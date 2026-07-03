@@ -462,6 +462,27 @@ CAL = r"""<!doctype html>
     .door.live.open:hover .cover{transform:none}
     .cta-btn:hover{transform:none}
   }
+  /* ---- live aktivitetsfeed (SSE): toast-stak nederst til venstre ---- */
+  .agx-live{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:2147483100;
+    display:flex;flex-direction:column;gap:8px;pointer-events:none;
+    max-width:min(340px,calc(100vw - 32px))}
+  .agx-toast{display:flex;align-items:center;gap:8px;padding:8px 13px;border-radius:12px;
+    background:rgba(9,11,17,.62);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,.13);color:#eef1f7;font-size:13px;line-height:1.4;
+    box-shadow:0 14px 40px -18px rgba(0,0,0,.8);
+    opacity:0;transform:translateY(12px);transition:opacity .35s ease,transform .35s ease}
+  .agx-toast.in{opacity:1;transform:none}
+  .agx-toast.now{transition:none}
+  .agx-toast.out{opacity:0}
+  .agx-toast .tem{font-size:16px;line-height:1;flex:none}
+  .agx-toast b{font-weight:700;white-space:nowrap}
+  @media (max-width:720px){
+    .agx-live{left:12px;bottom:calc(12px + env(safe-area-inset-bottom,0px));max-width:calc(100vw - 24px)}
+    .agx-toast{font-size:12px;padding:7px 11px;gap:7px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .agx-toast{transform:none;transition:opacity .35s ease}
+  }
 </style>
 </head>
 <body>
@@ -698,8 +719,15 @@ var AGX_MODELS = __MODELS_JSON__;
 // proxy. On static hosting / file:// the fetch fails and bar+top-3 stay hidden.
 var AGX_AVATARS = __AVATARS_JSON__;
 (function(){
+  var lastVotes=null; // seneste votes-map fra api/votes (giver "nr. X i kapløbet" i toasts)
+
+  // refresh(): den oprindelige engangs-fetch, nu som genbrugelig funktion.
+  // Kaldes ved load (uændret adfærd) og — debounced — ved hver SSE-aktivitet,
+  // så status-pill, leaderboard, behovs-panel og LEVENDE-tiles opdaterer live.
+  function refresh(){
   fetch('api/votes').then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(d){
     var votes=d.votes||{}, goal=d.goal||1000, total=d.total||0, avm=d.avatars||{};
+    lastVotes=votes;
     // slank status-pill: total stemmer mod mål
     document.getElementById('votesTxt').textContent=total+' af '+goal+' stemmer';
     document.getElementById('votesPill').hidden=false;
@@ -753,13 +781,117 @@ var AGX_AVATARS = __AVATARS_JSON__;
         if(b){ b.classList.add('asleep'); b.textContent='😴 Sover igen'; }
         el.classList.add('resleep');
       }else if(a.state==='awake'){
+        // idempotent begge veje, så live-refresh (SSE) også kan VENDE tilstanden:
+        // revive fjerner sove-badgen igen, og en fodret avatar mister ⚠️-chippen.
+        if(b&&b.classList.contains('asleep')){ b.classList.remove('asleep'); b.innerHTML='<i class="ld"></i>LEVENDE'; }
+        el.classList.remove('resleep');
         var nd=a.needs||{};
-        if(nd.food<25||nd.water<25||nd.love<25){
-          var c=el.querySelector('.hungry'); if(c) c.hidden=false;
-        }
+        var c=el.querySelector('.hungry');
+        if(c) c.hidden=!(nd.food<25||nd.water<25||nd.love<25);
       }
     });
   }).catch(function(){});
+  }
+  refresh();
+
+  // ==== live aktivitetsfeed — SSE-toasts som på en livestream ====
+  // RELATIV sti ('api/events', aldrig '/api/events'): siden bor under en
+  // sub-sti bag en prefix-strippende proxy. EventSource genforbinder selv,
+  // så INGEN egen retry-logik. På statisk hosting fejler forbindelsen med
+  // det samme — så lukker vi stille (nul console-spam), og feed-UI'et
+  // (der først skabes ved første toast) dukker aldrig op.
+  (function(){
+    if(!('EventSource' in window)) return;
+    var es;
+    try{ es=new EventSource('api/events'); }catch(e){ return; }
+    var opened=false, fails=0;
+    es.onopen=function(){ opened=true; fails=0; };
+    es.onerror=function(){
+      // aldrig åbnet og fejler igen => statisk hosting: luk permanent, i stilhed
+      if(!opened && ++fails>=2){ try{ es.close(); }catch(e){} }
+    };
+
+    var wrap=null, pending=null, needRef=false, refT=null;
+    var raf=window.requestAnimationFrame?window.requestAnimationFrame.bind(window):function(f){setTimeout(f,16);};
+    var NEED={food:['mad','🍖'],water:['vand','💧'],love:['kærlighed','❤️']};
+
+    // hvert event => (debounced) genkørsel af refresh(), så alt UI følger med live
+    function scheduleRefresh(){
+      if(refT) clearTimeout(refT);
+      refT=setTimeout(function(){ refT=null; refresh(); },800);
+    }
+    // billig rang: opdatér seneste kendte votes-map med tallet fra eventet
+    function voteRank(slug,n){
+      if(!lastVotes) return 0;
+      lastVotes[slug]=n;
+      var r=1,k;
+      for(k in lastVotes){ if(k!==slug&&(lastVotes[k]||0)>n) r++; }
+      return r;
+    }
+    function parts(ev){
+      var a=AGX_AVATARS[ev.slug]||[String(ev.slug||'?'),'🤖','#5eead4'];
+      var lead=a[1], txt='';
+      if(ev.type==='vote'){
+        txt=' fik en stemme';
+        var r=voteRank(ev.slug,+ev.votes||0);
+        if(r) txt+=' · nr. '+r+' i kapløbet';
+      }else if(ev.type==='feed'){
+        var n=NEED[ev.need]||NEED.love;
+        txt=' fik '+n[0]+' '+n[1];
+      }else if(ev.type==='revive'){ lead='😴→😊'; txt=' blev vækket til live igen!'; }
+      else if(ev.type==='wake'){ lead='🎬'; txt=' er VÅGNET som ægte AI-video!'; }
+      else return null;
+      return [lead,a[0],a[2],txt];
+    }
+    function drop(t){
+      if(t._h1) clearTimeout(t._h1);
+      if(t._h2) clearTimeout(t._h2);
+      if(t.parentNode) t.parentNode.removeChild(t);
+    }
+    // instant=true (backlog): ingen animation, kortere levetid (~4s)
+    function toast(ev,instant){
+      var p=parts(ev); if(!p) return;
+      if(!wrap){
+        wrap=document.createElement('div');
+        wrap.className='agx-live';
+        wrap.setAttribute('aria-hidden','true'); // ren dekoration — intet SR-spam
+        document.body.appendChild(wrap);
+      }
+      var t=document.createElement('div');
+      t.className=instant?'agx-toast now in':'agx-toast';
+      var em=document.createElement('span'); em.className='tem'; em.textContent=p[0];
+      var nm=document.createElement('b'); nm.style.color=p[2]; nm.textContent=p[1];
+      t.appendChild(em); t.appendChild(nm);
+      t.appendChild(document.createTextNode(p[3])); // textContent — aldrig HTML fra serverdata
+      wrap.appendChild(t); // containeren er bund-forankret => stakken vokser opad
+      var max=4;
+      try{ if(window.matchMedia&&window.matchMedia('(max-width:720px)').matches) max=2; }catch(e){}
+      while(wrap.children.length>max) drop(wrap.children[0]); // ældste ryger først
+      if(!instant){ raf(function(){ raf(function(){ t.classList.add('in'); }); }); }
+      var ttl=instant?4000:7000;
+      t._h1=setTimeout(function(){ t.classList.remove('now'); t.classList.add('out'); },ttl);
+      t._h2=setTimeout(function(){ drop(t); },ttl+420);
+    }
+
+    es.addEventListener('backlog', function(m){
+      if(document.hidden) return; // baggrundsfane: backlog er alligevel forældet
+      var d; try{ d=JSON.parse(m.data); }catch(e){ return; }
+      var evs=(d&&d.events)?d.events.slice(-3):[];
+      evs.forEach(function(ev){ toast(ev,true); });
+    });
+    es.addEventListener('activity', function(m){
+      var ev; try{ ev=JSON.parse(m.data); }catch(e){ return; }
+      if(!ev||!ev.type) return;
+      if(document.hidden){ pending=ev; needRef=true; return; } // buffer højst 1
+      toast(ev,false);
+      scheduleRefresh();
+    });
+    document.addEventListener('visibilitychange', function(){
+      if(document.hidden) return;
+      if(pending){ toast(pending,false); pending=null; }
+      if(needRef){ needRef=false; scheduleRefresh(); }
+    });
+  })();
 })();
 </script>
 <script src="track.js" defer></script>

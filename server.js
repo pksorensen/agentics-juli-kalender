@@ -226,6 +226,45 @@ fs.mkdirSync(DATA_DIR, { recursive: true });
 loadState();
 
 // ---------------------------------------------------------------------------
+// SSE-aktivitetsstrøm: ring-buffer (seneste 20, ældste først) + klient-Set.
+// Ingen persistens; events bærer INGEN afsenderdata (kun slug/type/need/counts).
+// ---------------------------------------------------------------------------
+const ACTIVITY_BUFFER_MAX = 20;
+const recentActivity = []; // ældste først
+const sseClients = new Set();
+
+// Skrivning til død klient må aldrig crashe — fjern klienten og gå videre.
+function sseWrite(client, chunk) {
+  try {
+    client.write(chunk);
+  } catch (err) {
+    sseClients.delete(client);
+  }
+}
+
+function broadcastActivity(type, slug, need) {
+  const event = {
+    type,
+    slug,
+    need: need || null,
+    votes: votes[slug],
+    total: totalVotes(),
+    ts: Date.now(),
+  };
+  recentActivity.push(event);
+  while (recentActivity.length > ACTIVITY_BUFFER_MAX) recentActivity.shift();
+  const msg = `event: activity\ndata: ${JSON.stringify(event)}\n\n`;
+  for (const client of sseClients) sseWrite(client, msg);
+}
+
+// Heartbeat-kommentar hver 25 s, så proxies ikke dræber idle forbindelser.
+// unref(): timeren må aldrig holde processen i live ved shutdown.
+const sseHeartbeat = setInterval(() => {
+  for (const client of sseClients) sseWrite(client, ': hb\n\n');
+}, 25000);
+sseHeartbeat.unref();
+
+// ---------------------------------------------------------------------------
 // App
 // ---------------------------------------------------------------------------
 const app = express();
@@ -235,6 +274,22 @@ app.disable('x-powered-by');
 
 app.get('/api/health', (req, res) => {
   res.json({ ok: true });
+});
+
+// Offentlig SSE-strøm (ingen auth). Backlog ved connect, derefter live events.
+app.get('/api/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // ingen buffering i nginx/proxies
+  res.flushHeaders();
+
+  // 'error' på socket/stream (fx skrivning efter disconnect) må aldrig crashe.
+  res.on('error', () => sseClients.delete(res));
+
+  sseWrite(res, `event: backlog\ndata: ${JSON.stringify({ events: recentActivity })}\n\n`);
+  sseClients.add(res);
+  req.on('close', () => sseClients.delete(res));
 });
 
 app.get('/api/votes', (req, res) => {
@@ -320,6 +375,7 @@ app.post('/api/vote', express.json({ limit: '64kb' }), (req, res) => {
   }
 
   saveState();
+  broadcastActivity(action, slug, need);
   console.log(`[vote] slug=${slug} action=${action}${need ? ` need=${need}` : ''} votes=${votes[slug]} total=${totalVotes()} messageId=${messageId || '-'}`);
   const response = { ok: true, slug, action, votes: votes[slug], total: totalVotes() };
   if (need) response.need = need;
@@ -354,6 +410,7 @@ app.post('/api/wake', express.json({ limit: '16kb' }), (req, res) => {
     console.log(`[state] ${slug}: ${prev} -> awake (POST /api/wake)`);
   }
   saveState();
+  broadcastActivity('wake', slug, null);
   res.json({
     ok: true,
     slug,
