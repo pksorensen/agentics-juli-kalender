@@ -503,9 +503,12 @@
 .agx-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .agx-tags span{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#aeb6c6;
   border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px 9px}
+/* agx-vote-css:start */
 .agx-vote{margin:0 0 12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.09)}
 .agx-vote .vt{font-size:12.5px;font-weight:700;letter-spacing:.01em;margin-bottom:2px}
 .agx-vote.alive .vt{color:#a4f5be}
+.agx-vote .vt.ok{color:#a4f5be}
+.agx-vote .vt.low{color:#ffb9b9}
 .agx-vote .vp{font-size:11.5px;color:#aeb6c6;line-height:1.45;margin-bottom:7px}
 .agx-vote .vp a{color:var(--agx);font-weight:600;text-decoration:none}
 .agx-vote .vp a:hover{text-decoration:underline}
@@ -519,6 +522,19 @@
 .agx-vote .vbar i{display:block;height:100%;width:0;border-radius:999px;background:var(--agx);
   transition:width .6s cubic-bezier(.2,.7,.2,1)}
 .agx-vote .vstat{margin-top:5px;font-size:10.5px;color:#aeb6c6;letter-spacing:.02em;line-height:1.45}
+.agx-vote .nrow{display:flex;gap:9px;margin:7px 0 9px}
+.agx-vote .need{flex:1;display:flex;align-items:center;gap:5px;font-size:11px;line-height:1}
+.agx-vote .need .nb{flex:1;height:4px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.agx-vote .need .nb i{display:block;height:100%;width:0;border-radius:999px;background:var(--agx);
+  transition:width .6s cubic-bezier(.2,.7,.2,1)}
+.agx-vote .need.low .nb i{background:#ff6a6a}
+.agx-vote .fbtns{display:flex;gap:6px}
+.agx-vote .fbtn{flex:1;text-align:center;padding:6px 2px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.04);color:#eef1f7;font-size:10.5px;font-weight:600;text-decoration:none;white-space:nowrap;
+  transition:transform .15s,border-color .15s,background .15s}
+.agx-vote .fbtn:hover{border-color:var(--agx);background:rgba(255,255,255,.08);transform:translateY(-1px)}
+.agx-vote .fbtn:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
+/* agx-vote-css:end */
 .agx-guess{margin:0 0 12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.09)}
 .agx-guess .gq{font-size:11.5px;color:#aeb6c6;margin-bottom:8px;letter-spacing:.01em}
 .agx-guess .gbtns{display:flex;gap:8px}
@@ -546,27 +562,49 @@
   <div class="h"><div class="em">🪞</div><div><div class="nm">Chrome</div><div class="tl">Formet af i dag, klar til i morgen.</div></div></div>
   <p>Chrome har intet fast ansigt — han flyder, tilpasser og omformer sig efter det, opgaven kræver lige nu. Han er den eksperimentelle kant af holdet, agenten der tester nye metoder, før de bliver mainstream, og som ikke er bange for at se lidt for fremtidig ud. Flydende form, skarpt formål.</p>
   <div class="agx-tags"><span>Eksperimenterende</span><span>Adaptiv</span><span>Skarp</span></div>
-  <div class="agx-vote" id="agxVote" data-slug="chrome">
+  <!-- agx-vote:start -->
+  <div class="agx-vote" id="agxVote" data-slug="chrome" data-name="Chrome" data-emoji="🪞">
     <div class="vt">🎬 Hjælp Chrome til live</div>
     <div class="vp">Jeg er stadig kun kode. Send én mail og stem mig levende:</div>
     <a class="vbtn" href="mailto:chrome@agent.agentics.dk?subject=Stem%20p%C3%A5%20Chrome%20%F0%9F%AA%9E&amp;body=Jeg%20stemmer%20p%C3%A5%20Chrome%21%20%F0%9F%8E%AC%0D%0AAnim%C3%A9r%20Chrome%20f%C3%B8rst%20%E2%80%94%20denne%20mail%20t%C3%A6ller%20som%20%C3%A9n%20stemme.">✉️ Stem på Chrome</a>
-    <div class="vmeter" id="agxVoteMeter" hidden>
-      <div class="vbar"><i id="agxVoteFill"></i></div>
-      <div class="vstat" id="agxVoteStat"></div>
-    </div>
   </div>
   <script>(function(){
     var box=document.getElementById('agxVote'); if(!box) return;
-    var SLUG=box.getAttribute('data-slug');
+    var SLUG=box.getAttribute('data-slug'),NAME=box.getAttribute('data-name')||SLUG,EMOJI=box.getAttribute('data-emoji')||'';
+    var NM=String(NAME).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+    function mailto(sub,body){return 'mailto:'+SLUG+'@agent.agentics.dk?subject='+encodeURIComponent(sub)+'&body='+encodeURIComponent(body);}
+    function bar(em,lv){lv=Math.round(+lv||0);lv=lv<0?0:(lv>100?100:lv);
+      return '<span class="need'+(lv<25?' low':'')+'">'+em+'<span class="nb"><i style="width:'+lv+'%"></i></span></span>';}
+    function fbtn(lbl,sub,body){return '<a class="fbtn" href="'+esc(mailto(sub,body))+'">'+lbl+'</a>';}
+    function render(inner){box.className='agx-vote';box.innerHTML=inner;}
     fetch('api/votes').then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(d){
-      var v=d.votes||{}, mine=v[SLUG]||0, leader=1, rank=1, n=0;
-      Object.keys(v).forEach(function(s){ n++; if(v[s]>leader) leader=v[s]; if(v[s]>mine) rank++; });
-      document.getElementById('agxVoteFill').style.width=Math.round(100*mine/leader)+'%';
-      document.getElementById('agxVoteStat').textContent=mine+(mine===1?' stemme':' stemmer')
-        +' · nr. '+rank+' af '+(n||31)+' · flest stemmer animeres først';
-      document.getElementById('agxVoteMeter').hidden=false;
-    }).catch(function(){ /* statisk hosting / offline: skjul måler, behold CTA */ });
+      var av=(d.avatars||{})[SLUG], state=av?av.state:'sleeping';
+      if(state==='awake'){
+        var n=av.needs||{}, low=(n.love<25||n.food<25||n.water<25);
+        render('<div class="vt '+(low?'low':'ok')+'">'+NM+(low?' er SULTEN!':' har det godt')+'</div>'
+          +'<div class="nrow">'+bar('❤️',n.love)+bar('🍖',n.food)+bar('💧',n.water)+'</div>'
+          +'<div class="fbtns">'
+          +fbtn('🍖 Giv mad','Mad til '+NAME+' 🍖','Her er mad til dig, '+NAME+'! 🍖')
+          +fbtn('💧 Giv vand','Vand til '+NAME+' 💧','Her er frisk vand til dig, '+NAME+'! 💧')
+          +fbtn('❤️ Giv kærlighed','Kærlighed til '+NAME+' ❤️','Du er elsket, '+NAME+'! ❤️')
+          +'</div>');
+      }else if(state==='asleep_again'){
+        render('<div class="vt">😴 '+NM+' er faldet i søvn igen…</div>'
+          +'<div class="vp">Behovene nåede nul. Én mail genopliver '+NM+':</div>'
+          +'<a class="vbtn" href="'+esc(mailto('Væk '+NAME+' '+EMOJI,'Vågn op, '+NAME+' — her er lidt kærlighed til at starte på! ❤️'))+'">✉️ Væk '+NM+'</a>');
+      }else{
+        var v=d.votes||{}, mine=v[SLUG]||0, leader=1, rank=1, cnt=0;
+        Object.keys(v).forEach(function(s){ cnt++; if(v[s]>leader) leader=v[s]; if(v[s]>mine) rank++; });
+        render('<div class="vt">🎬 Hjælp '+NM+' til live</div>'
+          +'<div class="vp">Jeg er stadig kun kode. Send én mail og stem mig levende:</div>'
+          +'<a class="vbtn" href="'+esc(mailto('Stem på '+NAME+' '+EMOJI,'Jeg stemmer på '+NAME+'! 🎬\r\nAnimér '+NAME+' først — denne mail tæller som én stemme.'))+'">✉️ Stem på '+NM+'</a>'
+          +'<div class="vmeter"><div class="vbar"><i style="width:'+Math.round(100*mine/leader)+'%"></i></div>'
+          +'<div class="vstat">'+mine+(mine===1?' stemme':' stemmer')+' · nr. '+rank+' af '+(cnt||31)+' · flest stemmer animeres først</div></div>');
+      }
+    }).catch(function(){ /* statisk hosting / offline: behold standardvisning, ingen behovs-bars */ });
   })();</script>
+  <!-- agx-vote:end -->
   <div class="agx-guess" id="agxGuess">
     <div class="gq">🤖 Hvilken Claude-model byggede Chrome?</div>
     <div class="gbtns">

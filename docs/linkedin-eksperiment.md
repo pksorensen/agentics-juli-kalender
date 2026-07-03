@@ -1,14 +1,14 @@
 # LinkedIn-eksperiment: Julikalenderen som follower-motor
 
-**Formål:** Afgøre om kommentar→credit + mail→stemme-mekanikken på agentics.dk/julikalender
-skaber **netto nye følgere** — ikke bare impressions. 31 dage, én mekanik, hårde tal.
+**Formål:** Afgøre om kommentar→credit + mail→stemme + feeding-mekanikken på agentics.dk/julikalender
+skaber **netto nye følgere** — ikke bare impressions. 31 dage, én mekanik i tre lag, hårde tal.
 
 ---
 
 ## 1. Hypotese & KPI'er
 
 **Hypotese:** En seriel 31-dages kampagne, hvor publikum *ejer udfaldet* (kommentarer funder
-avatarerne, mails bestemmer rækkefølgen), konverterer engagement til følgere markant bedre end
+avatarerne, mails bestemmer rækkefølgen — og feeds holder dem i live), konverterer engagement til følgere markant bedre end
 almindelige posts — fordi der er en grund til at komme tilbage i morgen, og "følg" er den
 naturlige måde at følge serien på.
 
@@ -20,24 +20,27 @@ en stigning fra 5–10 til 10–15+ nye følgere/dag under daglig serie-posting,
 på tværs af deltagere på 30 dage. Serialisering er driveren — ikke enkeltpostens rækkevidde.
 
 **Primær KPI:** Netto nye følgere pr. dag (mod baseline).
-**Sekundære KPI'er:** kommentarer pr. post, mails/stemmer pr. dag, besøg på /julikalender,
-antal gæt i modelspillet, profilvisninger.
+**Sekundære KPI'er:** kommentarer pr. post, mails/stemmer pr. dag, feeds pr. dag (🍖/💧/❤️),
+unikke feeders, redninger (avatarer hentet tilbage fra — eller fra kanten af — søvn), besøg på
+/julikalender, antal gæt i modelspillet, profilvisninger.
 
 **Baseline (obligatorisk, FØR launch):** Notér følgertal hver morgen kl. 09 i 7 dage før
 launch-posten. Gennemsnittet = baseline netto følgere/dag. Uden baseline er eksperimentet værdiløst.
 
 **Dagligt målepunkt-skema** (udfyldes kl. 09, tager 3 minutter):
 
-| Dag | Dato | Følgere kl. 09 | Nye følgere (Δ) | Kommentarer i går | Mails/stemmer i går | Besøg /julikalender | Gæt i modelspil | Noter (post-type, demotion-tegn?) |
-|-----|------|----------------|-----------------|-------------------|---------------------|---------------------|-----------------|-----------------------------------|
-| -7…-1 | | | | — | — | | | baseline-uge |
-| 1 | | | | | | | | launch |
-| 2 | | | | | | | | Ræv-reveal |
-| … | | | | | | | | |
-| 31 | | | | | | | | finale |
+| Dag | Dato | Følgere kl. 09 | Nye følgere (Δ) | Kommentarer i går | Stemmer i går | Feeds i går (🍖/💧/❤️) | Unikke feeders | Redninger | Besøg /julikalender | Gæt i modelspil | Noter (post-type, demotion-tegn?) |
+|-----|------|----------------|-----------------|-------------------|---------------|------------------------|----------------|-----------|---------------------|-----------------|-----------------------------------|
+| -7…-1 | | | | — | — | — | — | — | | | baseline-uge |
+| 1 | | | | | | | | | | | launch |
+| 2 | | | | | | | | | | | Ræv-reveal |
+| … | | | | | | | | | | | |
+| 31 | | | | | | | | | | | finale |
 
 Kilder til tallene: LinkedIn Analytics (følgere, impressions, profilvisninger), inbox-webhook
-(stemmer), site-analytics (besøg + gæt).
+(stemmer + feeds — `GET /api/votes` leverer feeds, behov og tilstand pr. avatar, se
+`feeding-spec.md`), site-analytics (besøg + gæt). *Redninger* = mails der genopliver en avatar
+fra "sovet igen" **plus** feeds på et behov < 25 (tælles manuelt fra webhook-loggen).
 
 ---
 
@@ -94,11 +97,15 @@ classifier, og distribution begrænses uanset kontohistorik
 
 **Kadence:** 1 launch-post (dag 1) + dagligt opfølgnings-format resten af juli:
 
-> **Dagligt format (5–10 min at skrive):** ① Hook: dagens leaderboard-drama (fører/underdog).
-> ② Dagens nye låge + én konkret teknisk detalje. ③ Modelspils-tease ("dagens hint: låge N er
-> bygget af en model, der …"). ④ Ægte spørgsmål. ⑤ `agentics.dk/julikalender` som ren tekst.
+> **Dagligt format (5–10 min at skrive):** ① Hook: dagens drama — leaderboard (fører/underdog)
+> *eller* hunger-alert ("Ugla står på 11 i vand og har 14 timer tilbage"). ② Dagens nye låge + én
+> konkret teknisk detalje. ③ Modelspils-tease ("dagens hint: låge N er bygget af en model, der …").
+> ④ Behovs-status i én linje, når nogen er vågne ("Ræv i dag: 🍖 62 · 💧 38 · ❤️ 71").
+> ⑤ Ægte spørgsmål. ⑥ `agentics.dk/julikalender` som ren tekst.
 
 De første 2 linjer afgør alt — det er dem, der vises før "…se mere". Hook først, kontekst bagefter.
+Hunger-alerts er hverdags-hooken; den *dedikerede* rescue-post (d) gemmes til reelle kriser
+(behov < 25) — se feeding-afsnittet nedenfor.
 
 ### Udkast (a) — Launch-posten
 
@@ -115,7 +122,10 @@ De første 2 linjer afgør alt — det er dem, der vises før "…se mere". Hook
 >
 > For hver kommentar på det her opslag lægger jeg 1 credit i puljen. Puljen betaler for at vække
 > de næste avatarer til live — og rækkefølgen bestemmer I: én tom mail til fx
-> raev@agent.agentics.dk tæller som én stemme. Live leaderboard på sitet.
+> ugla@agent.agentics.dk tæller som én stemme. Live leaderboard på sitet.
+>
+> (Og Ræv? Hun er vågen nu — og vågne avatarer skal have mad, vand og kærlighed via mail,
+> ellers falder de i søvn igen. Mere om dét i morgen.)
 >
 > Mit ærlige spørgsmål: hvilken avatar fortjener at blive levende først — og hvorfor lige den?
 >
@@ -138,6 +148,10 @@ De første 2 linjer afgør alt — det er dem, der vises før "…se mere". Hook
 >
 > Ræv er låge 2 af 31. Hvem der bliver nummer to afgøres af leaderboardet — lige nu fører [X].
 >
+> PS: Nu hvor Ræv er vågen, er hun også sulten. Hendes tre behov — mad, vand, kærlighed — falder
+> fra 100 til 0 på 48 timer, og en mail med fx "vand" i emnefeltet fylder baren op igen. Ingen
+> har fodret hende endnu.
+>
 > Døm selv, om han ligner: agentics.dk/julikalender
 
 ### Udkast (c) — Leaderboard/battle-opdatering
@@ -158,6 +172,91 @@ De første 2 linjer afgør alt — det er dem, der vises før "…se mere". Hook
 >
 > Er der nogen derude, der kan redde [underdog]? Én mail til [slug]@agent.agentics.dk tæller som
 > én stemme.
+>
+> agentics.dk/julikalender
+
+---
+
+## Feeding-loopet — retention-motoren
+
+*(Mekanikken i detaljer: se `feeding-spec.md`. Kort: mails til VÅGNE avatarer giver mad 🍖, vand 💧
+eller kærlighed ❤️ — +30 pr. mail via nøgleord i emne/tekst. Alle tre behov forfalder fra 100 til 0
+på 48 timer; rammer alle tre nul, falder avataren i søvn igen — trist, ikke død — og én enkelt mail
+genopliver den.)*
+
+### Hvorfor forfald skaber DAGLIGE besøg — og engangs-stemmer ikke gør
+
+1. **En stemme er en engangshandling.** Man stemmer, avataren vækkes (eller ikke), og relationen er
+   afsluttet. Feeding har intet slutpunkt: tilstanden er letfordærvelig, så der er *altid* en grund
+   til at kigge forbi — også på dage uden ny låge eller battle-drama.
+2. **Der sker noget, selv når ingen gør noget.** Forfaldet betyder, at status ændrer sig af sig
+   selv. Besøget skifter karakter fra "er der sket noget?" (ofte nej → skuffelse → churn) til
+   "jeg skal *forhindre*, at der sker noget" (altid relevant).
+3. **48 timer er valgt med vilje.** Vinduet er kortere end "jeg kigger forbi i weekenden": den, der
+   vil holde sin avatar kørende, skal forbi dagligt eller hver anden dag — dét er definitionen på en
+   retention-motor. Fra fuld bar nås kritisk zone (< 25) efter ca. 36 timer.
+4. **Tab svider mere end gevinst.** At miste en avatar, man selv har stemt vågen og fodret i en uge,
+   føles værre end aldrig at have vundet den — loss aversion arbejder for os hver nat.
+5. **Banneret er vejrudsigten.** "⚠️ Ræv mangler vand!" på kalender-forsiden gør /julikalender til
+   et statusbræt, man tjekker som DMI — og hver advarsel er samtidig næste dags LinkedIn-hook.
+
+### Tamagotchi-effekten: skyld og omsorg — doseret rigtigt
+
+- **Navngiven karakter + synlige behov + synligt forfald = omsorgs-script.** Tamagotchi beviste, at
+  mennesker passer pixels som kæledyr, når de har investeret i dem. Her er investeringen konkret:
+  *din* kommentar fundede den, *din* mail vækkede den — "MIN avatar"-ejerskabet fra afsnit 2
+  forlænges fra valgkamp til pasningsforhold.
+- **Skyld er en stærkere return-driver end nysgerrighed — men skal kunne indfries billigt.** Derfor
+  er søvnen reversibel ("trist, ikke død"), og én mail genopliver (alle behov til 40). Lav pris på
+  frelse holder det som et spil; en irreversibel "død" ville tippe skyld over i vrede og exit.
+- **Redninger er indbygget drama.** "Boo var 40 minutter fra at falde i søvn" er en historie, der
+  skriver sig selv — og redderen får offentlig kredit på plejer-leaderboardet (udkast e). Omsorg
+  konverteres til status, og status vender folk tilbage efter.
+- **Bait-disciplinen fra afsnit 2 gælder uændret:** feeding-posts *beskriver avatarens tilstand*
+  (fakta + tal) og slutter med et ægte spørgsmål — aldrig imperativer ("send en mail", "red hende",
+  "giv vand"). Mailto-knapperne og enhver direkte opfordring bor på sitet, ikke i posten. Og
+  rescue-posten (d) bruges kun, når et behov reelt er < 25, max 2×/uge — ellers råber vi ulven,
+  og skylden mister sin kraft.
+
+### Udkast (d) — Rescue-posten
+
+> Ræv er ved at falde i søvn igen 😴 — hun mangler vand.
+>
+> For nye læsere: de vågne avatarer i julikalenderen har tre behov — mad 🍖, vand 💧 og
+> kærlighed ❤️. Behovene falder fra 100 til 0 på 48 timer, og rammer alle tre nul, falder
+> avataren i søvn igen. Ikke død. Bare slukket. Det er næsten værre.
+>
+> Lige nu står Ræv sådan her: mad [41] · vand [9] · kærlighed [63]. Med den nuværende
+> forfaldshastighed er vandet væk om cirka [4] timer.
+>
+> Reglerne er de samme som altid: én mail til raev@agent.agentics.dk med "vand" i emnefeltet
+> tæller som ét glas vand (+30 på baren). Jeg har lovet mig selv ikke at fodre dem selv —
+> det ville være at snyde i mit eget eksperiment.
+>
+> Live-status: agentics.dk/julikalender
+>
+> Mit spørgsmål her til morgen: er der mon nogen derude med et glas vand til overs til en
+> søvnig ræv?
+
+### Udkast (e) — Ugens plejer-leaderboard
+
+> Tre voksne mennesker har brugt deres uge på at holde en tegneserie-ugle i live. Jeg elsker
+> internettet.
+>
+> Ugens plejer-leaderboard fra julikalenderen:
+>
+> 🥇 [M.K.] — [23] feeds. Mest kærlighed. Selvfølgelig.
+> 🥈 [S.J.] — [17] feeds + ugens redning: [Boo] var [3] timer fra at falde i søvn igen, da der
+> landede en mail med emnet "MAD NU 🍖".
+> 🥉 [A.] — [11] feeds, udelukkende vand. Konsekvent type.
+>
+> Ugens tal: [64] feeds fordelt på [mad 21 / vand 26 / kærlighed 17], [2] redninger og
+> [19] unikke plejere. [Ræv] har nu været vågen i [9] dage i træk.
+>
+> (Plejere vises med initialer — det er deres mails, ikke deres LinkedIn-profiler.)
+>
+> Det, der undrer mig mest: kærlighed er konsekvent det behov, der bliver glemt først.
+> Hvad siger det om os?
 >
 > agentics.dk/julikalender
 
@@ -198,10 +297,10 @@ Impressions bliver ikke til følgere af sig selv (~0,1 % uden aktiv konvertering
 | Fase | Dage | Indhold |
 |------|------|---------|
 | Baseline | -7 til 0 | Mål følgere dagligt. Klargør profil, webhook-test, leaderboard live |
-| Launch | 1–2 | Udkast (a), dagen efter udkast (b) Ræv-reveal |
-| Rytme | 3–27 | Dagligt format; battle-post (c) 2–3×/uge; behind-the-scenes 1×/uge |
+| Launch | 1–2 | Udkast (a), dagen efter udkast (b) Ræv-reveal (inkl. feeding-intro) |
+| Rytme | 3–27 | Dagligt format m. behovs-status/hunger-alert som hook; battle-post (c) 2–3×/uge; rescue-post (d) kun ved behov < 25, max 2×/uge; plejer-leaderboard (e) 1×/uge (søndag); behind-the-scenes 1×/uge |
 | Midtvejs | ~15 | Halvvejs-status: tal, læringer, største overraskelse |
-| Finale | 28–31 | Nedtælling, sidste avatar vækkes, samlet post-mortem med alle tal |
+| Finale | 28–31 | Nedtælling, sidste avatar vækkes — og kan hele flokken holdes vågen til d. 31.? Samlet post-mortem med alle tal |
 
 **Credits-budget** (100 credits ≈ 1 avatar ≈ 30–33 kr; 4000-credit-pakke = 190 USD ≈ 1.330 kr):
 
@@ -238,6 +337,9 @@ Det ville betyde: mekanikken skaber engagement-teater, ikke publikum.
 - Et tal for *vores* impressions→follower-konvertering — genbrugeligt i al fremtidig content.
 - Om mail-som-stemme fungerer som friktionsfri off-platform-mekanik (genbrugeligt til
   SminkepigerneDK-akademiet og kundecases: "inbox-webhook som produkt").
+- Om forfalds-mekanikken (feeding) reelt skaber daglig retention: feeds/dag- og unikke
+  feeders-kurverne efter dag 7 viser, om Tamagotchi-loopet holder — eller om folk fodrer én
+  gang og glemmer det.
 - Hvilke post-typer (reveal / battle / behind-the-scenes) der driver hvilken KPI — dag-for-dag-data.
 - En offentlig post-mortem med ægte tal er i sig selv en troværdigheds-post for agentics.dk.
 
@@ -246,7 +348,9 @@ Det ville betyde: mekanikken skaber engagement-teater, ikke publikum.
 ## Launch-tjekliste (10 punkter)
 
 1. [ ] 7 dages baseline-følgertal noteret i skemaet (afsnit 1).
-2. [ ] Inbox-webhook testet: mail til `raev@agent.agentics.dk` tæller synligt på leaderboardet.
+2. [ ] Inbox-webhook testet begge veje: mail til en *sovende* avatar (fx `ugla@agent.agentics.dk`)
+   tæller synligt som stemme på leaderboardet, og mail til `raev@agent.agentics.dk` med "vand"
+   i emnet rykker synligt på Rævs vandbar (Ræv seedes vågen, jf. `feeding-spec.md`).
 3. [ ] Leaderboard + progress bars live på agentics.dk/julikalender, tjekket på mobil.
 4. [ ] Modelspillet virker, og der ligger 3–4 hints klar til de første battle-posts.
 5. [ ] Profil opdateret: headline med juli-serien, featured-link til kalenderen, Ræv-video.

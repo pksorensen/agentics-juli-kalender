@@ -79,6 +79,16 @@
   .camp .cmeta{margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:5px 14px;font-size:12px;color:var(--dim)}
   .camp .cmeta b{color:var(--ink)}
   .camp .ctop span{font-weight:600;white-space:nowrap;margin-right:10px}
+  /* feeding: needs-status strip for awake avatars (docs/feeding-spec.md) */
+  .camp .cneeds{margin-top:10px;padding-top:9px;border-top:1px solid var(--line);
+    display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;font-size:12.5px}
+  .camp .cneeds .cav{display:inline-flex;align-items:center;gap:8px;font-weight:600;white-space:nowrap}
+  .camp .cneeds .nmini{display:inline-flex;align-items:center;gap:3px;font-size:11px}
+  .camp .cneeds .nmini .nt{display:inline-block;width:30px;height:4px;border-radius:999px;
+    background:rgba(255,255,255,.09);overflow:hidden}
+  .camp .cneeds .nmini .nt .nf{display:block;height:100%;border-radius:999px}
+  .camp .cneeds .warn{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
+    font-size:11.5px;font-weight:700;color:#ffd9c2;border:1px solid rgba(255,138,74,.5);background:rgba(255,138,74,.1)}
   .foot{margin-top:40px;color:#5a627a;font-size:13px;line-height:1.6}
   @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
   @media (prefers-reduced-motion:reduce){.door .poster .em{animation:none}.door.open:hover{transform:none}}
@@ -104,6 +114,7 @@
       <span id="campTotal"></span>
       <span>Top 3: <span class="ctop" id="campTop"></span></span>
     </div>
+    <div class="cneeds" id="campNeeds" hidden></div>
   </div>
   <div class="grid" id="grid">
     <a class="door" data-day="1" style="--c:#38e6ff" aria-label="Dag 1 — AURA">
@@ -485,6 +496,29 @@ var AGX_AVATARS = {"aura": ["AURA", "\ud83d\udd2e", "#38e6ff"], "raev": ["R\u00e
     document.getElementById('campTop').innerHTML=out;
     document.getElementById('campBar').hidden=false;
     document.getElementById('campMeta').hidden=false;
+    // feeding: needs-status strip — tiny ❤️🍖💧 bars per AWAKE avatar, plus an
+    // attention chip when any need is critical (< 25). See docs/feeding-spec.md.
+    var avm=d.avatars||{}, bars='', warns='';
+    Object.keys(avm).forEach(function(s){
+      var a=avm[s]||{};
+      if(a.state!=='awake') return;
+      var meta=AGX_AVATARS[s]||[s,'🤖','#5eead4'], nd=a.needs||{};
+      function mini(em,lv){lv=Math.round(+lv||0);lv=lv<0?0:(lv>100?100:lv);
+        return '<span class="nmini">'+em+'<span class="nt"><span class="nf" style="width:'+lv
+          +'%;background:'+(lv<25?'#ff6a6a':meta[2])+'"></span></span></span>';}
+      bars+='<span class="cav"><span style="color:'+meta[2]+'">'+meta[1]+' '+meta[0]+'</span>'
+        +mini('❤️',nd.love)+mini('🍖',nd.food)+mini('💧',nd.water)+'</span>';
+      var lows=[];
+      if(nd.food<25)lows.push('mad');
+      if(nd.water<25)lows.push('vand');
+      if(nd.love<25)lows.push('kærlighed');
+      if(lows.length)warns+='<span class="warn">⚠️ '+meta[0]+' mangler '+lows.join(' og ')+'!</span>';
+    });
+    if(bars||warns){
+      var cn=document.getElementById('campNeeds');
+      cn.innerHTML=bars+warns;
+      cn.hidden=false;
+    }
   }).catch(function(){});
 })();
 </script>

@@ -20,15 +20,40 @@ npx http-server -p 8090 .
 
 ## Hosting (Docker / Coolify)
 
-Repoet har en `Dockerfile` (nginx:alpine, port 80) klar til Coolify:
+Repoet har en `Dockerfile` (node:22-alpine, port 80) — én service der både
+serverer siderne (med HTTP Range til dag 2's video-scrub) og stemme/feeding-
+API'et:
 
 1. Coolify → New Resource → **Public Repository** → peg på dette repo
 2. Build pack: **Dockerfile** (auto-detekteres), port **80**
-3. Deploy — færdig. `/` lander direkte på kalenderen.
+3. **Env vars**: `VOTE_WEBHOOK_TOKEN=<lang tilfældig streng>` (påkrævet for
+   POST-endpoints; uden den svarer de 503) · `USER_DATA_DIR=/app/user-data`
+   (eller `DATA_DIR`) · valgfrit `VOTE_GOAL` (default 1000)
+4. **Volume**: mount til `/app/user-data` så stemmer/behov overlever redeploys
+5. Deploy — `/` lander direkte på kalenderen.
 
-nginx serverer Range-requests (206) out of the box, så dag 2's video-scrub
-virker. Rå genererings-artefakter (raw.mp4, still.png m.m.) holdes ude af
-imaget via `.dockerignore`.
+### Webhook-kontrakt (inbox-systemet)
+
+Én mail til `<slug>@agent.agentics.dk` → ét kald:
+
+```
+POST /api/vote
+Authorization: Bearer $VOTE_WEBHOOK_TOKEN
+Content-Type: application/json
+
+{ "recipient": "raev@agent.agentics.dk",
+  "subject":   "<rå emnelinje>",
+  "body":      "<rå mailtekst (valgfri)>",
+  "messageId": "<unik mail-id — dedup ved gensendelser>" }
+```
+
+Serveren afgør selv effekten: sovende avatar → wake-stemme; vågen avatar →
+nøgleords-parsing (mad/vand/kærlighed, da/en/emoji) → feed +30 på behovet;
+sovet-igen → revive. Svar: `{ok, slug, action: "vote"|"feed"|"revive", need?,
+levels?, votes, total}`. Se `docs/feeding-spec.md` for hele tilstandsmaskinen.
+
+Når en ny avatar er genereret og deployet: `POST /api/wake {"slug":"neko"}`
+(samme Bearer-token) — så aktiveres dens behov.
 
 ## Sådan hænger det sammen
 
