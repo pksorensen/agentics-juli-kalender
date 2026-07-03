@@ -7,6 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const fsp = fs.promises;
 const express = require('express');
+const crypto = require('crypto');
 
 const ROOT = __dirname;
 const PORT = parseInt(process.env.PORT, 10) || 80;
@@ -14,6 +15,13 @@ const VOTE_GOAL = parseInt(process.env.VOTE_GOAL, 10) || 1000;
 // DATA_DIR har forrang; USER_DATA_DIR matcher Coolify-opsætningens volume-navn
 const DATA_DIR = path.resolve(process.env.DATA_DIR || process.env.USER_DATA_DIR || './data');
 const VOTES_FILE = path.join(DATA_DIR, 'votes.json');
+// HMAC-hemmelighed for /api/feed (inbox-webhooks). Env har forrang; fallback er
+// en fil på den persistente volume, så hemmeligheden aldrig ligger i git.
+const FEED_SECRET_FILE = path.join(DATA_DIR, 'feed-secret');
+function feedSecret() {
+  if (process.env.FEED_WEBHOOK_SECRET) return process.env.FEED_WEBHOOK_SECRET.trim();
+  try { return fs.readFileSync(FEED_SECRET_FILE, 'utf8').trim(); } catch { return ''; }
+}
 const MAX_MESSAGE_IDS = 50000; // FIFO-cap på husket dedupe-liste
 
 // Avatar-roster — dag 1..31. GET /api/votes skal ALTID indeholde alle 31 slugs.
@@ -346,6 +354,11 @@ app.post('/api/vote', express.json({ limit: '64kb' }), (req, res) => {
     });
   }
 
+  res.json(processIncomingMail(slug, messageId, body.subject, body.body));
+});
+
+// Fælles kerne for /api/vote og /api/feed: stem + fodr/genopliv + dedupe.
+function processIncomingMail(slug, messageId, subject, bodyText) {
   const now = Date.now();
   const avatar = avatars[slug];
   refreshAvatar(slug, now); // vågen med alle behov forfaldet til 0 -> asleep_again
@@ -358,14 +371,14 @@ app.post('/api/vote', express.json({ limit: '64kb' }), (req, res) => {
   let levels = null;
   if (avatar.state === 'awake') {
     action = 'feed';
-    need = parseNeed(body.subject, body.body) || 'love'; // intet match -> love
+    need = parseNeed(subject, bodyText) || 'love'; // intet match -> love
     const fed = Math.min(100, decayedLevel(avatar.needs[need], now) + FEED_AMOUNT);
     avatar.needs[need] = makeNeed(fed, now);
     avatar.feeds[need] += 1;
     levels = currentLevels(avatar, now);
   } else if (avatar.state === 'asleep_again') {
     action = 'revive'; // én hvilken som helst feed-mail genopliver
-    need = parseNeed(body.subject, body.body) || 'love';
+    need = parseNeed(subject, bodyText) || 'love';
     for (const n of NEEDS) avatar.needs[n] = makeNeed(REVIVE_LEVEL, now);
     avatar.feeds[need] += 1;
     avatar.state = 'awake';
@@ -380,7 +393,42 @@ app.post('/api/vote', express.json({ limit: '64kb' }), (req, res) => {
   const response = { ok: true, slug, action, votes: votes[slug], total: totalVotes() };
   if (need) response.need = need;
   if (levels) response.levels = levels;
-  res.json(response);
+  return response;
+}
+
+// /api/feed — modtager pks-agent-inbox webhooks (WEBHOOK-CONTRACT.md):
+// HMAC-signeret JSON, X-Inbox-Signature: sha256=hex(hmac-sha256(rawBody, secret)).
+// Ét delt secret for alle 31 webhooks; payload.to afgør avataren.
+app.post('/api/feed', express.json({ limit: '64kb', verify: (req, res, buf) => { req.rawBody = buf; } }), (req, res) => {
+  const secret = feedSecret();
+  if (!secret) {
+    return res.status(503).json({ ok: false, error: 'not-configured' });
+  }
+  const sig = req.get('x-inbox-signature') || '';
+  const want = 'sha256=' + crypto.createHmac('sha256', secret).update(req.rawBody || Buffer.alloc(0)).digest('hex');
+  const a = Buffer.from(sig);
+  const b = Buffer.from(want);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return res.status(401).json({ ok: false, error: 'bad-signature' });
+  }
+
+  const p = (req.body && typeof req.body === 'object') ? req.body : {};
+  // Test-fires fra inbox'ens /test-endpoint skal validere uden at tælle.
+  if ((req.get('x-inbox-event') || p.event) === 'webhook.test') {
+    return res.json({ ok: true, test: true });
+  }
+
+  const to = Array.isArray(p.to) ? p.to.find((t) => typeof t === 'string' && t.includes('@')) : null;
+  const slug = to ? to.split('@')[0].trim().toLowerCase() : null;
+  if (!slug || !SLUG_SET.has(slug)) {
+    return res.status(404).json({ ok: false, error: 'unknown-slug' });
+  }
+  const messageId = (typeof p.id === 'string' && p.id) ? p.id : null;
+  if (messageId && seenMessageIds.has(messageId)) {
+    return res.json({ ok: true, duplicate: true, slug, votes: votes[slug], total: totalVotes() });
+  }
+
+  res.json(processIncomingMail(slug, messageId, p.subject, null));
 });
 
 // Kaldes når en avatar er genereret og deployet: state=awake, alle behov = 100.

@@ -21,7 +21,9 @@ raw request body and constant-time-compare with the header. Reject on mismatch.
 Route by the "to" localpart. Use senderHash for unique-feeder counts; avoid
 storing the raw from address.
 
-SECRET: b5182369fdb0ee6ddef1e995c221d9a65f7f2c2b48a4a51e
+SECRET: leveres out-of-band — læses af serveren fra env FEED_WEBHOOK_SECRET
+eller filen user-data/feed-secret på den persistente volume. ALDRIG i git
+(den tidligere version af denne fil lækkede et secret; det er roteret og dødt).
 
 Retries: failed deliveries retry 3x (1s/10s/60s). Endpoint should be idempotent
 on X-Inbox-Delivery or message id. Delivery is at-most-once beyond that.
