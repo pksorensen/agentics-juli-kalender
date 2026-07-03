@@ -72,6 +72,8 @@ VOTE_ROSTER = {
 # these is the alive/thank-you variant (shown when the fetch fails, e.g. static
 # hosting). At runtime the API state overrides the default on every page.
 ALIVE = {2, 3}
+# adopterede agenter: dag -> hvem (vises som guld-chip i kortet, uanset runtime-state)
+ADOPTED = {3: "agentics.dk"}
 
 # ---- region markers: everything between them (inclusive) is replaced on
 #      upgrade, so future versions never need anchor archaeology again ----
@@ -88,6 +90,7 @@ VOTE_CSS = (CSS_MARK_START + "\n" +
 """.agx-vote{margin:0 0 12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.09)}
 .agx-vote .vt{font-size:12.5px;font-weight:700;letter-spacing:.01em;margin-bottom:2px}
 .agx-vote.alive .vt{color:#a4f5be}
+.agx-vote .vadopt{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#ffe9b8;border:1px solid rgba(255,210,74,.5);background:rgba(255,210,74,.08);border-radius:999px;padding:3px 9px;margin-bottom:8px}
 .agx-vote .vt.ok{color:#a4f5be}
 .agx-vote .vt.low{color:#ffb9b9}
 .agx-vote .vp{font-size:11.5px;color:#aeb6c6;line-height:1.45;margin-bottom:7px}
@@ -124,6 +127,7 @@ V1_VOTE_CSS = (
 """.agx-vote{margin:0 0 12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.09)}
 .agx-vote .vt{font-size:12.5px;font-weight:700;letter-spacing:.01em;margin-bottom:2px}
 .agx-vote.alive .vt{color:#a4f5be}
+.agx-vote .vadopt{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#ffe9b8;border:1px solid rgba(255,210,74,.5);background:rgba(255,210,74,.08);border-radius:999px;padding:3px 9px;margin-bottom:8px}
 .agx-vote .vp{font-size:11.5px;color:#aeb6c6;line-height:1.45;margin-bottom:7px}
 .agx-vote .vp a{color:var(--agx);font-weight:600;text-decoration:none}
 .agx-vote .vp a:hover{text-decoration:underline}
@@ -147,20 +151,22 @@ V1_VOTE_CSS = (
 #      mailto: links are built with encodeURIComponent, which percent-encodes
 #      æøå and emoji correctly. ----
 VOTE_TMPL = """  <!-- agx-vote:start -->
-  <div class="agx-vote__ALIVECLS__" id="agxVote" data-slug="__SLUG__" data-name="__NAME__" data-emoji="__EMOJI__">
+  <div class="agx-vote__ALIVECLS__" id="agxVote" data-slug="__SLUG__" data-name="__NAME__" data-emoji="__EMOJI__" data-adopted="__ADOPTED__">
+    __VADOPT__
     __VHEAD__
     __VPLEA__
 __VCTA__  </div>
   <script>(function(){
     var box=document.getElementById('agxVote'); if(!box) return;
     var SLUG=box.getAttribute('data-slug'),NAME=box.getAttribute('data-name')||SLUG,EMOJI=box.getAttribute('data-emoji')||'';
+    var ADOPT=box.getAttribute('data-adopted')||'';
     var NM=String(NAME).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
     function mailto(sub,body){return 'mailto:'+SLUG+'@agent.agentics.dk?subject='+encodeURIComponent(sub)+'&body='+encodeURIComponent(body);}
     function bar(em,lv){lv=Math.round(+lv||0);lv=lv<0?0:(lv>100?100:lv);
       return '<span class="need'+(lv<25?' low':'')+'">'+em+'<span class="nb"><i style="width:'+lv+'%"></i></span></span>';}
     function fbtn(lbl,sub,body){return '<a class="fbtn" href="'+esc(mailto(sub,body))+'">'+lbl+'</a>';}
-    function render(inner){box.className='agx-vote';box.innerHTML=inner;}
+    function render(inner){box.className='agx-vote';box.innerHTML=(ADOPT?'<div class="vadopt">🏠 Adopteret af '+esc(ADOPT)+' · snart live</div>':'')+inner;}
     fetch('api/votes').then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(d){
       var av=(d.avatars||{})[SLUG], state=av?av.state:'sleeping';
       if(state==='awake'){
@@ -218,7 +224,12 @@ def vote_block(day):
         head = f'<div class="vt">🎬 Hjælp {nm} til live</div>'
         plea = '<div class="vp">Jeg er stadig kun kode. Send én mail og stem mig levende:</div>'
         cta = f'    <a class="vbtn" href="{mailto_href(day)}">✉️ Stem på {nm}</a>\n'
+    adopted_by = ADOPTED.get(day, "")
+    vadopt = (f'<div class="vadopt">🏠 Adopteret af {html.escape(adopted_by)} · snart live</div>'
+              if adopted_by else '')
     return (VOTE_TMPL
+            .replace("__ADOPTED__", html.escape(adopted_by, quote=True))
+            .replace("__VADOPT__", vadopt)
             .replace("__ALIVECLS__", alivecls)
             .replace("__SLUG__", slug)
             .replace("__NAME__", html.escape(name, quote=True))

@@ -230,20 +230,28 @@ else:
 # with a scrim, a pulsing "● LEVENDE" badge and a soft glow ring. Runtime refinement from
 # api/votes (asleep_again badge, hunger chip) happens in the calendar's vote script.
 LIVE_DAYS = {d for d in range(1, 32) if os.path.exists(f"{DIR}/assets/day-{d}/poster.jpg")}
+# adopterede agenter: dag -> hvem har adopteret (build-time; opdatér ved salg)
+ADOPTED = {3: "agentics.dk"}
 DAY_SLUG = {d: VOTE_ROSTER[d][0] for d in range(1, 32)}
 
 def door_html(d):
     name, emoji, acc, _ = ROSTER[d]
     slug = DAY_SLUG[d]
     if d in LIVE_DAYS:
-        return f'''    <a class="door live" data-day="{d}" data-slug="{slug}" data-live="1" style="--c:{acc}" aria-label="Dag {d} — {html.escape(name)} (levende AI-video-avatar)">
+        adopted_chip = (f'<span class="adoptbadge">🏠 {html.escape(ADOPTED[d])}</span>'
+                        if d in ADOPTED else '')
+        meta = (f"Dag {d} · adopteret ✓"
+                if d in ADOPTED else f"Dag {d} · ægte AI-video")
+        adopted_cls = " adopted" if d in ADOPTED else ""
+        return f'''    <a class="door live{adopted_cls}" data-day="{d}" data-slug="{slug}" data-live="1" style="--c:{acc}" aria-label="Dag {d} — {html.escape(name)} (levende AI-video-avatar)">
       <span class="cover" style="background-image:url('assets/day-{d}/poster.jpg')"></span>
       <span class="scrim"></span>
       <span class="corner">{d:02d}</span>
       <span class="lockbadge" aria-hidden="true">🔒</span>
       <span class="livebadge"><i class="ld"></i>LEVENDE</span>
       <span class="hungry" hidden>⚠️ Sulten</span>
-      <span class="lmeta"><span class="nm">{html.escape(name)}</span><span class="dag">Dag {d} · ægte AI-video</span></span>
+      {adopted_chip}
+      <span class="lmeta"><span class="nm">{html.escape(name)}</span><span class="dag">{meta}</span></span>
     </a>'''
     return f'''    <a class="door" data-day="{d}" data-slug="{slug}" style="--c:{acc}" aria-label="Dag {d} — {html.escape(name)}">
       <span class="corner">{d:02d}</span>
@@ -371,6 +379,11 @@ CAL = r"""<!doctype html>
   .door.live .lmeta{position:absolute;left:14px;right:14px;bottom:12px;z-index:1;display:flex;flex-direction:column;gap:3px;text-align:left;min-width:0}
   .door.live .lmeta .nm{font-size:17px;font-weight:750;letter-spacing:-.01em;text-shadow:0 1px 8px rgba(0,0,0,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .door.live .lmeta .dag{font-size:10.5px;color:#c9d0e0;letter-spacing:.08em;text-transform:uppercase;text-shadow:0 1px 6px rgba(0,0,0,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .door.live .adoptbadge{position:absolute;top:44px;right:10px;z-index:2;display:inline-flex;align-items:center;gap:5px;
+    font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#ffe9b8;
+    border:1px solid rgba(255,210,74,.55);background:rgba(50,38,8,.72);backdrop-filter:blur(6px);
+    border-radius:999px;padding:4px 9px}
+  .door.live.adopted .hungry{top:76px}
   .door.live .ribbon{top:auto;bottom:12px;right:12px}
   .door.live.today .lmeta{right:88px}
   .door.resleep{filter:saturate(.45) brightness(.72);box-shadow:none;border-color:var(--line)}
@@ -562,6 +575,7 @@ __DOORS4__
     <div class="body rv">
       <p>Hver agent i kalenderen kan blive <b>din</b>. Vi bygger den færdig som et komplet brand til din forside eller dit produkt: karakterdesign, ægte AI-video-avatar, animeret hero-side og en stemme, der passer til den.</p>
       <p>Og det bedste: du behøver ikke udfylde en formular. Skriv direkte til agentens egen mailadresse — den du er faldet for — og bed om et tilbud. Så svarer vi. Agenten læser med.</p>
+      <p>Den første er allerede væk: <b>Agent-01</b> er adopteret af agentics.dk selv og bliver ansigtet på deres nye forside — release lige om lidt. De 30 andre er stadig ledige.</p>
     </div>
     <a class="cta-btn ghost rv" href="mailto:raev@agent.agentics.dk?subject=Tilbud%20p%C3%A5%20R%C3%A6v%20%F0%9F%A6%8A&body=Hej%20agentics%20%E2%80%94%20jeg%20er%20interesseret%20i%20et%20tilbud%20p%C3%A5%20R%C3%A6v%20som%20avatar/brand%20til%20mit%20projekt.%20Kort%20om%20projektet%3A%20">✉️ Fx: bed Ræv om et tilbud</a>
     <p class="ps rv">PS: En tilbuds-mail tæller naturligvis også som en stemme — eller et måltid. Ræv siger tak.</p>
