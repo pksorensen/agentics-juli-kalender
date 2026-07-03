@@ -1,13 +1,13 @@
 # LinkedIn-eksperiment: Julikalenderen som follower-motor
 
-**Formål:** Afgøre om kommentar→credit + mail→stemme + feeding-mekanikken på agentics.dk/julikalender
+**Formål:** Afgøre om like/kommentar→credit + mail→stemme + feeding-mekanikken på agentics.dk/julikalender
 skaber **netto nye følgere** — ikke bare impressions. 31 dage, én mekanik i tre lag, hårde tal.
 
 ---
 
 ## 1. Hypotese & KPI'er
 
-**Hypotese:** En seriel 31-dages kampagne, hvor publikum *ejer udfaldet* (kommentarer funder
+**Hypotese:** En seriel 31-dages kampagne, hvor publikum *ejer udfaldet* (likes og kommentarer funder
 avatarerne, mails bestemmer rækkefølgen — og feeds holder dem i live), konverterer engagement til følgere markant bedre end
 almindelige posts — fordi der er en grund til at komme tilbage i morgen, og "følg" er den
 naturlige måde at følge serien på.
@@ -20,7 +20,8 @@ en stigning fra 5–10 til 10–15+ nye følgere/dag under daglig serie-posting,
 på tværs af deltagere på 30 dage. Serialisering er driveren — ikke enkeltpostens rækkevidde.
 
 **Primær KPI:** Netto nye følgere pr. dag (mod baseline).
-**Sekundære KPI'er:** kommentarer pr. post, mails/stemmer pr. dag, feeds pr. dag (🍖/💧/❤️),
+**Sekundære KPI'er:** likes og kommentarer pr. post (credits pr. post = likes + 3 × kommentarer),
+mails/stemmer pr. dag, feeds pr. dag (🍖/💧/❤️),
 unikke feeders, redninger (avatarer hentet tilbage fra — eller fra kanten af — søvn), besøg på
 /julikalender, antal gæt i modelspillet, profilvisninger.
 
@@ -29,7 +30,7 @@ launch-posten. Gennemsnittet = baseline netto følgere/dag. Uden baseline er eks
 
 **Dagligt målepunkt-skema** (udfyldes kl. 09, tager 3 minutter):
 
-| Dag | Dato | Følgere kl. 09 | Nye følgere (Δ) | Kommentarer i går | Stemmer i går | Feeds i går (🍖/💧/❤️) | Unikke feeders | Redninger | Besøg /julikalender | Gæt i modelspil | Noter (post-type, demotion-tegn?) |
+| Dag | Dato | Følgere kl. 09 | Nye følgere (Δ) | Likes / kommentarer i går | Stemmer i går | Feeds i går (🍖/💧/❤️) | Unikke feeders | Redninger | Besøg /julikalender | Gæt i modelspil | Noter (post-type, demotion-tegn?) |
 |-----|------|----------------|-----------------|-------------------|---------------|------------------------|----------------|-----------|---------------------|-----------------|-----------------------------------|
 | -7…-1 | | | | — | — | — | — | — | | | baseline-uge |
 | 1 | | | | | | | | | | | launch |
@@ -46,15 +47,16 @@ fra "sovet igen" **plus** feeds på et behov < 25 (tælles manuelt fra webhook-l
 
 ## 2. Mekanik-design
 
-### Hvorfor kommentar→credit + mail→stemme slår "like og del"
+### Hvorfor like/kommentar→credit + mail→stemme slår "like og del"
 
 1. **Kommentarer er algoritmens stærkeste signal.** Kommentar-drevne posts får op til 8× mere
    rækkevidde end link-posts, og kommentar-*tråde* (svar frem og tilbage) udløser aggressiv
    reach-ekspansion — likes betyder næsten intet
    ([ConnectSafely](https://connectsafely.ai/articles/linkedin-lead-magnet-guide-2026),
    [meet-lea](https://meet-lea.com/en/blog/linkedin-algorithm-explained)).
-2. **Kommentaren har en konsekvens i den virkelige verden.** "Din kommentar = 1 credit = en avatar
-   kommer tættere på at blive levende" er en mikro-donation med synligt resultat. Det giver folk
+2. **Engagementet har en konsekvens i den virkelige verden.** "Dit like = 1 credit, din kommentar
+   = 3 credits = en avatar kommer tættere på at blive levende" er en mikro-donation med synligt
+   resultat. At kommentaren tæller 3× afspejler, at den også *er* 3× mere værd — og det giver folk
    en grund til at skrive noget *ægte* — ikke bare "YES".
 3. **Mail→stemme flytter halvdelen af engagementet UD af LinkedIn.** Stemmer via
    `<slug>@agent.agentics.dk` kan aldrig trigge LinkedIns bait-classifier, og de skaber en
@@ -79,8 +81,8 @@ classifier, og distribution begrænses uanset kontohistorik
 
 - **Stil et ægte spørgsmål** som postens afslutning: *"Hvilken avatar skal vækkes til live først —
   og hvorfor?"* Aldrig imperativer som "kommentér for at stemme".
-- **Beskriv mekanikken som en aftale, ikke en opfordring:** "for hver kommentar veksler jeg 1 credit"
-  er en beskrivelse af, hvad *Poul* gør — ikke en instruks til læseren. Grænsetilfælde, ja; men
+- **Beskriv mekanikken som en aftale, ikke en opfordring:** "for hvert like veksler jeg 1 credit,
+  for hver kommentar 3" er en beskrivelse af, hvad *Poul* gør — ikke en instruks til læseren. Grænsetilfælde, ja; men
   classifieren jagter imperativ-mønstre ("comment X if…"), ikke omtale af ordet.
 - **Undgå imperativerne like/del/kommentér/tag/følg i post-teksten.** "Følg mig"-CTA'er hører til
   i *kommentarsporet og på profilen*, ikke i posten.
@@ -120,7 +122,8 @@ Hunger-alerts er hverdags-hooken; den *dedikerede* rescue-post (d) gemmes til re
 >
 > De andre 29 står stadig stille. Så jeg har lavet en aftale med mig selv:
 >
-> For hver kommentar på det her opslag lægger jeg 1 credit i puljen. Puljen betaler for at vække
+> For hvert like på det her opslag lægger jeg 1 credit i puljen — og for hver kommentar 3.
+> Cirka 100 credits (omkring 30 kroner) vækker én avatar. Puljen betaler for at vække
 > de næste avatarer til live — og rækkefølgen bestemmer I: én tom mail til fx
 > ugla@agent.agentics.dk tæller som én stemme. Live leaderboard på sitet.
 >
@@ -160,7 +163,7 @@ Hunger-alerts er hverdags-hooken; den *dedikerede* rescue-post (d) gemmes til re
 >
 > Status på julikalenderen, dag [N]:
 >
-> – [X] kommentarer er blevet til [X] credits i puljen — nok til [Y] nye video-avatarer
+> – [X] likes og [K] kommentarer er blevet til [X + 3K] credits i puljen — nok til [Y] nye video-avatarer
 > – [Z] stemmer er landet i indbakken, fordelt på [W] forskellige avatarer
 > – Top 3: [A], [B], [C]
 >
@@ -302,15 +305,18 @@ Impressions bliver ikke til følgere af sig selv (~0,1 % uden aktiv konvertering
 | Midtvejs | ~15 | Halvvejs-status: tal, læringer, største overraskelse |
 | Finale | 28–31 | Nedtælling, sidste avatar vækkes — og kan hele flokken holdes vågen til d. 31.? Samlet post-mortem med alle tal |
 
-**Credits-budget** (100 credits ≈ 1 avatar ≈ 30–33 kr; 4000-credit-pakke = 190 USD ≈ 1.330 kr):
+**Credits-budget** (1 like = 1 credit, 1 kommentar = 3 credits; ~100 credits ≈ 1 avatar ≈ 30–33 kr;
+4000-credit-pakke = 190 USD ≈ 1.330 kr):
 
-| Kommentarer | Credits | Avatarer vækket | Pris ca. |
-|-------------|---------|-----------------|----------|
-| 100 | 100 | 1 | ~33 kr |
-| 500 | 500 | 5 | ~165 kr |
-| 1.000 | 1.000 | 10 | ~330 kr |
-| Loft: alle 29 | ~2.900 | 29 | ~870 kr — rigeligt dækket af én 4000-credit-pakke |
+| Engagement-mix | Credits | Avatarer vækket | Pris ca. |
+|----------------|---------|-----------------|----------|
+| 70 likes + 10 kommentarer | 100 | 1 | ~33 kr |
+| 350 likes + 50 kommentarer | 500 | 5 | ~165 kr |
+| 700 likes + 100 kommentarer | 1.000 | 10 | ~330 kr |
+| Loft: alle 29 — fx 1.400 likes + 500 kommentarer | ~2.900 | 29 | ~870 kr — rigeligt dækket af én 4000-credit-pakke |
 
+Regnestykket bag loftet: 1.400 likes × 1 + 500 kommentarer × 3 = 1.400 + 1.500 = 2.900 credits.
+Med like-benet i økonomien er "alle 29" et realistisk mål over 31 dage — ikke kun et loft.
 Worst case-økonomien er altså ~870 kr + genforsøg (budgettér 4000 credits i alt = 190 USD).
 Det er billigere end én LinkedIn-annonce — hele risikoen ligger i tid, ikke penge.
 
@@ -326,8 +332,8 @@ Det ville betyde: mekanikken skaber engagement-teater, ikke publikum.
 
 - **Demotion:** 2 posts i træk med <30 % af normal reach efter 2 timer → drop al mekanik-omtale i
   posten; flyt den 100 % til site + pinned kommentar.
-- **Spam:** >25 % af kommentarer er indholdsløse ("!", emoji-spam) → credits gælder kun
-  kommentarer med et *hvorfor*. Annoncér ændringen åbent — det er i sig selv en god post.
+- **Spam:** >25 % af kommentarer er indholdsløse ("!", emoji-spam) → 3-credit-satsen gælder kun
+  kommentarer med et *hvorfor* (resten tæller som likes: 1 credit). Annoncér ændringen åbent — det er i sig selv en god post.
 - **Tid:** dagligt format tager >45 min/dag i to uger → skift til 3–4 posts/uge (research viser
   at 3–5/uge er nok: [Zapier](https://zapier.com/blog/linkedin-challenge/)).
 - **Budget:** hårdt loft på 4000 credits. Punktum.
