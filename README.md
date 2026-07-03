@@ -18,6 +18,18 @@ npx http-server -p 8090 .
 > og `npx serve` gør; `python3 -m http.server` gør IKKE — scroll-scrub-videoen
 > på dag 2 fejler i stilhed uden Range-support.
 
+## Hosting (Docker / Coolify)
+
+Repoet har en `Dockerfile` (nginx:alpine, port 80) klar til Coolify:
+
+1. Coolify → New Resource → **Public Repository** → peg på dette repo
+2. Build pack: **Dockerfile** (auto-detekteres), port **80**
+3. Deploy — færdig. `/` lander direkte på kalenderen.
+
+nginx serverer Range-requests (206) out of the box, så dag 2's video-scrub
+virker. Rå genererings-artefakter (raw.mp4, still.png m.m.) holdes ude af
+imaget via `.dockerignore`.
+
 ## Sådan hænger det sammen
 
 | Fil | Hvad |

@@ -1,0 +1,23 @@
+# aldrig ind i imaget
+.git
+.gitignore
+.env
+node_modules
+*.err
+
+# build-filer skal ikke serveres som web-indhold
+Dockerfile
+.dockerignore
+nginx.conf
+tools
+README.md
+
+# rå genererings-artefakter — siderne bruger kun avatar-scrub.* og poster.jpg
+assets/**/raw.mp4
+assets/**/still.png
+assets/**/frame_*.jpg
+assets/**/still.json
+assets/**/motion.json
+assets/**/still_url.txt
+assets/**/motion_url.txt
+assets/**/chrome-fragment.html
