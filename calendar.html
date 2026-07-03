@@ -368,6 +368,15 @@
   Alle sider er selvstændige, animerede og cursor-reaktive. #agentics #juli</p>
 </div>
 <script>
+// Sub-path hosting (fx agentics.dk/julikalender): uden trailing slash resolver
+// relative links (day-N.html) mod parent-stien og 404'er. Normaliser URL'en
+// FØR nogen kan klikke — replaceState ændrer dokumentets base-URL.
+(function(){
+  var p = location.pathname;
+  if (!/\.html$/i.test(p) && p.charAt(p.length-1) !== '/') {
+    history.replaceState(null, '', p + '/' + location.search + location.hash);
+  }
+})();
 var AGX_MODELS = {"1": "opus", "2": "opus", "3": "opus", "4": "opus", "5": "opus", "6": "opus", "7": "opus", "8": "opus", "9": "opus", "10": "opus", "11": "opus", "12": "opus", "13": "opus", "14": "opus", "15": "sonnet", "16": "sonnet", "17": "opus", "18": "sonnet", "19": "opus", "20": "sonnet", "21": "opus", "22": "sonnet", "23": "opus", "24": "sonnet", "25": "opus", "26": "opus", "27": "sonnet", "28": "opus", "29": "sonnet", "30": "opus", "31": "sonnet"};
 (function(){
   var MONTH=6, YEAR=2026; // July 2026 (0-indexed month)

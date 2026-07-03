@@ -232,7 +232,7 @@ f'''    <a class="door" data-day="{d}" style="--c:{acc}" aria-label="Dag {d} —
     </a>''')
 doors_html = "\n".join(doors)
 
-CAL = """<!doctype html>
+CAL = r"""<!doctype html>
 <html lang="da">
 <head>
 <meta charset="utf-8">
@@ -324,6 +324,15 @@ __DOORS__
   Alle sider er selvstændige, animerede og cursor-reaktive. #agentics #juli</p>
 </div>
 <script>
+// Sub-path hosting (fx agentics.dk/julikalender): uden trailing slash resolver
+// relative links (day-N.html) mod parent-stien og 404'er. Normaliser URL'en
+// FØR nogen kan klikke — replaceState ændrer dokumentets base-URL.
+(function(){
+  var p = location.pathname;
+  if (!/\.html$/i.test(p) && p.charAt(p.length-1) !== '/') {
+    history.replaceState(null, '', p + '/' + location.search + location.hash);
+  }
+})();
 var AGX_MODELS = __MODELS_JSON__;
 (function(){
   var MONTH=6, YEAR=2026; // July 2026 (0-indexed month)
