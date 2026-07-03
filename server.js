@@ -131,7 +131,7 @@ function sanitizeAvatar(stored, now) {
 }
 
 // Migration: votes.json uden avatars-felt (eller frisk boot) -> syntetisér:
-// alle sover, undtagen ræv (dag 2) der seedes vågen med fulde behov.
+// alle sover, undtagen ræv (dag 2) og agent01 (dag 3) der seedes vågne med fulde behov.
 function hydrateAvatars(raw) {
   const now = Date.now();
   const hasStored = !!(raw && typeof raw === 'object');
@@ -142,13 +142,13 @@ function hydrateAvatars(raw) {
     } else if (hasStored) {
       avatars[slug] = makeAvatar('sleeping', 0, now); // ny slug i roster
     } else {
-      avatars[slug] = (slug === 'raev')
+      avatars[slug] = (slug === 'raev' || slug === 'agent01')
         ? makeAvatar('awake', WAKE_LEVEL, now)
         : makeAvatar('sleeping', 0, now);
     }
   }
   if (!hasStored) {
-    console.log('[boot] no avatars in state — synthesized (all sleeping, raev seeded awake)');
+    console.log('[boot] no avatars in state — synthesized (all sleeping, raev+agent01 seeded awake)');
   }
 }
 

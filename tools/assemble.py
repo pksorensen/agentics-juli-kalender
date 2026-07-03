@@ -486,6 +486,7 @@ var AGX_AVATARS = __AVATARS_JSON__;
   }).catch(function(){});
 })();
 </script>
+<script src="track.js" defer></script>
 </body>
 </html>
 """

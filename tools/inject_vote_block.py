@@ -71,7 +71,7 @@ VOTE_ROSTER = {
 # days whose avatar is ALREADY animated (video) — the BUILD-TIME default for
 # these is the alive/thank-you variant (shown when the fetch fails, e.g. static
 # hosting). At runtime the API state overrides the default on every page.
-ALIVE = {2}
+ALIVE = {2, 3}
 
 # ---- region markers: everything between them (inclusive) is replaced on
 #      upgrade, so future versions never need anchor archaeology again ----
