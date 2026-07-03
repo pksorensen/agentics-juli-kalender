@@ -6,9 +6,10 @@ node_modules
 *.err
 
 # build-filer skal ikke serveres som web-indhold
+# (nginx.conf SKAL være i build-context pga. COPY-instruktionen —
+#  den fjernes fra web-root i Dockerfilen i stedet)
 Dockerfile
 .dockerignore
-nginx.conf
 tools
 README.md
 
