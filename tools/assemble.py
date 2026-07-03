@@ -3,7 +3,13 @@
 #  - injects uniform story chrome into all 31 day pages (day-1..31.html)
 #  - generates calendar.html (date-locked 31-door grid)
 # Usage: python3 assemble.py <workflow_task_output.json>
-import sys, json, html, re
+import sys, json, html, re, os
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# single source of truth for the vote-campaign block — tools/inject_vote_block.py
+# patches existing day pages in place; we import the exact same builders here so
+# a future FULL regeneration produces byte-identical vote markup.
+from inject_vote_block import VOTE_CSS, VOTE_ROSTER, vote_block
 
 DIR = "/home/claude-desktop/experiments/animated-avatar"
 
@@ -101,7 +107,7 @@ CHROME = """
 .agx-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .agx-tags span{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#aeb6c6;
   border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px 9px}
-.agx-guess{margin:0 0 12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.09)}
+__VOTECSS__.agx-guess{margin:0 0 12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.09)}
 .agx-guess .gq{font-size:11.5px;color:#aeb6c6;margin-bottom:8px;letter-spacing:.01em}
 .agx-guess .gbtns{display:flex;gap:8px}
 .agx-guess .gbtn{flex:1;padding:8px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
@@ -128,6 +134,7 @@ CHROME = """
   <div class="h"><div class="em">__EMOJI__</div><div><div class="nm">__NAME__</div><div class="tl">__TAGLINE__</div></div></div>
   <p>__LORE__</p>
   <div class="agx-tags">__TAGS__</div>
+__VOTE__
   <div class="agx-guess" id="agxGuess">
     <div class="gq">🤖 Hvilken Claude-model byggede __NAME__?</div>
     <div class="gbtns">
@@ -194,7 +201,8 @@ def inject(day):
               .replace("__TAGLINE__", html.escape(tagline)).replace("__LORE__", html.escape(lore))
               .replace("__TAGS__", tags_html).replace("__PREV__", prev).replace("__NEXT__", nxt)
               .replace("__DAYNUM__", str(day)).replace("__MODEL__", MODEL[day])
-              .replace("'__NAMEJS__'", name_js))
+              .replace("'__NAMEJS__'", name_js)
+              .replace("__VOTECSS__", VOTE_CSS).replace("__VOTE__", vote_block(day)))
     if "</body>" in doc:
         doc = doc.replace("</body>", chrome + "\n</body>", 1)
     else:
@@ -301,6 +309,18 @@ CAL = r"""<!doctype html>
   .door:focus-visible{outline:2px solid var(--c);outline-offset:3px}
   .status .pill.preview{border-color:color-mix(in srgb,#ffb45a 45%,var(--line));color:#ffe3c2}
   .status .pill.preview a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+  /* vote-campaign banner */
+  .camp{margin:16px 0 0;max-width:780px;padding:14px 16px 13px;border-radius:16px;
+    border:1px solid var(--line);background:rgba(255,255,255,.02)}
+  .camp [hidden]{display:none!important}
+  .camp .ct{font-size:14px;font-weight:700;letter-spacing:.01em;margin-bottom:4px}
+  .camp .cx{font-size:12.5px;color:var(--dim);line-height:1.55}
+  .camp .cbar{margin-top:10px;height:6px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden}
+  .camp .cbar i{display:block;height:100%;width:0;border-radius:999px;
+    background:linear-gradient(90deg,#5eead4,#b8a6ff 60%,#ff9ad2);transition:width .8s cubic-bezier(.2,.7,.2,1)}
+  .camp .cmeta{margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:5px 14px;font-size:12px;color:var(--dim)}
+  .camp .cmeta b{color:var(--ink)}
+  .camp .ctop span{font-weight:600;white-space:nowrap;margin-right:10px}
   .foot{margin-top:40px;color:#5a627a;font-size:13px;line-height:1.6}
   @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
   @media (prefers-reduced-motion:reduce){.door .poster .em{animation:none}.door.open:hover{transform:none}}
@@ -316,6 +336,16 @@ CAL = r"""<!doctype html>
     <span class="pill"><span class="dot"></span><span id="count">…</span></span>
     <span class="pill game" id="scorePill"><span class="dot"></span><span id="scoreTxt"></span></span>
     <span id="hint">Nye låger åbner kl. 00 hver dag i juli 2026.</span>
+  </div>
+  <div class="camp" id="agxCampaign">
+    <div class="ct">🎬 Kampagnen: stem holdet levende</div>
+    <div class="cx">1 LinkedIn-kommentar = 1 credit · 1 mail = 1 stemme · flest stemmer animeres først.
+      Åbn en låge og send din stemme direkte fra agentens egen side.</div>
+    <div class="cbar" id="campBar" hidden><i id="campFill"></i></div>
+    <div class="cmeta" id="campMeta" hidden>
+      <span id="campTotal"></span>
+      <span>Top 3: <span class="ctop" id="campTop"></span></span>
+    </div>
   </div>
   <div class="grid" id="grid">
 __DOORS__
@@ -400,12 +430,40 @@ var AGX_MODELS = __MODELS_JSON__;
   }
 })();
 </script>
+<script>
+// vote-campaign meter — RELATIVE url ('api/votes', no leading slash): the page
+// lives under a sub-path (agentics.dk/julikalender) behind a prefix-stripping
+// proxy. On static hosting / file:// the fetch fails and bar+top-3 stay hidden.
+var AGX_AVATARS = __AVATARS_JSON__;
+(function(){
+  fetch('api/votes').then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(d){
+    var votes=d.votes||{}, goal=d.goal||1000, total=d.total||0;
+    document.getElementById('campFill').style.width=Math.min(100,Math.round(100*total/goal))+'%';
+    document.getElementById('campTotal').innerHTML='<b>'+total+'</b> af '+goal+' stemmer i alt';
+    var top=Object.keys(votes).sort(function(a,b){ return (votes[b]||0)-(votes[a]||0); }).slice(0,3);
+    var out='';
+    top.forEach(function(s,i){
+      var a=AGX_AVATARS[s]||[s,'🤖','#5eead4'];
+      out+='<span style="color:'+a[2]+'">'+(i+1)+'. '+a[1]+' '+a[0]+' · '+(votes[s]||0)+'</span>';
+    });
+    document.getElementById('campTop').innerHTML=out;
+    document.getElementById('campBar').hidden=false;
+    document.getElementById('campMeta').hidden=false;
+  }).catch(function(){});
+})();
+</script>
 </body>
 </html>
 """
 models_json = json.dumps({str(d): MODEL[d] for d in range(1, 32)})
+# slug -> [name, emoji, accent] for the campaign top-3 (names/emoji are plain
+# ASCII/emoji — ensure_ascii keeps the inline JSON safe inside the script tag)
+avatars_json = json.dumps(
+    {slug: [name, emoji, acc] for slug, name, emoji, acc in VOTE_ROSTER.values()}
+)
 open(f"{DIR}/calendar.html","w",encoding="utf-8").write(
     CAL.replace("__DOORS__", doors_html).replace("__MODELS_JSON__", models_json)
+       .replace("__AVATARS_JSON__", avatars_json)
 )
 print("wrote calendar.html")
 

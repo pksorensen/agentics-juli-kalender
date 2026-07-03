@@ -786,6 +786,22 @@
 .agx-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
 .agx-tags span{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#aeb6c6;
   border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px 9px}
+.agx-vote{margin:0 0 12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.09)}
+.agx-vote .vt{font-size:12.5px;font-weight:700;letter-spacing:.01em;margin-bottom:2px}
+.agx-vote.alive .vt{color:#a4f5be}
+.agx-vote .vp{font-size:11.5px;color:#aeb6c6;line-height:1.45;margin-bottom:7px}
+.agx-vote .vp a{color:var(--agx);font-weight:600;text-decoration:none}
+.agx-vote .vp a:hover{text-decoration:underline}
+.agx-vote .vbtn{display:block;text-align:center;padding:7px 10px;border-radius:10px;border:1px solid var(--agx);
+  background:rgba(255,255,255,.05);color:#eef1f7;font-size:12.5px;font-weight:700;text-decoration:none;
+  transition:transform .15s,background .15s,box-shadow .15s}
+.agx-vote .vbtn:hover{transform:translateY(-1px);background:rgba(255,255,255,.1);box-shadow:0 6px 18px -8px var(--agx)}
+.agx-vote .vbtn:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
+.agx-vote .vmeter{margin-top:8px}
+.agx-vote .vbar{height:5px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.agx-vote .vbar i{display:block;height:100%;width:0;border-radius:999px;background:var(--agx);
+  transition:width .6s cubic-bezier(.2,.7,.2,1)}
+.agx-vote .vstat{margin-top:5px;font-size:10.5px;color:#aeb6c6;letter-spacing:.02em;line-height:1.45}
 .agx-guess{margin:0 0 12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.09)}
 .agx-guess .gq{font-size:11.5px;color:#aeb6c6;margin-bottom:8px;letter-spacing:.01em}
 .agx-guess .gbtns{display:flex;gap:8px}
@@ -813,6 +829,27 @@
   <div class="h"><div class="em">👨‍🚀</div><div><div class="nm">Comet</div><div class="tl">Kortlægger det ukendte, før du spørger.</div></div></div>
   <p>Comet drømte som barn om at rejse længere end nogen kort viste, og nu gør han præcis det — udforsker nye data, ukendte edge cases og systemer, ingen har rørt før. Han vender altid hjem med noget nyttigt: et mønster, en genvej, en advarsel. Grænser er bare startpunkter for ham.</p>
   <div class="agx-tags"><span>Nysgerrig</span><span>Modig</span><span>Opdagende</span></div>
+  <div class="agx-vote" id="agxVote" data-slug="comet">
+    <div class="vt">🎬 Hjælp Comet til live</div>
+    <div class="vp">Jeg er stadig kun kode. Send én mail og stem mig levende:</div>
+    <a class="vbtn" href="mailto:comet@agent.agentics.dk?subject=Stem%20p%C3%A5%20Comet%20%F0%9F%91%A8%E2%80%8D%F0%9F%9A%80&amp;body=Jeg%20stemmer%20p%C3%A5%20Comet%21%20%F0%9F%8E%AC%0D%0AAnim%C3%A9r%20Comet%20f%C3%B8rst%20%E2%80%94%20denne%20mail%20t%C3%A6ller%20som%20%C3%A9n%20stemme.">✉️ Stem på Comet</a>
+    <div class="vmeter" id="agxVoteMeter" hidden>
+      <div class="vbar"><i id="agxVoteFill"></i></div>
+      <div class="vstat" id="agxVoteStat"></div>
+    </div>
+  </div>
+  <script>(function(){
+    var box=document.getElementById('agxVote'); if(!box) return;
+    var SLUG=box.getAttribute('data-slug');
+    fetch('api/votes').then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(d){
+      var v=d.votes||{}, mine=v[SLUG]||0, leader=1, rank=1, n=0;
+      Object.keys(v).forEach(function(s){ n++; if(v[s]>leader) leader=v[s]; if(v[s]>mine) rank++; });
+      document.getElementById('agxVoteFill').style.width=Math.round(100*mine/leader)+'%';
+      document.getElementById('agxVoteStat').textContent=mine+(mine===1?' stemme':' stemmer')
+        +' · nr. '+rank+' af '+(n||31)+' · flest stemmer animeres først';
+      document.getElementById('agxVoteMeter').hidden=false;
+    }).catch(function(){ /* statisk hosting / offline: skjul måler, behold CTA */ });
+  })();</script>
   <div class="agx-guess" id="agxGuess">
     <div class="gq">🤖 Hvilken Claude-model byggede Comet?</div>
     <div class="gbtns">

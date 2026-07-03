@@ -1,0 +1,12 @@
+{
+  "name": "agentics-juli-kalender",
+  "version": "1.0.0",
+  "private": true,
+  "description": "agentics.dk juli-kalender: statisk site + stemme-API i en lille Node-service",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

@@ -67,6 +67,18 @@
   .door:focus-visible{outline:2px solid var(--c);outline-offset:3px}
   .status .pill.preview{border-color:color-mix(in srgb,#ffb45a 45%,var(--line));color:#ffe3c2}
   .status .pill.preview a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+  /* vote-campaign banner */
+  .camp{margin:16px 0 0;max-width:780px;padding:14px 16px 13px;border-radius:16px;
+    border:1px solid var(--line);background:rgba(255,255,255,.02)}
+  .camp [hidden]{display:none!important}
+  .camp .ct{font-size:14px;font-weight:700;letter-spacing:.01em;margin-bottom:4px}
+  .camp .cx{font-size:12.5px;color:var(--dim);line-height:1.55}
+  .camp .cbar{margin-top:10px;height:6px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden}
+  .camp .cbar i{display:block;height:100%;width:0;border-radius:999px;
+    background:linear-gradient(90deg,#5eead4,#b8a6ff 60%,#ff9ad2);transition:width .8s cubic-bezier(.2,.7,.2,1)}
+  .camp .cmeta{margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;gap:5px 14px;font-size:12px;color:var(--dim)}
+  .camp .cmeta b{color:var(--ink)}
+  .camp .ctop span{font-weight:600;white-space:nowrap;margin-right:10px}
   .foot{margin-top:40px;color:#5a627a;font-size:13px;line-height:1.6}
   @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
   @media (prefers-reduced-motion:reduce){.door .poster .em{animation:none}.door.open:hover{transform:none}}
@@ -82,6 +94,16 @@
     <span class="pill"><span class="dot"></span><span id="count">…</span></span>
     <span class="pill game" id="scorePill"><span class="dot"></span><span id="scoreTxt"></span></span>
     <span id="hint">Nye låger åbner kl. 00 hver dag i juli 2026.</span>
+  </div>
+  <div class="camp" id="agxCampaign">
+    <div class="ct">🎬 Kampagnen: stem holdet levende</div>
+    <div class="cx">1 LinkedIn-kommentar = 1 credit · 1 mail = 1 stemme · flest stemmer animeres først.
+      Åbn en låge og send din stemme direkte fra agentens egen side.</div>
+    <div class="cbar" id="campBar" hidden><i id="campFill"></i></div>
+    <div class="cmeta" id="campMeta" hidden>
+      <span id="campTotal"></span>
+      <span>Top 3: <span class="ctop" id="campTop"></span></span>
+    </div>
   </div>
   <div class="grid" id="grid">
     <a class="door" data-day="1" style="--c:#38e6ff" aria-label="Dag 1 — AURA">
@@ -442,6 +464,28 @@ var AGX_MODELS = {"1": "opus", "2": "opus", "3": "opus", "4": "opus", "5": "opus
     document.getElementById('scorePill').style.display='inline-flex';
     document.getElementById('scoreTxt').textContent='Din score: '+correct+'/'+guessed+' rigtige gæt';
   }
+})();
+</script>
+<script>
+// vote-campaign meter — RELATIVE url ('api/votes', no leading slash): the page
+// lives under a sub-path (agentics.dk/julikalender) behind a prefix-stripping
+// proxy. On static hosting / file:// the fetch fails and bar+top-3 stay hidden.
+var AGX_AVATARS = {"aura": ["AURA", "\ud83d\udd2e", "#38e6ff"], "raev": ["R\u00e6v", "\ud83e\udd8a", "#ff9a3d"], "agent01": ["Agent-01", "\ud83e\udd16", "#5eead4"], "nova": ["Nova", "\ud83e\udee7", "#ff5cc8"], "comet": ["Comet", "\ud83d\udc68\u200d\ud83d\ude80", "#ff7a3d"], "boo": ["Boo", "\ud83d\udc7b", "#c8b6ff"], "neko": ["Neko", "\ud83d\udc31", "#ff8a3d"], "tsuru": ["Tsuru", "\ud83d\udd4a\ufe0f", "#b83b2e"], "bit": ["Bit", "\ud83d\udc7e", "#00f0c8"], "lumen": ["Lumen", "\ud83e\udebc", "#3ff0d8"], "ugla": ["Ugla", "\ud83e\udd89", "#ffb45a"], "chrome": ["Chrome", "\ud83e\ude9e", "#c8b6ff"], "ember": ["Ember", "\ud83d\udd25", "#ff7a18"], "koi": ["Koi", "\ud83d\udc1f", "#4aa8ff"], "golem": ["Golem", "\ud83d\uddff", "#9fb0a0"], "sprout": ["Sprout", "\ud83c\udf31", "#6ee07a"], "draco": ["Draco", "\ud83d\udc09", "#ff5a3c"], "aster": ["Aster", "\u2728", "#b98cff"], "lundi": ["Lundi", "\ud83d\udc26", "#ff8a4a"], "mochi": ["Mochi", "\ud83c\udf61", "#ffb3d1"], "volt": ["Volt", "\u26a1", "#ffe14a"], "prism": ["Prism", "\ud83d\udc8e", "#7ad0ff"], "nimbus": ["Nimbus", "\u2601\ufe0f", "#bcd3ff"], "ravn": ["Ravn", "\ud83d\udc26\u200d\u2b1b", "#8a7dff"], "cog": ["Cog", "\u2699\ufe0f", "#d0a24a"], "frost": ["Frost", "\u2744\ufe0f", "#9fe8ff"], "beacon": ["Beacon", "\ud83d\uddfc", "#ffd24a"], "sol": ["Sol", "\u2600\ufe0f", "#ffb02e"], "luna": ["Luna", "\ud83c\udf19", "#c0c8ff"], "bi": ["Bi", "\ud83d\udc1d", "#ffcf33"], "vega": ["Vega", "\ud83d\ude80", "#ff7a3d"]};
+(function(){
+  fetch('api/votes').then(function(r){ if(!r.ok) throw 0; return r.json(); }).then(function(d){
+    var votes=d.votes||{}, goal=d.goal||1000, total=d.total||0;
+    document.getElementById('campFill').style.width=Math.min(100,Math.round(100*total/goal))+'%';
+    document.getElementById('campTotal').innerHTML='<b>'+total+'</b> af '+goal+' stemmer i alt';
+    var top=Object.keys(votes).sort(function(a,b){ return (votes[b]||0)-(votes[a]||0); }).slice(0,3);
+    var out='';
+    top.forEach(function(s,i){
+      var a=AGX_AVATARS[s]||[s,'🤖','#5eead4'];
+      out+='<span style="color:'+a[2]+'">'+(i+1)+'. '+a[1]+' '+a[0]+' · '+(votes[s]||0)+'</span>';
+    });
+    document.getElementById('campTop').innerHTML=out;
+    document.getElementById('campBar').hidden=false;
+    document.getElementById('campMeta').hidden=false;
+  }).catch(function(){});
 })();
 </script>
 <script src="track.js" defer></script>
