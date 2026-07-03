@@ -1,0 +1,41 @@
+[
+  {
+    "created_at": "2026-07-03T18:25:31.863711Z",
+    "display_name": "Seedance 2.0",
+    "id": "e22758f5-ab5b-462a-893d-370427645947",
+    "job_type": "seedance_2_0",
+    "min_result_url": null,
+    "params": {
+      "aspect_ratio": "16:9",
+      "bitrate_mode": "standard",
+      "duration": 8,
+      "generate_audio": true,
+      "genre": "auto",
+      "height": 1080,
+      "medias": [
+        {
+          "data": {
+            "id": "579b17cb-d874-40be-94ab-bedf81d0e434",
+            "type": "media_input",
+            "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_3FrWNkY3JraLGlw9hIAsPuYA3WR/579b17cb-d874-40be-94ab-bedf81d0e434_resize.jpg"
+          },
+          "role": "start_image"
+        }
+      ],
+      "mode": "std",
+      "model": "seedance_2_0",
+      "multi_prompt": [],
+      "multi_shot_mode": "custom",
+      "multi_shots": false,
+      "prompt": "Animate the image: the low-poly origami paper fox sits alert on the snowy ridge, breathing gently, her faceted tail swaying slowly, one ear twitching now and then. She gazes at the aurora, then slowly turns her head to look directly toward the camera, ears perking forward, amber eyes brightening with a sly curious glint and a slight head tilt — then calmly turns back to watching the aurora. The aurora ribbons drift very slowly, fine snow falls, warm amber rim light shimmers softly on the paper facets. Camera dollies in very slowly the whole time. Calm, seamless, loopable motion, cinematic lighting unchanged.",
+      "prompt_language": "en",
+      "reference_elements": [],
+      "resolution": "1080p",
+      "speedramp": "auto",
+      "width": 1920
+    },
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3FrWNkY3JraLGlw9hIAsPuYA3WR/hf_20260703_182531_e22758f5-ab5b-462a-893d-370427645947.mp4",
+    "status": "completed",
+    "thumbnail_url": "https://cdn.higgsfield.ai/user_3FrWNkY3JraLGlw9hIAsPuYA3WR/hf_20260703_182531_e22758f5-ab5b-462a-893d-370427645947_thumbnail.webp"
+  }
+]

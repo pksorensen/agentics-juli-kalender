@@ -1,0 +1,439 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>agentics.dk · Juli-kalender 2026</title>
+<style>
+  :root{--bg:#06070b;--ink:#eef1f7;--dim:#8b93a7;--line:#1a2030;--card:#0e1119;--accent:#5eead4}
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  body{min-height:100vh;padding:clamp(26px,5vw,72px) clamp(18px,5vw,72px) 72px;position:relative;overflow-x:hidden;
+    background:
+     radial-gradient(1100px 640px at 82% -12%, rgba(94,234,212,.12), transparent 60%),
+     radial-gradient(860px 520px at -6% 108%, rgba(180,140,255,.10), transparent 60%),
+     var(--bg)}
+  .grain{position:fixed;inset:0;pointer-events:none;opacity:.05;z-index:0;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  .wrap{max-width:1180px;margin:0 auto;position:relative;z-index:1}
+  .kicker{letter-spacing:.34em;text-transform:uppercase;font-size:12px;color:var(--accent);font-weight:600}
+  h1{font-size:clamp(34px,6vw,64px);line-height:1.02;margin:.3em 0 .18em;letter-spacing:-.03em;font-weight:750}
+  h1 .g{background:linear-gradient(90deg,#5eead4,#b8a6ff 60%,#ff9ad2);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{color:var(--dim);font-size:clamp(15px,1.8vw,18px);max-width:60ch;line-height:1.6}
+  .status{margin:22px 0 6px;display:flex;flex-wrap:wrap;align-items:center;gap:12px;font-size:13.5px;color:var(--dim)}
+  .status .pill{display:inline-flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;
+    border:1px solid var(--line);background:rgba(255,255,255,.02);color:var(--ink);font-weight:600}
+  .status .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+  .status .pill.game{display:none;border-color:color-mix(in srgb,#b98cff 45%,var(--line));color:#e3d9ff}
+  .status .pill.game .dot{background:#b98cff;box-shadow:0 0 12px #b98cff}
+  .grid{margin-top:26px;display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:14px}
+  .door{position:relative;aspect-ratio:1/1;border-radius:18px;overflow:hidden;text-decoration:none;color:inherit;
+    background:linear-gradient(180deg,var(--card),#0a0d13);border:1px solid var(--line);
+    display:flex;align-items:center;justify-content:center;cursor:default;
+    filter:grayscale(.4) brightness(.8);
+    transition:transform .28s cubic-bezier(.2,.7,.2,1),border-color .28s,box-shadow .28s,filter .28s}
+  .door .corner{position:absolute;top:10px;left:12px;font-size:12px;font-weight:700;color:var(--dim);letter-spacing:.04em}
+  .door::after{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--c);opacity:.35;transition:opacity .28s}
+  .door:hover{filter:grayscale(.15) brightness(.9);border-color:color-mix(in srgb,var(--c) 40%,var(--line));
+    box-shadow:0 16px 40px -26px var(--c)}
+  /* lock badge — shown until the door is actually open */
+  .door .lockbadge{position:absolute;top:9px;right:9px;width:24px;height:24px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;font-size:11px;
+    background:rgba(6,7,11,.6);border:1px solid rgba(255,255,255,.14);backdrop-filter:blur(6px)}
+  .door.open .lockbadge{display:none}
+  /* poster — the avatar's art/name, always shown */
+  .door .poster{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;padding:10px}
+  .door .poster .em{font-size:clamp(38px,6vw,58px);line-height:1;filter:drop-shadow(0 6px 18px var(--c))}
+  .door .poster .nm{font-size:15px;font-weight:700;letter-spacing:-.01em}
+  .door .poster .dag{font-size:11px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
+  .door .poster .when{text-transform:none;letter-spacing:normal;color:#5a627a}
+  .door.open .poster .when{display:none}
+  .door.open .poster .em{animation:float 4.5s ease-in-out infinite}
+  .door.open{cursor:pointer;filter:none}
+  .door.open .corner{color:var(--ink)}
+  .door.open::after{opacity:1;box-shadow:0 0 16px var(--c)}
+  .door.open:hover{transform:translateY(-5px);border-color:color-mix(in srgb,var(--c) 60%,transparent);
+    box-shadow:0 26px 60px -24px var(--c)}
+  .door.open::before{content:"";position:absolute;inset:0;background:radial-gradient(120px 90px at 50% 30%,color-mix(in srgb,var(--c) 22%,transparent),transparent 70%);opacity:0;transition:opacity .3s}
+  .door.open:hover::before{opacity:1}
+  /* preview-unlocked (operator only): still clearly marked apart from a REAL open day */
+  .door.open.preview{border-style:dashed}
+  .door.open.preview .lockbadge{display:flex;background:rgba(94,234,212,.16);border-color:color-mix(in srgb,var(--c) 55%,transparent)}
+  /* today */
+  .door.today{border-color:color-mix(in srgb,var(--c) 70%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--c) 45%,transparent),0 22px 55px -26px var(--c)}
+  .door.today .ribbon{position:absolute;top:9px;right:9px;font-size:10px;font-weight:800;letter-spacing:.12em;
+    background:var(--c);color:#07080c;padding:3px 8px;border-radius:999px}
+  .door:focus-visible{outline:2px solid var(--c);outline-offset:3px}
+  .status .pill.preview{border-color:color-mix(in srgb,#ffb45a 45%,var(--line));color:#ffe3c2}
+  .status .pill.preview a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+  .foot{margin-top:40px;color:#5a627a;font-size:13px;line-height:1.6}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  @media (prefers-reduced-motion:reduce){.door .poster .em{animation:none}.door.open:hover{transform:none}}
+</style>
+</head>
+<body>
+<div class="grain"></div>
+<div class="wrap">
+  <div class="kicker">agentics.dk · avatar-kalender</div>
+  <h1>31 dage. <span class="g">31 agenter.</span></h1>
+  <p class="sub">En lille autonom karakter for hver dag i juli — hver med sit eget temperament og sin egen historie. Én ny <b>låge</b> åbner hver morgen. Klik en åben låge for at møde dagens agent, og gæt om <b>Claude Opus 4.8</b> eller <b>Claude Sonnet 5</b> byggede den. Bedst på desktop — de kigger tilbage.</p>
+  <div class="status" id="status">
+    <span class="pill"><span class="dot"></span><span id="count">…</span></span>
+    <span class="pill game" id="scorePill"><span class="dot"></span><span id="scoreTxt"></span></span>
+    <span id="hint">Nye låger åbner kl. 00 hver dag i juli 2026.</span>
+  </div>
+  <div class="grid" id="grid">
+    <a class="door" data-day="1" style="--c:#38e6ff" aria-label="Dag 1 — AURA">
+      <span class="corner">01</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🔮</span>
+        <span class="nm">AURA</span>
+        <span class="dag">Dag 1<span class="when"> · åbner 1. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="2" style="--c:#ff9a3d" aria-label="Dag 2 — Ræv">
+      <span class="corner">02</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🦊</span>
+        <span class="nm">Ræv</span>
+        <span class="dag">Dag 2<span class="when"> · åbner 2. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="3" style="--c:#5eead4" aria-label="Dag 3 — Agent-01">
+      <span class="corner">03</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🤖</span>
+        <span class="nm">Agent-01</span>
+        <span class="dag">Dag 3<span class="when"> · åbner 3. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="4" style="--c:#ff5cc8" aria-label="Dag 4 — Nova">
+      <span class="corner">04</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🫧</span>
+        <span class="nm">Nova</span>
+        <span class="dag">Dag 4<span class="when"> · åbner 4. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="5" style="--c:#ff7a3d" aria-label="Dag 5 — Comet">
+      <span class="corner">05</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">👨‍🚀</span>
+        <span class="nm">Comet</span>
+        <span class="dag">Dag 5<span class="when"> · åbner 5. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="6" style="--c:#c8b6ff" aria-label="Dag 6 — Boo">
+      <span class="corner">06</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">👻</span>
+        <span class="nm">Boo</span>
+        <span class="dag">Dag 6<span class="when"> · åbner 6. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="7" style="--c:#ff8a3d" aria-label="Dag 7 — Neko">
+      <span class="corner">07</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🐱</span>
+        <span class="nm">Neko</span>
+        <span class="dag">Dag 7<span class="when"> · åbner 7. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="8" style="--c:#b83b2e" aria-label="Dag 8 — Tsuru">
+      <span class="corner">08</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🕊️</span>
+        <span class="nm">Tsuru</span>
+        <span class="dag">Dag 8<span class="when"> · åbner 8. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="9" style="--c:#00f0c8" aria-label="Dag 9 — Bit">
+      <span class="corner">09</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">👾</span>
+        <span class="nm">Bit</span>
+        <span class="dag">Dag 9<span class="when"> · åbner 9. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="10" style="--c:#3ff0d8" aria-label="Dag 10 — Lumen">
+      <span class="corner">10</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🪼</span>
+        <span class="nm">Lumen</span>
+        <span class="dag">Dag 10<span class="when"> · åbner 10. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="11" style="--c:#ffb45a" aria-label="Dag 11 — Ugla">
+      <span class="corner">11</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🦉</span>
+        <span class="nm">Ugla</span>
+        <span class="dag">Dag 11<span class="when"> · åbner 11. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="12" style="--c:#c8b6ff" aria-label="Dag 12 — Chrome">
+      <span class="corner">12</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🪞</span>
+        <span class="nm">Chrome</span>
+        <span class="dag">Dag 12<span class="when"> · åbner 12. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="13" style="--c:#ff7a18" aria-label="Dag 13 — Ember">
+      <span class="corner">13</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🔥</span>
+        <span class="nm">Ember</span>
+        <span class="dag">Dag 13<span class="when"> · åbner 13. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="14" style="--c:#4aa8ff" aria-label="Dag 14 — Koi">
+      <span class="corner">14</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🐟</span>
+        <span class="nm">Koi</span>
+        <span class="dag">Dag 14<span class="when"> · åbner 14. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="15" style="--c:#9fb0a0" aria-label="Dag 15 — Golem">
+      <span class="corner">15</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🗿</span>
+        <span class="nm">Golem</span>
+        <span class="dag">Dag 15<span class="when"> · åbner 15. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="16" style="--c:#6ee07a" aria-label="Dag 16 — Sprout">
+      <span class="corner">16</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🌱</span>
+        <span class="nm">Sprout</span>
+        <span class="dag">Dag 16<span class="when"> · åbner 16. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="17" style="--c:#ff5a3c" aria-label="Dag 17 — Draco">
+      <span class="corner">17</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🐉</span>
+        <span class="nm">Draco</span>
+        <span class="dag">Dag 17<span class="when"> · åbner 17. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="18" style="--c:#b98cff" aria-label="Dag 18 — Aster">
+      <span class="corner">18</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">✨</span>
+        <span class="nm">Aster</span>
+        <span class="dag">Dag 18<span class="when"> · åbner 18. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="19" style="--c:#ff8a4a" aria-label="Dag 19 — Lundi">
+      <span class="corner">19</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🐦</span>
+        <span class="nm">Lundi</span>
+        <span class="dag">Dag 19<span class="when"> · åbner 19. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="20" style="--c:#ffb3d1" aria-label="Dag 20 — Mochi">
+      <span class="corner">20</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🍡</span>
+        <span class="nm">Mochi</span>
+        <span class="dag">Dag 20<span class="when"> · åbner 20. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="21" style="--c:#ffe14a" aria-label="Dag 21 — Volt">
+      <span class="corner">21</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">⚡</span>
+        <span class="nm">Volt</span>
+        <span class="dag">Dag 21<span class="when"> · åbner 21. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="22" style="--c:#7ad0ff" aria-label="Dag 22 — Prism">
+      <span class="corner">22</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">💎</span>
+        <span class="nm">Prism</span>
+        <span class="dag">Dag 22<span class="when"> · åbner 22. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="23" style="--c:#bcd3ff" aria-label="Dag 23 — Nimbus">
+      <span class="corner">23</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">☁️</span>
+        <span class="nm">Nimbus</span>
+        <span class="dag">Dag 23<span class="when"> · åbner 23. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="24" style="--c:#8a7dff" aria-label="Dag 24 — Ravn">
+      <span class="corner">24</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🐦‍⬛</span>
+        <span class="nm">Ravn</span>
+        <span class="dag">Dag 24<span class="when"> · åbner 24. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="25" style="--c:#d0a24a" aria-label="Dag 25 — Cog">
+      <span class="corner">25</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">⚙️</span>
+        <span class="nm">Cog</span>
+        <span class="dag">Dag 25<span class="when"> · åbner 25. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="26" style="--c:#9fe8ff" aria-label="Dag 26 — Frost">
+      <span class="corner">26</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">❄️</span>
+        <span class="nm">Frost</span>
+        <span class="dag">Dag 26<span class="when"> · åbner 26. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="27" style="--c:#ffd24a" aria-label="Dag 27 — Beacon">
+      <span class="corner">27</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🗼</span>
+        <span class="nm">Beacon</span>
+        <span class="dag">Dag 27<span class="when"> · åbner 27. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="28" style="--c:#ffb02e" aria-label="Dag 28 — Sol">
+      <span class="corner">28</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">☀️</span>
+        <span class="nm">Sol</span>
+        <span class="dag">Dag 28<span class="when"> · åbner 28. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="29" style="--c:#c0c8ff" aria-label="Dag 29 — Luna">
+      <span class="corner">29</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🌙</span>
+        <span class="nm">Luna</span>
+        <span class="dag">Dag 29<span class="when"> · åbner 29. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="30" style="--c:#ffcf33" aria-label="Dag 30 — Bi">
+      <span class="corner">30</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🐝</span>
+        <span class="nm">Bi</span>
+        <span class="dag">Dag 30<span class="when"> · åbner 30. juli</span></span>
+      </span>
+    </a>
+    <a class="door" data-day="31" style="--c:#ff7a3d" aria-label="Dag 31 — Vega">
+      <span class="corner">31</span>
+      <span class="lockbadge" aria-hidden="true">🔒</span>
+      <span class="poster">
+        <span class="em">🚀</span>
+        <span class="nm">Vega</span>
+        <span class="dag">Dag 31<span class="when"> · åbner 31. juli</span></span>
+      </span>
+    </a>
+  </div>
+  <p class="foot">agentics.dk — vi bygger autonome AI-agenter. Denne kalender er selve holdet, én dag ad gangen.<br>
+  Alle sider er selvstændige, animerede og cursor-reaktive. #agentics #juli</p>
+</div>
+<script>
+var AGX_MODELS = {"1": "opus", "2": "opus", "3": "opus", "4": "opus", "5": "opus", "6": "opus", "7": "opus", "8": "opus", "9": "opus", "10": "opus", "11": "opus", "12": "opus", "13": "opus", "14": "opus", "15": "sonnet", "16": "sonnet", "17": "opus", "18": "sonnet", "19": "opus", "20": "sonnet", "21": "opus", "22": "sonnet", "23": "opus", "24": "sonnet", "25": "opus", "26": "opus", "27": "sonnet", "28": "opus", "29": "sonnet", "30": "opus", "31": "sonnet"};
+(function(){
+  var MONTH=6, YEAR=2026; // July 2026 (0-indexed month)
+
+  // ---- operator preview mode: ?preview=1 unlocks every door for clicking (persists via
+  // localStorage so it survives reloads); ?preview=0 turns it back off. Does not change what
+  // real visitors see — it's per-browser, opt-in only, and clearly flagged when active. ----
+  var qp = new URLSearchParams(location.search);
+  if (qp.has('preview')) {
+    try {
+      if (qp.get('preview') === '0') localStorage.removeItem('agx_preview');
+      else localStorage.setItem('agx_preview', '1');
+    } catch (e) {}
+  }
+  var PREVIEW = false;
+  try { PREVIEW = localStorage.getItem('agx_preview') === '1'; } catch (e) {}
+
+  var now=new Date();
+  var doors=[].slice.call(document.querySelectorAll('.door'));
+  var open=0, todayDay=null;
+  if(now.getFullYear()===YEAR && now.getMonth()===MONTH) todayDay=now.getDate();
+  doors.forEach(function(el){
+    var d=+el.getAttribute('data-day');
+    var unlock=new Date(YEAR,MONTH,d);
+    var reallyOpen=now>=unlock;
+    var isOpen=reallyOpen||PREVIEW;
+    if(isOpen){
+      el.classList.add('open');
+      el.setAttribute('href','day-'+d+'.html');
+      el.removeAttribute('aria-disabled');
+      open++;
+      if(reallyOpen && d===todayDay){el.classList.add('today');
+        var r=document.createElement('span');r.className='ribbon';r.textContent='I DAG';el.appendChild(r);}
+      else if(!reallyOpen){
+        el.classList.add('preview');
+        var lb=el.querySelector('.lockbadge');
+        if(lb){lb.textContent='🔓';lb.title='Forhåndsvisning — ikke åben for besøgende endnu';}
+      }
+    }else{
+      el.removeAttribute('href');el.setAttribute('aria-disabled','true');
+    }
+  });
+  var c=document.getElementById('count');
+  c.textContent=(PREVIEW?open+' af 31 låger (preview)':open+' af 31 låger åbne');
+  if(PREVIEW){
+    var pv=document.createElement('span');
+    pv.className='pill preview';
+    pv.innerHTML='🔓 Preview-tilstand — du kan klikke alle · <a href="calendar.html?preview=0">afslut</a>';
+    document.getElementById('status').appendChild(pv);
+  }
+  if(todayDay===null){
+    document.getElementById('hint').textContent = (now<new Date(YEAR,MONTH,1))
+      ? 'Kalenderen starter 1. juli 2026.' : 'Juli 2026 er slut — alle 31 agenter er åbne. 🎉';
+  }
+  // guess-the-model score, aggregated from each day page's localStorage guess
+  var guessed=0, correct=0;
+  for(var d=1; d<=31; d++){
+    var g=null;
+    try{ g=localStorage.getItem('agx_guess_'+d); }catch(e){}
+    if(g){ guessed++; if(g===AGX_MODELS[d]) correct++; }
+  }
+  if(guessed>0){
+    document.getElementById('scorePill').style.display='inline-flex';
+    document.getElementById('scoreTxt').textContent='Din score: '+correct+'/'+guessed+' rigtige gæt';
+  }
+})();
+</script>
+</body>
+</html>

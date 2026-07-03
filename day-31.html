@@ -1,0 +1,811 @@
+<title>agentics.dk — Vega</title>
+<style>
+  :root{
+    --accent:#ff7a3d;
+    --accent-soft:#ffab6b;
+    --ink:#f3f1ff;
+    --ink-dim:#aab0d6;
+    --ink-faint:#6b709c;
+    --sky-top:#05061a;
+    --sky-mid:#0c0f30;
+    --sky-low:#181138;
+    --sky-glow:#3a1a3f;
+    --focus:#ffd8bd;
+    --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;
+    background:var(--sky-top);
+    color:var(--ink);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  .stage{position:fixed;inset:0;overflow:hidden}
+
+  /* ---------- layered night sky ---------- */
+  .sky{
+    position:absolute;inset:0;
+    background:
+      radial-gradient(90% 60% at 50% 100%, rgba(255,122,61,.20) 0%, rgba(255,122,61,0) 55%),
+      radial-gradient(60% 50% at 78% 18%, rgba(255,171,107,.10) 0%, rgba(255,171,107,0) 50%),
+      radial-gradient(80% 60% at 18% 12%, rgba(122,90,200,.14) 0%, rgba(122,90,200,0) 55%),
+      linear-gradient(178deg, var(--sky-top) 0%, var(--sky-mid) 44%, var(--sky-low) 78%, var(--sky-glow) 100%);
+  }
+  .horizon{
+    position:absolute;left:0;right:0;bottom:0;height:38%;
+    background:linear-gradient(0deg, rgba(255,122,61,.16) 0%, rgba(255,122,61,0) 100%);
+    pointer-events:none;
+  }
+  #grain{position:absolute;inset:0;opacity:.05;mix-blend-mode:overlay;pointer-events:none}
+  #stars{position:absolute;inset:0;pointer-events:none}
+  #para{position:absolute;inset:0;pointer-events:none;will-change:transform}
+  #sparks{position:absolute;inset:0;pointer-events:none}
+
+  .pglow{
+    position:absolute;border-radius:50%;
+    background:radial-gradient(60% 60% at 50% 40%, rgba(255,122,61,.20), rgba(255,122,61,0) 72%);
+    filter:blur(2px);will-change:transform;
+  }
+
+  /* ---------- chrome ---------- */
+  .top{
+    position:absolute;top:0;left:0;right:0;z-index:20;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:26px clamp(24px,5vw,64px);
+  }
+  .wm{display:flex;align-items:center;gap:11px;font-weight:600;letter-spacing:-.02em;font-size:17px}
+  .wm .dot{
+    width:22px;height:22px;border-radius:7px;
+    background:radial-gradient(70% 70% at 35% 30%, #fff, var(--accent) 60%, var(--accent-soft));
+    box-shadow:0 0 22px rgba(255,122,61,.55);
+  }
+  .wm b{font-weight:700}
+  .wm span{color:var(--ink-dim);font-weight:500}
+  nav{display:flex;gap:8px;align-items:center}
+  nav a{
+    color:var(--ink-dim);text-decoration:none;font-size:14px;font-weight:500;
+    padding:8px 14px;border-radius:999px;letter-spacing:.01em;
+    transition:color .3s var(--ease),background .3s var(--ease);
+  }
+  nav a:hover{color:var(--ink);background:rgba(255,122,61,.10)}
+  nav a:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+  @media(max-width:680px){nav .hidesm{display:none}}
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative;z-index:10;height:100%;
+    display:grid;grid-template-columns:1.05fr .95fr;align-items:center;
+    padding:0 clamp(24px,5vw,64px);
+    gap:24px;
+  }
+  .copy{padding-top:24px}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:12.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent-soft);
+    padding:7px 14px;border-radius:999px;
+    background:rgba(255,122,61,.10);
+    border:1px solid rgba(255,122,61,.28);
+    margin-bottom:22px;
+    opacity:0;transform:translateY(10px);
+  }
+  .eyebrow .pip{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+  h1{
+    font-size:clamp(2.6rem,6.6vw,5.5rem);
+    line-height:.98;font-weight:800;letter-spacing:-.035em;
+    margin-bottom:22px;
+  }
+  h1 .ln{display:block;overflow:hidden}
+  h1 .ln span{display:inline-block;opacity:0;transform:translateY(115%)}
+  h1 .accent-word{
+    background:linear-gradient(95deg, var(--accent-soft), var(--accent) 55%, #ffd27a);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .sub{
+    font-size:clamp(1.02rem,1.6vw,1.28rem);
+    line-height:1.6;color:var(--ink-dim);max-width:46ch;
+    margin-bottom:38px;font-weight:450;
+    opacity:0;transform:translateY(10px);
+  }
+  .cta-row{display:flex;align-items:center;gap:28px;flex-wrap:wrap;opacity:0;transform:translateY(10px)}
+  .cta{
+    position:relative;display:inline-flex;align-items:center;gap:10px;
+    padding:16px 30px;border-radius:999px;
+    background:linear-gradient(100deg, var(--accent), var(--accent-soft));
+    color:#1c0d02;font-weight:700;font-size:15.5px;letter-spacing:-.005em;
+    text-decoration:none;isolation:isolate;overflow:visible;
+    box-shadow:0 10px 30px -8px rgba(255,122,61,.55), 0 0 0 1px rgba(255,255,255,.08) inset;
+    transition:transform .35s var(--ease), box-shadow .35s var(--ease);
+  }
+  .cta::before{
+    content:"";position:absolute;inset:-14px;border-radius:999px;z-index:-1;
+    background:radial-gradient(circle, rgba(255,122,61,.55), rgba(255,122,61,0) 68%);
+    opacity:0;transition:opacity .4s var(--ease);
+  }
+  .cta:hover{transform:translateY(-3px) scale(1.035);box-shadow:0 16px 40px -8px rgba(255,122,61,.7), 0 0 0 1px rgba(255,255,255,.14) inset}
+  .cta:hover::before{opacity:1}
+  .cta:focus-visible{outline:2px solid var(--focus);outline-offset:4px}
+  .cta svg{width:16px;height:16px;transition:transform .35s var(--ease)}
+  .cta:hover svg{transform:translate(3px,-3px)}
+  .secondary{
+    color:var(--ink-dim);text-decoration:none;font-size:14.5px;font-weight:600;
+    display:inline-flex;align-items:center;gap:7px;position:relative;
+    padding-bottom:2px;
+  }
+  .secondary::after{
+    content:"";position:absolute;left:0;right:100%;bottom:0;height:1px;
+    background:var(--accent-soft);transition:right .4s var(--ease);
+  }
+  .secondary:hover{color:var(--ink)}
+  .secondary:hover::after{right:0}
+  .secondary:focus-visible{outline:2px solid var(--focus);outline-offset:4px}
+
+  .stat-row{
+    display:flex;gap:34px;margin-top:52px;padding-top:26px;
+    border-top:1px solid rgba(255,255,255,.08);
+    opacity:0;transform:translateY(10px);
+  }
+  .stat b{display:block;font-size:1.5rem;font-weight:800;letter-spacing:-.02em}
+  .stat span{font-size:12.5px;color:var(--ink-faint);letter-spacing:.03em}
+
+  /* ---------- avatar stage ---------- */
+  .avatar-wrap{
+    position:relative;height:100%;
+    display:flex;align-items:center;justify-content:center;
+    perspective:900px;
+  }
+  #vega-svg{width:min(100%,560px);height:auto;overflow:visible;will-change:transform}
+
+  /* ---------- bottom-left / bottom-right kept clear per spec ---------- */
+  .foot-hint{
+    position:absolute;left:clamp(24px,5vw,64px);bottom:22px;z-index:15;
+    font-size:12px;color:var(--ink-faint);letter-spacing:.04em;
+    display:flex;align-items:center;gap:8px;opacity:0;
+  }
+  .foot-hint .bar{width:26px;height:1px;background:var(--ink-faint)}
+
+  @media(max-width:900px){
+    .hero{grid-template-columns:1fr;padding-top:96px;gap:0}
+    .avatar-wrap{order:-1;height:38vh;min-height:260px}
+    .copy{padding-top:6px}
+    .stat-row{margin-top:34px}
+    .foot-hint{display:none}
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  }
+
+  .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+</style>
+
+<div class="stage">
+  <div class="sky"></div>
+  <div class="horizon"></div>
+  <canvas id="grain"></canvas>
+  <canvas id="stars"></canvas>
+  <canvas id="sparks"></canvas>
+  <div id="para">
+    <div class="pglow" style="width:340px;height:340px;left:8%;top:14%"></div>
+    <div class="pglow" style="width:260px;height:260px;right:10%;top:52%"></div>
+  </div>
+
+  <header class="top">
+    <div class="wm"><span class="dot" aria-hidden="true"></span><b>agentics.dk</b> <span>/ juli</span></div>
+    <nav aria-label="Primær navigation">
+      <a href="#" class="hidesm">Kalender</a>
+      <a href="#" class="hidesm">Om</a>
+      <a href="#">Start akademiet</a>
+    </nav>
+  </header>
+
+  <main class="hero">
+    <div class="copy">
+      <div class="eyebrow" id="eyebrow"><span class="pip"></span> Dag 31 · Den store finale</div>
+      <h1 id="headline">
+        <span class="ln"><span>Tænd motorerne.</span></span>
+        <span class="ln"><span>Vi er <span class="accent-word">klar til løft.</span></span></span>
+      </h1>
+      <p class="sub" id="sub">Vega har talt ned hele måneden — nu er det countdown til afgang. Fra idé til bane på rekordtid: sådan ser fremdrift ud, når ambition får en flamme under sig.</p>
+      <div class="cta-row" id="ctarow">
+        <a href="#" class="cta">
+          Start opsendelsen
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 17L17 7M17 7H9M17 7V15" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a href="#" class="secondary">Se hele rejsen ↓</a>
+      </div>
+      <div class="stat-row" id="statrow">
+        <div class="stat"><b>31</b><span>DAGE I BANE</span></div>
+        <div class="stat"><b>100%</b><span>ORBITAL ambition</span></div>
+        <div class="stat"><b>∞</b><span>NÆSTE STOP</span></div>
+      </div>
+    </div>
+
+    <div class="avatar-wrap">
+      <svg id="vega-svg" viewBox="0 0 480 620" role="img" aria-labelledby="vegaTitle">
+        <title id="vegaTitle">Vega, en venlig lille raket-maskot, klar til opsendelse</title>
+        <defs>
+          <linearGradient id="hullGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#fff7ef"/>
+            <stop offset="55%" stop-color="#ffd9bd"/>
+            <stop offset="100%" stop-color="#ff9a5c"/>
+          </linearGradient>
+          <linearGradient id="hullShade" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#000" stop-opacity="0"/>
+            <stop offset="100%" stop-color="#5c2a10" stop-opacity=".28"/>
+          </linearGradient>
+          <radialGradient id="windowGrad" cx="35%" cy="30%" r="75%">
+            <stop offset="0%" stop-color="#eafcff"/>
+            <stop offset="55%" stop-color="#9fe3ff"/>
+            <stop offset="100%" stop-color="#3aa9d9"/>
+          </radialGradient>
+          <linearGradient id="finGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#ff9a5c"/>
+            <stop offset="100%" stop-color="#e85f2c"/>
+          </linearGradient>
+          <radialGradient id="flameGrad" cx="50%" cy="0%" r="90%">
+            <stop offset="0%" stop-color="#fff6d8"/>
+            <stop offset="35%" stop-color="#ffcf6b"/>
+            <stop offset="70%" stop-color="#ff8a3d"/>
+            <stop offset="100%" stop-color="#ff5a3d" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="glowSoft" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#ff7a3d" stop-opacity=".55"/>
+            <stop offset="100%" stop-color="#ff7a3d" stop-opacity="0"/>
+          </radialGradient>
+          <filter id="softBlur" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="8"/>
+          </filter>
+        </defs>
+
+        <!-- ambient glow behind rocket -->
+        <ellipse cx="240" cy="330" rx="230" ry="260" fill="url(#glowSoft)" filter="url(#softBlur)"/>
+
+        <!-- exhaust particles group (JS populated) -->
+        <g id="exhaust"></g>
+
+        <!-- flame -->
+        <g id="flameGroup" transform="translate(240,468)">
+          <path id="flameOuter" d="M0,0 C-30,34 -22,78 0,118 C22,78 30,34 0,0 Z" fill="url(#flameGrad)"/>
+          <path id="flameInner" d="M0,10 C-14,32 -10,58 0,82 C10,58 14,32 0,10 Z" fill="#fff2c4" opacity=".85"/>
+        </g>
+
+        <!-- rocket body (this whole group tilts toward cursor) -->
+        <g id="rocketTilt" transform="translate(240,300)">
+          <g id="rocketBob">
+            <!-- fins -->
+            <path d="M-46,96 C-96,110 -118,168 -108,206 C-78,178 -54,150 -34,122 Z" fill="url(#finGrad)"/>
+            <path d="M46,96 C96,110 118,168 108,206 C78,178 54,150 34,122 Z" fill="url(#finGrad)"/>
+            <path d="M-46,96 C-70,104 -84,132 -82,158 C-66,142 -50,124 -34,110 Z" fill="#ffb27e" opacity=".7"/>
+            <path d="M46,96 C70,104 84,132 82,158 C66,142 50,124 34,110 Z" fill="#ffb27e" opacity=".7"/>
+
+            <!-- hull -->
+            <path d="M0,-170 C56,-116 74,-30 68,88 C68,150 -68,150 -68,88 C-74,-30 -56,-116 0,-170 Z" fill="url(#hullGrad)"/>
+            <path d="M0,-170 C56,-116 74,-30 68,88 C68,150 30,150 30,150 C30,90 48,-20 0,-160 Z" fill="url(#hullShade)"/>
+
+            <!-- nose cap accent ring -->
+            <path d="M-40,-58 C-14,-72 14,-72 40,-58" stroke="#ff7a3d" stroke-width="5" fill="none" stroke-linecap="round" opacity=".55"/>
+            <path d="M-58,20 C-20,8 20,8 58,20" stroke="#ff7a3d" stroke-width="4" fill="none" stroke-linecap="round" opacity=".4"/>
+
+            <!-- window -->
+            <circle cx="0" cy="-28" r="52" fill="#2a1206"/>
+            <circle cx="0" cy="-28" r="45" fill="url(#windowGrad)"/>
+            <circle cx="0" cy="-28" r="45" fill="none" stroke="#fff" stroke-width="3" opacity=".55"/>
+
+            <!-- face inside window: eyes track cursor -->
+            <g id="face">
+              <g id="eyeL">
+                <circle cx="-16" cy="-28" r="9.5" fill="#0c2233"/>
+                <circle cx="-13.2" cy="-31" r="3" fill="#fff"/>
+              </g>
+              <g id="eyeR">
+                <circle cx="16" cy="-28" r="9.5" fill="#0c2233"/>
+                <circle cx="18.8" cy="-31" r="3" fill="#fff"/>
+              </g>
+              <path id="mouth" d="M-11,-6 Q0,4 11,-6" stroke="#0c2233" stroke-width="3.4" fill="none" stroke-linecap="round"/>
+              <!-- blink lids -->
+              <rect id="lidL" x="-27" y="-38" width="22" height="0" fill="#ffd9bd"/>
+              <rect id="lidR" x="5" y="-38" width="22" height="0" fill="#ffd9bd"/>
+            </g>
+
+            <!-- cheeks -->
+            <ellipse cx="-34" cy="-14" rx="7" ry="4.5" fill="#ff8a5c" opacity=".55"/>
+            <ellipse cx="34" cy="-14" rx="7" ry="4.5" fill="#ff8a5c" opacity=".55"/>
+
+            <!-- little antenna flag -->
+            <g id="flag" transform="translate(0,-170)">
+              <line x1="0" y1="0" x2="0" y2="-26" stroke="#e9e2ff" stroke-width="3" stroke-linecap="round"/>
+              <path id="flagCloth" d="M0,-26 L26,-20 L0,-14 Z" fill="#ff7a3d"/>
+            </g>
+          </g>
+        </g>
+
+        <!-- rising sparks near rocket -->
+        <g id="microSparks"></g>
+      </svg>
+    </div>
+  </main>
+
+  <div class="foot-hint" id="foothint"><span class="bar"></span> flyt musen — Vega sigter mod dig</div>
+</div>
+
+<span class="sr-only">Vega, agentics.dk's rumfarende maskot for dag 31, byder velkommen til abonnements-akademiet.</span>
+
+<script>
+(function(){
+  "use strict";
+  var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var running = true;
+
+  /* ---------------- entrance choreography ---------------- */
+  function entrance(){
+    var lines = document.querySelectorAll('h1 .ln span');
+    lines.forEach(function(el, i){
+      el.style.transition = 'transform .95s '+i*0.09+'s cubic-bezier(.16,.9,.2,1), opacity .8s '+i*0.09+'s ease';
+      requestAnimationFrame(function(){ el.style.opacity = 1; el.style.transform = 'translateY(0)'; });
+    });
+    var seq = [
+      ['#eyebrow', 60], ['#sub', 220], ['#ctarow', 360], ['#statrow', 480], ['#foothint', 700]
+    ];
+    seq.forEach(function(pair){
+      var el = document.querySelector(pair[0]);
+      if(!el) return;
+      setTimeout(function(){
+        el.style.transition = 'transform .8s cubic-bezier(.16,.9,.2,1), opacity .8s ease';
+        el.style.opacity = 1;
+        el.style.transform = 'translateY(0)';
+      }, pair[1]);
+    });
+  }
+  entrance();
+
+  /* ---------------- starfield + grain + sparks canvases ---------------- */
+  var starsCv = document.getElementById('stars'), starsCtx = starsCv.getContext('2d');
+  var grainCv = document.getElementById('grain'), grainCtx = grainCv.getContext('2d');
+  var sparkCv = document.getElementById('sparks'), sparkCtx = sparkCv.getContext('2d');
+  var W=0, H=0;
+  var stars = [];
+  var rising = []; // background rising sparks (parallax, far)
+
+  function resize(){
+    W = window.innerWidth; H = window.innerHeight;
+    [starsCv, grainCv, sparkCv].forEach(function(cv){
+      cv.width = W*dpr; cv.height = H*dpr;
+      cv.style.width = W+'px'; cv.style.height = H+'px';
+    });
+    starsCtx.setTransform(dpr,0,0,dpr,0,0);
+    grainCtx.setTransform(dpr,0,0,dpr,0,0);
+    sparkCtx.setTransform(dpr,0,0,dpr,0,0);
+    buildStars();
+  }
+
+  function buildStars(){
+    stars = [];
+    var count = Math.round((W*H)/9000);
+    for(var i=0;i<count;i++){
+      stars.push({
+        x: Math.random()*W,
+        y: Math.random()*H*0.85,
+        r: Math.random()*1.4+0.3,
+        tw: Math.random()*Math.PI*2,
+        sp: Math.random()*0.02+0.006,
+        par: Math.random()*0.4+0.08
+      });
+    }
+    rising = [];
+    var rc = 26;
+    for(var j=0;j<rc;j++){
+      rising.push(spawnRiser(true));
+    }
+  }
+
+  function spawnRiser(randomY){
+    return {
+      x: W*0.42 + (Math.random()-0.5)*W*0.5,
+      y: randomY ? Math.random()*H : H + Math.random()*80,
+      r: Math.random()*1.8+0.6,
+      vy: Math.random()*0.5+0.35,
+      vx: (Math.random()-0.5)*0.25,
+      life: Math.random()*260+140,
+      age: Math.random()*100,
+      hue: Math.random()<0.5 ? '255,154,92' : '255,210,122'
+    };
+  }
+
+  function drawGrain(){
+    var iw = 96, ih = 96;
+    var off = document.createElement('canvas');
+    off.width = iw; off.height = ih;
+    var octx = off.getContext('2d');
+    var imgData = octx.createImageData(iw, ih);
+    for(var i=0;i<imgData.data.length;i+=4){
+      var v = Math.random()*255;
+      imgData.data[i]=v; imgData.data[i+1]=v; imgData.data[i+2]=v; imgData.data[i+3]=22;
+    }
+    octx.putImageData(imgData,0,0);
+    grainCtx.clearRect(0,0,W,H);
+    var pat = grainCtx.createPattern(off,'repeat');
+    grainCtx.fillStyle = pat;
+    grainCtx.fillRect(0,0,W,H);
+  }
+
+  var mouseX = 0.5, mouseY = 0.45; // normalized 0..1
+  var targetMouseX = 0.5, targetMouseY = 0.45;
+  var hasPointer = false;
+
+  window.addEventListener('mousemove', function(e){
+    targetMouseX = e.clientX / W;
+    targetMouseY = e.clientY / H;
+    hasPointer = true;
+  }, {passive:true});
+
+  window.addEventListener('touchmove', function(e){
+    if(e.touches && e.touches[0]){
+      targetMouseX = e.touches[0].clientX / W;
+      targetMouseY = e.touches[0].clientY / H;
+      hasPointer = true;
+    }
+  }, {passive:true});
+
+  /* ---------------- rocket references ---------------- */
+  var svg = document.getElementById('vega-svg');
+  var rocketTilt = document.getElementById('rocketTilt');
+  var rocketBob = document.getElementById('rocketBob');
+  var eyeL = document.getElementById('eyeL');
+  var eyeR = document.getElementById('eyeR');
+  var lidL = document.getElementById('lidL');
+  var lidR = document.getElementById('lidR');
+  var mouth = document.getElementById('mouth');
+  var flameOuter = document.getElementById('flameOuter');
+  var flameInner = document.getElementById('flameInner');
+  var flameGroup = document.getElementById('flameGroup');
+  var flagCloth = document.getElementById('flagCloth');
+  var paraLayer = document.getElementById('para');
+  var exhaustG = document.getElementById('exhaust');
+  var microSparksG = document.getElementById('microSparks');
+
+  var eyePupilsL = eyeL.querySelectorAll('circle')[1];
+  var eyePupilsR = eyeR.querySelectorAll('circle')[1];
+
+  /* exhaust particles emitted from base of rocket, in SVG space */
+  var particles = [];
+  var maxParticles = 30;
+  var svgBox = {w:480,h:620};
+
+  function spawnParticle(){
+    if(particles.length >= maxParticles) return;
+    var ns = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    ns.setAttribute('r', (Math.random()*4+2).toFixed(2));
+    ns.setAttribute('fill', Math.random()<0.5 ? '#ffcf6b' : '#ff8a3d');
+    exhaustG.appendChild(ns);
+    particles.push({
+      el: ns,
+      x: (Math.random()-0.5)*26,
+      y: 470 + Math.random()*10,
+      vx: (Math.random()-0.5)*0.7,
+      vy: Math.random()*2.2+1.6,
+      life: 0,
+      maxLife: Math.random()*46+40,
+      opacity: 1
+    });
+  }
+
+  function updateParticles(intensity){
+    var spawnRate = 0.5 + intensity*1.8;
+    var toSpawn = spawnRate;
+    while(toSpawn > 0){
+      if(Math.random() < toSpawn) spawnParticle();
+      toSpawn -= 1;
+    }
+    for(var i=particles.length-1;i>=0;i--){
+      var p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy + intensity*1.2;
+      p.life++;
+      p.opacity = Math.max(0, 1 - p.life/p.maxLife);
+      p.el.setAttribute('cx', p.x.toFixed(2));
+      p.el.setAttribute('cy', p.y.toFixed(2));
+      p.el.setAttribute('opacity', p.opacity.toFixed(2));
+      var scale = 1 + p.life*0.02;
+      p.el.setAttribute('r', ((Math.random()*0.3+2.2)*scale).toFixed(2));
+      if(p.life >= p.maxLife){
+        exhaustG.removeChild(p.el);
+        particles.splice(i,1);
+      }
+    }
+  }
+
+  /* micro sparks that drift up near the flame, in SVG coords, celebratory */
+  var micro = [];
+  var maxMicro = 14;
+  function spawnMicro(){
+    if(micro.length >= maxMicro) return;
+    var ns = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    ns.setAttribute('r', (Math.random()*2+1).toFixed(2));
+    ns.setAttribute('fill', '#ffe3ab');
+    microSparksG.appendChild(ns);
+    micro.push({
+      el: ns,
+      x: 240 + (Math.random()-0.5)*220,
+      y: 560 + Math.random()*20,
+      vy: Math.random()*1.4+0.6,
+      vx: (Math.random()-0.5)*0.4,
+      life:0, maxLife: Math.random()*160+120
+    });
+  }
+
+  function updateMicro(){
+    if(Math.random()<0.06) spawnMicro();
+    for(var i=micro.length-1;i>=0;i--){
+      var p = micro[i];
+      p.x += p.vx; p.y -= p.vy; p.life++;
+      var op = Math.max(0, 1-p.life/p.maxLife) * 0.8;
+      p.el.setAttribute('cx',p.x.toFixed(2));
+      p.el.setAttribute('cy',p.y.toFixed(2));
+      p.el.setAttribute('opacity', op.toFixed(2));
+      if(p.life >= p.maxLife){
+        microSparksG.removeChild(p.el);
+        micro.splice(i,1);
+      }
+    }
+  }
+
+  /* ---------------- blink scheduling ---------------- */
+  var blinkT = 0, nextBlink = 2600 + Math.random()*2200, blinking = false, blinkPhase = 0;
+
+  /* ---------------- main animation loop ---------------- */
+  var t0 = performance.now();
+  var last = t0;
+  var smoothX = 0.5, smoothY = 0.45;
+  var tiltIntensity = 0;
+
+  function frame(now){
+    if(!running){ return; }
+    var dt = Math.min(now - last, 48); last = now;
+    var elapsed = (now - t0)/1000;
+
+    // smooth pointer follow
+    smoothX += (targetMouseX - smoothX) * (reduceMotion?1:0.09);
+    smoothY += (targetMouseY - smoothY) * (reduceMotion?1:0.09);
+
+    var dx = (smoothX - 0.5); // -0.5..0.5
+    var dy = (smoothY - 0.45);
+
+    // idle bob/sway (always on unless reduced motion)
+    var bobY = reduceMotion ? 0 : Math.sin(elapsed*1.15)*7;
+    var swayX = reduceMotion ? 0 : Math.sin(elapsed*0.7)*4;
+    var breathe = reduceMotion ? 1 : 1 + Math.sin(elapsed*1.15)*0.012;
+
+    // rocket tilts/aims toward cursor
+    var tiltMax = 13;
+    var rotate = reduceMotion ? 0 : (dx*tiltMax*2);
+    var translateAim = reduceMotion ? {x:0,y:0} : {x: dx*30, y: dy*22};
+
+    rocketTilt.setAttribute('transform',
+      'translate('+(240+translateAim.x)+','+(300+translateAim.y)+') rotate('+rotate.toFixed(2)+')');
+    rocketBob.setAttribute('transform',
+      'translate('+swayX.toFixed(2)+','+bobY.toFixed(2)+') scale('+breathe.toFixed(4)+')');
+
+    // eyes track cursor within window
+    var eyeRange = 5.5;
+    var ex = reduceMotion ? 0 : dx*eyeRange*2;
+    var ey = reduceMotion ? 0 : dy*eyeRange*2;
+    ex = Math.max(-eyeRange, Math.min(eyeRange, ex));
+    ey = Math.max(-eyeRange, Math.min(eyeRange, ey));
+    eyePupilsL.setAttribute('cx', (-13.2+ex).toFixed(2));
+    eyePupilsL.setAttribute('cy', (-31+ey).toFixed(2));
+    eyePupilsR.setAttribute('cx', (18.8+ex).toFixed(2));
+    eyePupilsR.setAttribute('cy', (-31+ey).toFixed(2));
+
+    // mouth widens slightly with proximity to center (excitement) & thruster intensity
+    var distFromCenter = Math.sqrt(dx*dx+dy*dy);
+    var proximity = Math.max(0, 1 - distFromCenter*1.8); // near pointer over rocket -> excited
+    var mouthCurve = 4 + proximity*10;
+    mouth.setAttribute('d', 'M-11,-6 Q0,'+mouthCurve.toFixed(1)+' 11,-6');
+
+    // blink
+    blinkT += dt;
+    if(!blinking && blinkT > nextBlink){
+      blinking = true; blinkPhase = 0;
+    }
+    if(blinking){
+      blinkPhase += dt;
+      var bp = blinkPhase/160; // 160ms full blink
+      var h;
+      if(bp < 0.5) h = (bp/0.5)*40;
+      else if(bp < 1) h = (1-(bp-0.5)/0.5)*40;
+      else { h = 0; blinking = false; blinkT = 0; nextBlink = 2600+Math.random()*2600; }
+      lidL.setAttribute('height', Math.max(0,h).toFixed(1));
+      lidL.setAttribute('y', (-28 - h/2).toFixed(1));
+      lidR.setAttribute('height', Math.max(0,h).toFixed(1));
+      lidR.setAttribute('y', (-28 - h/2).toFixed(1));
+    }
+
+    // thruster intensity: flickers idly, boosts when cursor near rocket center
+    var flicker = reduceMotion ? 0 : (Math.sin(elapsed*14)*0.06 + Math.sin(elapsed*23.7)*0.04);
+    var intensity = Math.max(0, Math.min(1, 0.55 + proximity*0.7 + flicker));
+    tiltIntensity += (intensity - tiltIntensity)*0.12;
+
+    var flameScaleY = 0.75 + tiltIntensity*0.75;
+    var flameScaleX = 0.85 + tiltIntensity*0.3;
+    flameGroup.setAttribute('transform',
+      'translate(' + (240+translateAim.x*0.6) + ',' + (468+bobY*0.5+468*0) + ') scale('+flameScaleX.toFixed(3)+','+flameScaleY.toFixed(3)+')');
+    flameOuter.setAttribute('opacity', (0.75+tiltIntensity*0.25).toFixed(2));
+    flameInner.setAttribute('opacity', (0.6+tiltIntensity*0.35).toFixed(2));
+
+    // flag flutter
+    var flutter = reduceMotion ? 0 : Math.sin(elapsed*4.2)*10 + dx*10;
+    flagCloth.setAttribute('d', 'M0,-26 L'+(26+flutter*0.3)+',-20 L0,-14 Z');
+
+    if(!reduceMotion){
+      updateParticles(tiltIntensity);
+      updateMicro();
+    }
+
+    // background parallax layers (stars + glows) move opposite to cursor slightly
+    if(!reduceMotion){
+      paraLayer.style.transform = 'translate('+(-dx*18).toFixed(2)+'px,'+(-dy*14).toFixed(2)+'px)';
+    }
+
+    // starfield twinkle + gentle parallax drift
+    starsCtx.clearRect(0,0,W,H);
+    for(var i=0;i<stars.length;i++){
+      var s = stars[i];
+      s.tw += s.sp*dt*0.06;
+      var a = 0.35 + Math.abs(Math.sin(s.tw))*0.65;
+      var px = s.x - dx*40*s.par;
+      var py = s.y - dy*30*s.par;
+      starsCtx.beginPath();
+      starsCtx.fillStyle = 'rgba(255,255,255,'+a.toFixed(2)+')';
+      starsCtx.arc(px, py, s.r, 0, Math.PI*2);
+      starsCtx.fill();
+    }
+
+    // rising background sparks (far parallax, ambient — separate from SVG exhaust)
+    sparkCtx.clearRect(0,0,W,H);
+    for(var j=0;j<rising.length;j++){
+      var r = rising[j];
+      r.age += dt*0.06;
+      r.y -= r.vy;
+      r.x += r.vx;
+      var lifeRatio = r.age / r.life;
+      if(lifeRatio >= 1 || r.y < -20){
+        rising[j] = spawnRiser(false);
+        continue;
+      }
+      var alpha = Math.sin(Math.min(1,lifeRatio)*Math.PI) * 0.55;
+      sparkCtx.beginPath();
+      sparkCtx.fillStyle = 'rgba('+r.hue+','+alpha.toFixed(2)+')';
+      sparkCtx.arc(r.x - dx*24, r.y - dy*10, r.r, 0, Math.PI*2);
+      sparkCtx.fill();
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  window.addEventListener('resize', function(){
+    resize();
+  });
+  resize();
+  drawGrain();
+  requestAnimationFrame(frame);
+
+  document.addEventListener('visibilitychange', function(){
+    running = !document.hidden;
+    if(running){
+      last = performance.now();
+      requestAnimationFrame(frame);
+      requestAnimationFrame(idleDrift);
+    }
+  });
+
+  // gentle idle drift target when no real pointer yet, so idle loop still feels alive
+  function idleDrift(){
+    if(!running) return;
+    if(hasPointer) return;
+    var e = (performance.now()-t0)/1000;
+    targetMouseX = 0.5 + Math.sin(e*0.35)*0.12;
+    targetMouseY = 0.45 + Math.cos(e*0.28)*0.06;
+    requestAnimationFrame(idleDrift);
+  }
+  requestAnimationFrame(idleDrift);
+})();
+</script>
+
+<style id="agx-chrome-css">
+.agx{position:fixed;z-index:2147483000;font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;box-sizing:border-box}
+.agx a{cursor:pointer}
+.agx-badge{right:16px;bottom:16px;display:flex;gap:7px;align-items:center;padding:8px 13px;border-radius:999px;
+  background:rgba(9,11,17,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
+.agx-badge b{color:var(--agx);font-size:13px}
+.agx-story{left:16px;bottom:16px;max-width:min(360px,calc(100vw - 32px));padding:16px 16px 13px;border-radius:16px;
+  background:rgba(9,11,17,.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;box-shadow:0 24px 70px -26px rgba(0,0,0,.85)}
+.agx-story .h{display:flex;align-items:center;gap:11px;margin-bottom:9px}
+.agx-story .em{font-size:26px;line-height:1;filter:drop-shadow(0 3px 11px var(--agx))}
+.agx-story .nm{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.agx-story .tl{color:var(--agx);font-size:12px;font-weight:600;margin-top:3px}
+.agx-story p{margin:0 0 11px;color:#c6ccd9;font-size:13px;line-height:1.56}
+.agx-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.agx-tags span{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#aeb6c6;
+  border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px 9px}
+.agx-guess{margin:0 0 12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.09)}
+.agx-guess .gq{font-size:11.5px;color:#aeb6c6;margin-bottom:8px;letter-spacing:.01em}
+.agx-guess .gbtns{display:flex;gap:8px}
+.agx-guess .gbtn{flex:1;padding:8px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.03);color:#eef1f7;font-size:12px;font-weight:600;cursor:pointer;
+  transition:transform .15s,border-color .15s,background .15s,opacity .15s;font-family:inherit}
+.agx-guess .gbtn:hover:not(:disabled){border-color:var(--agx);background:rgba(255,255,255,.07);transform:translateY(-1px)}
+.agx-guess .gbtn:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
+.agx-guess .gbtn:disabled{cursor:default}
+.agx-guess .gbtn.correct{border-color:#5eea8f;background:rgba(94,234,143,.16);color:#a4f5be;opacity:1}
+.agx-guess .gbtn.wrong{border-color:#ff6a6a;background:rgba(255,106,106,.14);color:#ffb9b9;opacity:1}
+.agx-guess .gbtn.dim{opacity:.45}
+.agx-guess .greveal{margin-top:9px;font-size:11.5px;line-height:1.55;color:#c6ccd9}
+.agx-guess .greveal b{color:#eef1f7}
+.agx-nav{display:flex;align-items:center;gap:13px;font-size:12.5px;border-top:1px solid rgba(255,255,255,.09);padding-top:11px}
+.agx-nav a{color:#eef1f7;text-decoration:none;opacity:.82}
+.agx-nav a:hover{opacity:1;color:var(--agx)}
+.agx-nav .home{margin-right:auto;font-weight:600}
+.agx-nav a[aria-disabled=true]{opacity:.32;pointer-events:none}
+@media (max-width:560px){.agx-story{left:12px;right:12px;bottom:12px;max-width:none}.agx-badge{display:none}}
+@media (prefers-reduced-motion:reduce){.agx-story .em{filter:none}}
+</style>
+<div class="agx agx-badge" style="--agx:#ff7a3d">AGENTICS · JULI <b>31</b></div>
+<aside class="agx agx-story" style="--agx:#ff7a3d" aria-label="Avatarens historie">
+  <div class="h"><div class="em">🚀</div><div><div class="nm">Vega</div><div class="tl">Tændt, tanket, klar til at rykke ud.</div></div></div>
+  <p>Vega har stået på afskydningsrampen hele måneden og set de andre 30 gøre klar til dette øjeblik. Nu er nedtællingen slut, og alt det, holdet har bygget sammen, samles i ét skud opad. Han er ikke bekymret for tyngdekraften – han er bygget til at forlade den.</p>
+  <div class="agx-tags"><span>modig</span><span>målbevidst</span><span>fremadrettet</span></div>
+  <div class="agx-guess" id="agxGuess">
+    <div class="gq">🤖 Hvilken Claude-model byggede Vega?</div>
+    <div class="gbtns">
+      <button type="button" class="gbtn" data-m="opus">Opus 4.8</button>
+      <button type="button" class="gbtn" data-m="sonnet">Sonnet 5</button>
+    </div>
+    <div class="greveal" id="agxReveal" hidden></div>
+  </div>
+  <nav class="agx-nav">
+    <a class="home" href="calendar.html">← Kalender</a>
+    <a href="day-30.html">‹ forrige</a>
+    <a aria-disabled="true">finale 🎉</a>
+  </nav>
+</aside>
+<script>(function(){var n=document.querySelector('.agx-nav a[data-day]');if(!n)return;var d=+n.getAttribute('data-day');
+if(new Date()<new Date(2026,6,d)){n.setAttribute('aria-disabled','true');n.textContent='næste (åbner '+d+'. juli)';}})();</script>
+<script>(function(){
+  var DAY=31, MODEL='sonnet', NAME="Vega";
+  var KEY='agx_guess_'+DAY;
+  var wrap=document.getElementById('agxGuess');
+  if(!wrap) return;
+  var btns=Array.prototype.slice.call(wrap.querySelectorAll('.gbtn'));
+  var reveal=document.getElementById('agxReveal');
+  var TXT={
+    opus:'🧠 Rigtigt svar: <b>Claude Opus 4.8</b> byggede '+NAME+'.',
+    sonnet:'⚡ Rigtigt svar: <b>Claude Sonnet 5</b> byggede '+NAME+'.'
+  };
+  function render(saved){
+    btns.forEach(function(b){
+      b.disabled=true;
+      var m=b.getAttribute('data-m');
+      if(m===MODEL) b.classList.add('correct');
+      else if(m===saved) b.classList.add('wrong'); else b.classList.add('dim');
+    });
+    var extra = saved===MODEL ? ' Du gættede rigtigt! 🎉' : ' Forkert gæt denne gang — bedre held i morgen.';
+    reveal.innerHTML=TXT[MODEL]+extra;
+    reveal.hidden=false;
+  }
+  var prior=localStorage.getItem(KEY);
+  if(prior){ render(prior); return; }
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      var g=b.getAttribute('data-m');
+      try{ localStorage.setItem(KEY, g); }catch(e){}
+      render(g);
+    });
+  });
+})();</script>

@@ -1,0 +1,752 @@
+<title>agentics.dk — Nimbus</title>
+<style>
+  :root{
+    --accent:#bcd3ff;
+    --accent-soft:#8fb4ff;
+    --ink:#eaf1ff;
+    --ink-dim:#a9b7d6;
+    --ink-faint:#6f7ea6;
+    --sky-top:#1a2145;
+    --sky-mid:#2b2a5c;
+    --sky-low:#4a3a66;
+    --sky-glow:#6b5488;
+    --focus:#dfe9ff;
+    --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;
+    background:var(--sky-top);
+    color:var(--ink);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  .stage{position:fixed;inset:0;overflow:hidden}
+
+  /* ---------- layered sky ---------- */
+  .sky{
+    position:absolute;inset:0;
+    background:
+      radial-gradient(120% 90% at 78% 8%, rgba(188,211,255,.16) 0%, rgba(188,211,255,0) 42%),
+      radial-gradient(90% 70% at 20% 100%, var(--sky-glow) 0%, rgba(107,84,136,0) 55%),
+      linear-gradient(178deg, var(--sky-top) 0%, var(--sky-mid) 46%, var(--sky-low) 80%, var(--sky-glow) 100%);
+  }
+  /* a low warm horizon band, like twilight */
+  .horizon{
+    position:absolute;left:0;right:0;bottom:0;height:34%;
+    background:linear-gradient(0deg, rgba(255,203,168,.14) 0%, rgba(255,203,168,0) 100%);
+    pointer-events:none;
+  }
+  #grain{position:absolute;inset:0;opacity:.05;mix-blend-mode:overlay;pointer-events:none}
+  #stars{position:absolute;inset:0;pointer-events:none}
+  #para{position:absolute;inset:0;pointer-events:none;will-change:transform}
+
+  /* soft parallax cloud shapes drawn in bg (behind avatar) */
+  .pcloud{
+    position:absolute;border-radius:50%;
+    background:radial-gradient(60% 60% at 50% 40%, rgba(188,211,255,.22), rgba(188,211,255,0) 72%);
+    filter:blur(2px);will-change:transform;
+  }
+
+  /* ---------- chrome ---------- */
+  .top{
+    position:absolute;top:0;left:0;right:0;z-index:20;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:26px clamp(24px,5vw,64px);
+  }
+  .wm{display:flex;align-items:center;gap:11px;font-weight:600;letter-spacing:-.02em;font-size:17px}
+  .wm .dot{
+    width:22px;height:22px;border-radius:7px;
+    background:radial-gradient(70% 70% at 35% 30%, #fff, var(--accent) 60%, var(--accent-soft));
+    box-shadow:0 0 22px rgba(188,211,255,.55);
+  }
+  .wm b{font-weight:700}
+  .wm span{color:var(--ink-dim);font-weight:500}
+  nav{display:flex;gap:8px;align-items:center}
+  nav a{
+    color:var(--ink-dim);text-decoration:none;font-size:14px;font-weight:500;
+    padding:8px 14px;border-radius:999px;letter-spacing:.01em;
+    transition:color .3s var(--ease),background .3s var(--ease);
+  }
+  nav a:hover{color:var(--ink);background:rgba(188,211,255,.09)}
+  nav a:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+  @media(max-width:680px){nav .hidesm{display:none}}
+
+  /* ---------- hero ---------- */
+  .hero{
+    position:relative;z-index:10;height:100%;
+    display:grid;grid-template-columns:1.05fr .95fr;align-items:center;
+    padding:0 clamp(24px,5vw,72px);
+    max-width:1400px;margin:0 auto;
+  }
+  .copy{max-width:600px;padding-top:26px}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:9px;
+    font-size:12.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--accent);margin-bottom:22px;
+    padding:7px 13px 7px 11px;border-radius:999px;
+    background:rgba(188,211,255,.07);border:1px solid rgba(188,211,255,.16);
+  }
+  .eyebrow .pulse{
+    width:7px;height:7px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 0 0 rgba(188,211,255,.6);animation:pulse 3.4s var(--ease) infinite;
+  }
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(188,211,255,.55)}70%{box-shadow:0 0 0 9px rgba(188,211,255,0)}100%{box-shadow:0 0 0 0 rgba(188,211,255,0)}}
+
+  h1{
+    font-size:clamp(42px,6.6vw,86px);
+    line-height:.98;letter-spacing:-.035em;font-weight:700;
+    margin-bottom:26px;
+  }
+  h1 .line{display:block;overflow:hidden}
+  h1 .line i{display:block;font-style:normal;transform:translateY(112%);will-change:transform}
+  h1 .soft{
+    background:linear-gradient(96deg,var(--accent) 0%, #fff 46%, var(--accent-soft) 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    font-weight:600;
+  }
+  .sub{
+    font-size:clamp(15px,1.55vw,18.5px);line-height:1.6;color:var(--ink-dim);
+    max-width:460px;margin-bottom:38px;font-weight:400;
+  }
+  .cta-row{display:flex;align-items:center;gap:22px;flex-wrap:wrap}
+  .cta{
+    position:relative;display:inline-flex;align-items:center;gap:11px;
+    font-size:15.5px;font-weight:600;letter-spacing:.005em;color:#151a30;
+    text-decoration:none;padding:16px 26px;border-radius:14px;
+    background:linear-gradient(180deg,#eef4ff,var(--accent));
+    box-shadow:0 12px 34px -12px rgba(143,180,255,.75), inset 0 1px 0 rgba(255,255,255,.6);
+    will-change:transform;transition:box-shadow .4s var(--ease);isolation:isolate;
+  }
+  .cta .glow{
+    position:absolute;inset:-2px;border-radius:16px;z-index:-1;opacity:0;
+    background:radial-gradient(120px 80px at var(--gx,50%) var(--gy,50%), rgba(188,211,255,.9), rgba(188,211,255,0) 70%);
+    filter:blur(10px);transition:opacity .4s var(--ease);
+  }
+  .cta:hover .glow{opacity:1}
+  .cta:hover{box-shadow:0 20px 50px -14px rgba(143,180,255,.9), inset 0 1px 0 rgba(255,255,255,.7)}
+  .cta:focus-visible{outline:2px solid var(--focus);outline-offset:4px}
+  .cta .arr{transition:transform .4s var(--ease)}
+  .cta:hover .arr{transform:translateX(4px)}
+  .link{
+    display:inline-flex;align-items:center;gap:8px;
+    color:var(--ink);text-decoration:none;font-size:15px;font-weight:500;
+    opacity:.85;transition:opacity .3s var(--ease),gap .3s var(--ease);
+  }
+  .link:hover{opacity:1;gap:11px}
+  .link:focus-visible{outline:2px solid var(--focus);outline-offset:3px;border-radius:6px}
+  .link .u{position:relative}
+  .link .u::after{content:"";position:absolute;left:0;right:100%;bottom:-3px;height:1px;background:var(--accent);transition:right .35s var(--ease)}
+  .link:hover .u::after{right:0}
+
+  /* ---------- avatar column ---------- */
+  .avatar-wrap{
+    position:relative;display:flex;align-items:center;justify-content:center;
+    height:100%;will-change:transform;
+  }
+  .avatar{width:min(46vh,420px);height:auto;overflow:visible;will-change:transform}
+  .avatar *{transform-box:fill-box}
+
+  /* entrance reveal helper */
+  .reveal{opacity:0}
+
+  /* meta strip mid-hero (kept off the bottom edges) */
+  .meta{
+    position:absolute;z-index:12;top:calc(50% + 168px);left:clamp(24px,5vw,72px);
+    display:flex;gap:26px;color:var(--ink-faint);font-size:12.5px;letter-spacing:.04em;
+    text-transform:uppercase;font-weight:600;
+  }
+  .meta b{color:var(--ink-dim);font-weight:600}
+  .meta .sep{width:1px;height:14px;background:rgba(188,211,255,.22);align-self:center}
+  @media(max-width:900px){
+    .hero{grid-template-columns:1fr}
+    .avatar-wrap{position:absolute;inset:0;z-index:1;opacity:.4}
+    .copy{z-index:5}
+    .meta{display:none}
+  }
+
+  @media(prefers-reduced-motion:reduce){
+    h1 .line i{transform:none!important}
+    .reveal{opacity:1!important}
+    .eyebrow .pulse{animation:none}
+    #para,.pcloud{transform:none!important}
+  }
+</style>
+
+<div class="stage">
+  <div class="sky"></div>
+  <canvas id="stars"></canvas>
+  <div id="para" aria-hidden="true">
+    <div class="pcloud" style="width:340px;height:200px;left:6%;top:22%"></div>
+    <div class="pcloud" style="width:260px;height:150px;left:64%;top:14%"></div>
+    <div class="pcloud" style="width:420px;height:230px;left:38%;top:64%"></div>
+    <div class="pcloud" style="width:200px;height:120px;left:80%;top:52%"></div>
+  </div>
+  <div class="horizon"></div>
+  <canvas id="grain" aria-hidden="true"></canvas>
+
+  <header class="top">
+    <div class="wm reveal" data-r="1">
+      <span class="dot" aria-hidden="true"></span>
+      <span><b>agentics</b><span>.dk</span></span>
+    </div>
+    <nav aria-label="Primary">
+      <a class="reveal hidesm" data-r="2" href="#work">Skyer</a>
+      <a class="reveal hidesm" data-r="3" href="#studio">Studie</a>
+      <a class="reveal" data-r="4" href="#calendar">Kalender</a>
+      <a class="reveal" data-r="5" href="#contact">Kontakt</a>
+    </nav>
+  </header>
+
+  <main class="hero">
+    <section class="copy">
+      <span class="eyebrow reveal" data-r="6"><span class="pulse" aria-hidden="true"></span>Juli · dag 23 · Nimbus</span>
+      <h1>
+        <span class="line"><i class="reveal" data-r="7">Byg noget der</i></span>
+        <span class="line"><i class="reveal soft" data-r="8">svæver.</i></span>
+      </h1>
+      <p class="sub reveal" data-r="9">
+        Nimbus tegner idéer op imens du tænker — rolige, drømmende agenter der
+        driver med dig, ikke imod dig. Flyt musen, så vågner den.
+      </p>
+      <div class="cta-row">
+        <a class="cta reveal" data-r="10" href="#start" id="cta">
+          <span class="glow" aria-hidden="true"></span>
+          Sæt en agent i skyen
+          <span class="arr" aria-hidden="true">→</span>
+        </a>
+        <a class="link reveal" data-r="11" href="#watch">
+          <span aria-hidden="true">▶</span><span class="u">Se den drømme</span>
+        </a>
+      </div>
+    </section>
+
+    <div class="avatar-wrap" id="avatarWrap" aria-hidden="true">
+      <!-- Nimbus, hand-built vector cloud -->
+      <svg class="avatar reveal" data-r="9" id="nimbus" viewBox="0 0 400 360" role="img" aria-label="Nimbus, a dreamy little cloud character">
+        <defs>
+          <radialGradient id="body" cx="42%" cy="34%" r="78%">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="52%" stop-color="#eaf1ff"/>
+            <stop offset="100%" stop-color="#c3d3f2"/>
+          </radialGradient>
+          <radialGradient id="belly" cx="50%" cy="86%" r="70%">
+            <stop offset="0%" stop-color="#9db6e6" stop-opacity=".55"/>
+            <stop offset="60%" stop-color="#9db6e6" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="cheek" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="#bcd3ff" stop-opacity=".85"/>
+            <stop offset="100%" stop-color="#bcd3ff" stop-opacity="0"/>
+          </radialGradient>
+          <linearGradient id="halo" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#bcd3ff" stop-opacity=".5"/>
+            <stop offset="100%" stop-color="#bcd3ff" stop-opacity="0"/>
+          </linearGradient>
+          <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="7"/>
+          </filter>
+        </defs>
+
+        <!-- ambient glow halo -->
+        <ellipse id="halo" cx="200" cy="180" rx="150" ry="120" fill="url(#halo)" opacity=".7" filter="url(#soft)"/>
+
+        <!-- weather layer (rain / bolt) sits behind the body-bottom -->
+        <g id="weather"></g>
+
+        <!-- the whole squishy body group (idle bob + puff scale live here) -->
+        <g id="bodyG">
+          <!-- soft under-shadow -->
+          <ellipse cx="204" cy="196" rx="128" ry="94" fill="#a9c0ee" opacity=".35" filter="url(#soft)"/>
+
+          <!-- cloud silhouette: overlapping lobes -->
+          <g id="cloud">
+            <path fill="url(#body)" d="
+              M118 210
+              C 78 210 58 178 78 150
+              C 70 116 108 96 134 112
+              C 146 78 196 70 214 100
+              C 244 78 290 96 288 132
+              C 322 130 336 176 306 196
+              C 300 214 96 214 118 210 Z"/>
+            <!-- extra top lobes for a puffier crown -->
+            <circle cx="150" cy="132" r="40" fill="url(#body)"/>
+            <circle cx="205" cy="118" r="48" fill="url(#body)"/>
+            <circle cx="258" cy="136" r="42" fill="url(#body)"/>
+            <circle cx="112" cy="168" r="34" fill="url(#body)"/>
+            <circle cx="296" cy="168" r="34" fill="url(#body)"/>
+            <rect x="104" y="150" width="200" height="60" rx="30" fill="url(#body)"/>
+            <!-- belly shading -->
+            <ellipse cx="204" cy="200" rx="118" ry="42" fill="url(#belly)"/>
+          </g>
+
+          <!-- face group: parallax + gaze offset applied here -->
+          <g id="face">
+            <!-- cheeks -->
+            <ellipse id="cheekL" cx="158" cy="176" rx="17" ry="11" fill="url(#cheek)"/>
+            <ellipse id="cheekR" cx="252" cy="176" rx="17" ry="11" fill="url(#cheek)"/>
+
+            <!-- eyes: sleepy. group so we can move pupils + blink lids -->
+            <g id="eyeL">
+              <ellipse cx="168" cy="158" rx="14" ry="15" fill="#3a4a6e"/>
+              <circle id="pupL" cx="168" cy="158" r="6.5" fill="#1c2742"/>
+              <circle cx="171" cy="154" r="2.4" fill="#eaf1ff" opacity=".9"/>
+              <path id="lidL" d="M152 158 Q168 158 184 158" fill="#eef3ff" stroke="none"/>
+            </g>
+            <g id="eyeR">
+              <ellipse cx="240" cy="158" rx="14" ry="15" fill="#3a4a6e"/>
+              <circle id="pupR" cx="240" cy="158" r="6.5" fill="#1c2742"/>
+              <circle cx="243" cy="154" r="2.4" fill="#eaf1ff" opacity=".9"/>
+              <path id="lidR" d="M224 158 Q240 158 256 158" fill="#eef3ff" stroke="none"/>
+            </g>
+            <!-- sleepy upper-lid arcs (always slightly lowered) -->
+            <path d="M153 149 Q168 141 183 150" fill="none" stroke="#c3d3f2" stroke-width="3" stroke-linecap="round" opacity=".8"/>
+            <path d="M225 149 Q240 141 255 150" fill="none" stroke="#c3d3f2" stroke-width="3" stroke-linecap="round" opacity=".8"/>
+
+            <!-- little mouth -->
+            <path id="mouth" d="M192 184 Q204 194 216 184" fill="none" stroke="#5a6b90" stroke-width="3.4" stroke-linecap="round"/>
+          </g>
+        </g>
+
+        <!-- drifting sparkle stars around Nimbus -->
+        <g id="sparkles" fill="#dfe9ff"></g>
+      </svg>
+    </div>
+
+    <div class="meta reveal" data-r="12" aria-hidden="true">
+      <span><b>60</b> fps drift</span>
+      <span class="sep"></span>
+      <span>humør · <b>rolig</b></span>
+      <span class="sep"></span>
+      <span>følger din <b>markør</b></span>
+    </div>
+  </main>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+  /* ---------------- staggered entrance ---------------- */
+  const reveals = [...document.querySelectorAll(".reveal")].sort(
+    (a, b) => (+a.dataset.r || 0) - (+b.dataset.r || 0)
+  );
+  if (reduce) {
+    reveals.forEach(el => { el.style.opacity = "1"; });
+    document.querySelectorAll("h1 .line i").forEach(i => i.style.transform = "none");
+  } else if (window.matchMedia) {
+    // Web Animations API entrance
+    reveals.forEach((el, i) => {
+      const isLine = el.matches("h1 .line i");
+      const delay = 120 + i * 78;
+      if (isLine) {
+        el.animate(
+          [{ transform: "translateY(112%)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }],
+          { duration: 1000, delay, easing: "cubic-bezier(.19,1,.22,1)", fill: "both" }
+        );
+      } else {
+        el.animate(
+          [{ transform: "translateY(16px)", opacity: 0 }, { transform: "translateY(0)", opacity: 1 }],
+          { duration: 820, delay, easing: "cubic-bezier(.22,.61,.36,1)", fill: "both" }
+        );
+      }
+    });
+  }
+
+  /* ---------------- starfield (twinkle) ---------------- */
+  const sCanvas = document.getElementById("stars");
+  const sctx = sCanvas.getContext("2d");
+  let stars = [];
+  function sizeStars() {
+    sCanvas.width = innerWidth * DPR;
+    sCanvas.height = innerHeight * DPR;
+    sctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    const n = Math.round((innerWidth * innerHeight) / 14000);
+    stars = Array.from({ length: n }, () => ({
+      x: Math.random() * innerWidth,
+      y: Math.random() * innerHeight * 0.72,
+      r: Math.random() * 1.3 + 0.3,
+      p: Math.random() * Math.PI * 2,
+      s: Math.random() * 0.9 + 0.3
+    }));
+  }
+
+  /* ---------------- grain (static, drawn once) ---------------- */
+  const gCanvas = document.getElementById("grain");
+  function drawGrain() {
+    const gw = 180, gh = 180;
+    gCanvas.width = gw; gCanvas.height = gh;
+    gCanvas.style.width = "100%"; gCanvas.style.height = "100%";
+    const gctx = gCanvas.getContext("2d");
+    const img = gctx.createImageData(gw, gh);
+    for (let i = 0; i < img.data.length; i += 4) {
+      const v = (Math.random() * 255) | 0;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+      img.data[i + 3] = 255;
+    }
+    gctx.putImageData(img, 0, 0);
+  }
+  drawGrain();
+
+  /* ---------------- sparkles inside SVG ---------------- */
+  const NS = "http://www.w3.org/2000/svg";
+  const sparkG = document.getElementById("sparkles");
+  const sparkPos = [
+    [96, 96, 3.2], [318, 108, 2.4], [70, 200, 2.6],
+    [332, 210, 3.0], [206, 62, 2.2], [150, 250, 2.0]
+  ];
+  const sparkNodes = sparkPos.map(([x, y, r]) => {
+    const p = document.createElementNS(NS, "path");
+    // 4-point sparkle
+    p.setAttribute("d",
+      `M${x} ${y - r*2} Q${x} ${y} ${x + r*2} ${y} Q${x} ${y} ${x} ${y + r*2} Q${x} ${y} ${x - r*2} ${y} Q${x} ${y} ${x} ${y - r*2} Z`);
+    p.setAttribute("opacity", "0");
+    sparkG.appendChild(p);
+    return { node: p, phase: Math.random() * Math.PI * 2, sp: 0.5 + Math.random() * 0.6 };
+  });
+
+  /* ---------------- Nimbus rig ---------------- */
+  const bodyG = document.getElementById("bodyG");
+  const face = document.getElementById("face");
+  const pupL = document.getElementById("pupL");
+  const pupR = document.getElementById("pupR");
+  const lidL = document.getElementById("lidL");
+  const lidR = document.getElementById("lidR");
+  const cheekL = document.getElementById("cheekL");
+  const cheekR = document.getElementById("cheekR");
+  const mouth = document.getElementById("mouth");
+  const halo = document.getElementById("halo");
+  const weather = document.getElementById("weather");
+  const avatarWrap = document.getElementById("avatarWrap");
+  const para = document.getElementById("para");
+  const pclouds = [...document.querySelectorAll(".pcloud")];
+
+  // pupil rest centers
+  const eyeCenters = { L: { x: 168, y: 158 }, R: { x: 240, y: 158 } };
+
+  // pointer state (smoothed)
+  const ptr = { x: 0.5, y: 0.4, tx: 0.5, ty: 0.4, vx: 0, speed: 0, dispatched: false };
+  let lastPX = null, lastPY = null, lastT = 0;
+
+  function onMove(e) {
+    const nx = e.clientX / innerWidth;
+    const ny = e.clientY / innerHeight;
+    ptr.tx = nx; ptr.ty = ny;
+    const now = performance.now();
+    if (lastPX !== null) {
+      const dt = Math.max(now - lastT, 8);
+      const dist = Math.hypot(e.clientX - lastPX, e.clientY - lastPY);
+      const inst = dist / dt; // px per ms
+      ptr.speed = ptr.speed * 0.7 + inst * 0.3;
+    }
+    lastPX = e.clientX; lastPY = e.clientY; lastT = now;
+  }
+  if (!reduce) addEventListener("pointermove", onMove, { passive: true });
+
+  /* ---------------- weather bursts (mood) ---------------- */
+  const drops = [];
+  function spawnRain(n) {
+    for (let i = 0; i < n; i++) {
+      const el = document.createElementNS(NS, "line");
+      const x = 150 + Math.random() * 108;
+      el.setAttribute("x1", x); el.setAttribute("x2", x - 2);
+      el.setAttribute("y1", 206); el.setAttribute("y2", 214);
+      el.setAttribute("stroke", "#bcd3ff");
+      el.setAttribute("stroke-width", "2.4");
+      el.setAttribute("stroke-linecap", "round");
+      weather.appendChild(el);
+      drops.push({ el, y: 206, vy: 1.6 + Math.random() * 1.4, x, life: 1, kind: "rain" });
+    }
+  }
+  function spawnBolt() {
+    const bx = 176 + Math.random() * 52;
+    const el = document.createElementNS(NS, "path");
+    el.setAttribute("d", `M${bx} 204 l-10 22 l9 -3 l-7 20 l20 -28 l-9 3 Z`);
+    el.setAttribute("fill", "#dfe9ff");
+    el.setAttribute("stroke", "#bcd3ff");
+    el.setAttribute("stroke-width", "1.2");
+    weather.appendChild(el);
+    drops.push({ el, life: 1, kind: "bolt", flash: 1 });
+  }
+  let moodCd = 0; // cooldown so bursts don't spam
+
+  /* ---------------- main loop ---------------- */
+  let blinkT = 2 + Math.random() * 3; // seconds to next blink
+  let blinkPhase = 0; // 0 open, >0 blinking
+  let running = true;
+  let last = performance.now();
+
+  function frame(now) {
+    if (!running) return;
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+    const t = now / 1000;
+
+    /* smooth pointer + speed decay */
+    ptr.x += (ptr.tx - ptr.x) * Math.min(1, dt * 6);
+    ptr.y += (ptr.ty - ptr.y) * Math.min(1, dt * 6);
+    ptr.speed *= 0.94;
+
+    /* --- idle: bob, sway, gentle puff-breathe --- */
+    const bob = Math.sin(t * 0.9) * 7;
+    const sway = Math.sin(t * 0.55) * 5;
+    const puff = 1 + Math.sin(t * 1.15) * 0.018; // breathing scale
+
+    /* pointer pull on whole avatar (parallax) */
+    const pullX = (ptr.x - 0.5) * 26;
+    const pullY = (ptr.y - 0.45) * 20;
+    if (avatarWrap) avatarWrap.style.transform = `translate(${pullX * 0.5}px, ${pullY * 0.5}px)`;
+
+    bodyG.style.transform =
+      `translate(${sway + pullX * 0.35}px, ${bob + pullY * 0.3}px) scale(${puff.toFixed(4)})`;
+    bodyG.style.transformOrigin = "200px 190px";
+
+    /* halo pulse */
+    halo.style.transformOrigin = "200px 180px";
+    halo.style.transform = `scale(${(1 + Math.sin(t * 0.9) * 0.05).toFixed(3)})`;
+    halo.style.opacity = (0.55 + Math.sin(t * 0.9) * 0.12).toFixed(3);
+
+    /* --- gaze: pupils + head lean toward cursor --- */
+    const gx = (ptr.x - 0.5);
+    const gy = (ptr.y - 0.5);
+    const pxMove = Math.max(-5, Math.min(5, gx * 12));
+    const pyMove = Math.max(-4.5, Math.min(4.5, gy * 10));
+    pupL.setAttribute("cx", eyeCenters.L.x + pxMove);
+    pupL.setAttribute("cy", eyeCenters.L.y + pyMove);
+    pupR.setAttribute("cx", eyeCenters.R.x + pxMove);
+    pupR.setAttribute("cy", eyeCenters.R.y + pyMove);
+
+    /* face parallax (subtle, opposite-ish for depth) */
+    face.style.transform = `translate(${gx * 6}px, ${gy * 5}px)`;
+
+    /* --- blink --- */
+    blinkT -= dt;
+    if (blinkT <= 0 && blinkPhase === 0) blinkPhase = 0.0001;
+    if (blinkPhase > 0) {
+      blinkPhase += dt * 7;
+      // 0->1 close, 1->2 open
+      let closeAmt;
+      if (blinkPhase < 1) closeAmt = blinkPhase;
+      else if (blinkPhase < 2) closeAmt = 2 - blinkPhase;
+      else { closeAmt = 0; blinkPhase = 0; blinkT = 2.5 + Math.random() * 3.5; }
+      const lidY = 158;
+      // Draw each lid as a filled cap descending from the brow; cover: 0 open -> 1 closed
+      const cover = closeAmt;
+      lidL.setAttribute("d", `M152 ${lidY} Q168 ${lidY - 34 * cover} 184 ${lidY} L184 140 L152 140 Z`);
+      lidR.setAttribute("d", `M224 ${lidY} Q240 ${lidY - 34 * cover} 256 ${lidY} L256 140 L224 140 Z`);
+      lidL.style.opacity = cover > 0.02 ? "1" : "0";
+      lidR.style.opacity = cover > 0.02 ? "1" : "0";
+    }
+
+    /* --- mood: fast pointer -> weather --- */
+    moodCd -= dt;
+    const fast = ptr.speed; // px/ms; ~>1.3 is a quick flick
+    if (!reduce && moodCd <= 0 && fast > 1.3) {
+      if (fast > 2.6 && Math.random() < 0.5) {
+        spawnBolt();
+        // startle: mouth to small O, cheeks brighten
+        mouth.setAttribute("d", "M198 184 Q204 192 210 184");
+        cheekL.style.opacity = cheekR.style.opacity = "1";
+      } else {
+        spawnRain(2 + (Math.random() * 2 | 0));
+      }
+      moodCd = 0.28;
+    }
+    // relax mouth/cheeks back
+    if (fast < 0.6) {
+      mouth.setAttribute("d", "M192 184 Q204 194 216 184");
+    }
+    const calmCheek = 0.5 + Math.min(0.5, fast * 0.25);
+    cheekL.style.opacity = cheekR.style.opacity = calmCheek.toFixed(2);
+
+    /* update weather particles */
+    for (let i = drops.length - 1; i >= 0; i--) {
+      const d = drops[i];
+      if (d.kind === "rain") {
+        d.y += d.vy + d.vy * dt * 60 * 0.2;
+        d.el.setAttribute("y1", d.y);
+        d.el.setAttribute("y2", d.y + 8);
+        d.life -= dt * 1.1;
+        d.el.setAttribute("opacity", Math.max(0, d.life).toFixed(2));
+        if (d.y > 300 || d.life <= 0) { d.el.remove(); drops.splice(i, 1); }
+      } else {
+        d.flash -= dt * 2.4;
+        d.el.setAttribute("opacity", Math.max(0, d.flash).toFixed(2));
+        if (d.flash <= 0) { d.el.remove(); drops.splice(i, 1); }
+      }
+    }
+
+    /* --- sparkles twinkle + slow orbit --- */
+    for (const s of sparkNodes) {
+      const a = (Math.sin(t * s.sp + s.phase) * 0.5 + 0.5);
+      s.node.setAttribute("opacity", (a * 0.85).toFixed(2));
+      s.node.style.transformOrigin = "center";
+    }
+
+    /* --- background parallax clouds + stars twinkle --- */
+    if (!reduce) {
+      para.style.transform = `translate(${gx * -18}px, ${gy * -12}px)`;
+      pclouds.forEach((c, i) => {
+        const dph = t * (0.05 + i * 0.015);
+        const drift = Math.sin(dph + i) * (10 + i * 4);
+        const depth = 0.4 + i * 0.22;
+        c.style.transform = `translate(${drift + gx * -14 * depth}px, ${Math.cos(dph) * 5 + gy * -8 * depth}px)`;
+      });
+    }
+
+    // starfield
+    sctx.clearRect(0, 0, innerWidth, innerHeight);
+    for (const st of stars) {
+      const tw = 0.35 + 0.65 * (Math.sin(t * st.s + st.p) * 0.5 + 0.5);
+      sctx.globalAlpha = tw;
+      sctx.beginPath();
+      sctx.arc(st.x + gx * -6 * st.r, st.y + gy * -4 * st.r, st.r, 0, 6.283);
+      sctx.fillStyle = "#dfe9ff";
+      sctx.fill();
+    }
+    sctx.globalAlpha = 1;
+
+    raf = requestAnimationFrame(frame);
+  }
+
+  /* ---------------- CTA magnetic + glow ---------------- */
+  const cta = document.getElementById("cta");
+  if (cta && !reduce) {
+    const strength = 0.32;
+    cta.addEventListener("pointermove", e => {
+      const r = cta.getBoundingClientRect();
+      const mx = e.clientX - (r.left + r.width / 2);
+      const my = e.clientY - (r.top + r.height / 2);
+      cta.style.transform = `translate(${mx * strength}px, ${my * strength}px)`;
+      cta.style.setProperty("--gx", (e.clientX - r.left) + "px");
+      cta.style.setProperty("--gy", (e.clientY - r.top) + "px");
+    });
+    cta.addEventListener("pointerleave", () => { cta.style.transform = ""; });
+  }
+
+  /* ---------------- lifecycle ---------------- */
+  let raf = null;
+  function start() { if (!running) { running = true; last = performance.now(); } if (!raf) raf = requestAnimationFrame(frame); }
+  function stop() { running = false; if (raf) { cancelAnimationFrame(raf); raf = null; } }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden) stop(); else start();
+  });
+
+  let rz;
+  addEventListener("resize", () => {
+    clearTimeout(rz);
+    rz = setTimeout(() => { sizeStars(); }, 120);
+  });
+
+  sizeStars();
+  if (reduce) {
+    // draw one composed static starfield + a single relaxed frame
+    const t = 1.2;
+    sctx.clearRect(0, 0, innerWidth, innerHeight);
+    for (const st of stars) { sctx.globalAlpha = 0.6; sctx.beginPath(); sctx.arc(st.x, st.y, st.r, 0, 6.283); sctx.fillStyle = "#dfe9ff"; sctx.fill(); }
+    sctx.globalAlpha = 1;
+    bodyG.style.transform = "translate(0,0) scale(1)";
+    sparkNodes.forEach(s => s.node.setAttribute("opacity", "0.5"));
+  } else {
+    raf = requestAnimationFrame(frame);
+  }
+})();
+</script>
+
+<style id="agx-chrome-css">
+.agx{position:fixed;z-index:2147483000;font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;box-sizing:border-box}
+.agx a{cursor:pointer}
+.agx-badge{right:16px;bottom:16px;display:flex;gap:7px;align-items:center;padding:8px 13px;border-radius:999px;
+  background:rgba(9,11,17,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
+.agx-badge b{color:var(--agx);font-size:13px}
+.agx-story{left:16px;bottom:16px;max-width:min(360px,calc(100vw - 32px));padding:16px 16px 13px;border-radius:16px;
+  background:rgba(9,11,17,.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;box-shadow:0 24px 70px -26px rgba(0,0,0,.85)}
+.agx-story .h{display:flex;align-items:center;gap:11px;margin-bottom:9px}
+.agx-story .em{font-size:26px;line-height:1;filter:drop-shadow(0 3px 11px var(--agx))}
+.agx-story .nm{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.agx-story .tl{color:var(--agx);font-size:12px;font-weight:600;margin-top:3px}
+.agx-story p{margin:0 0 11px;color:#c6ccd9;font-size:13px;line-height:1.56}
+.agx-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.agx-tags span{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#aeb6c6;
+  border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px 9px}
+.agx-guess{margin:0 0 12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.09)}
+.agx-guess .gq{font-size:11.5px;color:#aeb6c6;margin-bottom:8px;letter-spacing:.01em}
+.agx-guess .gbtns{display:flex;gap:8px}
+.agx-guess .gbtn{flex:1;padding:8px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.03);color:#eef1f7;font-size:12px;font-weight:600;cursor:pointer;
+  transition:transform .15s,border-color .15s,background .15s,opacity .15s;font-family:inherit}
+.agx-guess .gbtn:hover:not(:disabled){border-color:var(--agx);background:rgba(255,255,255,.07);transform:translateY(-1px)}
+.agx-guess .gbtn:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
+.agx-guess .gbtn:disabled{cursor:default}
+.agx-guess .gbtn.correct{border-color:#5eea8f;background:rgba(94,234,143,.16);color:#a4f5be;opacity:1}
+.agx-guess .gbtn.wrong{border-color:#ff6a6a;background:rgba(255,106,106,.14);color:#ffb9b9;opacity:1}
+.agx-guess .gbtn.dim{opacity:.45}
+.agx-guess .greveal{margin-top:9px;font-size:11.5px;line-height:1.55;color:#c6ccd9}
+.agx-guess .greveal b{color:#eef1f7}
+.agx-nav{display:flex;align-items:center;gap:13px;font-size:12.5px;border-top:1px solid rgba(255,255,255,.09);padding-top:11px}
+.agx-nav a{color:#eef1f7;text-decoration:none;opacity:.82}
+.agx-nav a:hover{opacity:1;color:var(--agx)}
+.agx-nav .home{margin-right:auto;font-weight:600}
+.agx-nav a[aria-disabled=true]{opacity:.32;pointer-events:none}
+@media (max-width:560px){.agx-story{left:12px;right:12px;bottom:12px;max-width:none}.agx-badge{display:none}}
+@media (prefers-reduced-motion:reduce){.agx-story .em{filter:none}}
+</style>
+<div class="agx agx-badge" style="--agx:#bcd3ff">AGENTICS · JULI <b>23</b></div>
+<aside class="agx agx-story" style="--agx:#bcd3ff" aria-label="Avatarens historie">
+  <div class="h"><div class="em">☁️</div><div><div class="nm">Nimbus</div><div class="tl">Let som luft, tung af overblik.</div></div></div>
+  <p>Nimbus svæver højt over dine systemer, hvor støjen fra den enkelte opgave forsvinder og mønstrene i det store billede træder frem. Han samler regn, når det er nødvendigt, og trækker sig væk, når himlen er klar. En stille vogter, der aldrig blander sig – før han skal.</p>
+  <div class="agx-tags"><span>overskuende</span><span>mild</span><span>opmærksom</span></div>
+  <div class="agx-guess" id="agxGuess">
+    <div class="gq">🤖 Hvilken Claude-model byggede Nimbus?</div>
+    <div class="gbtns">
+      <button type="button" class="gbtn" data-m="opus">Opus 4.8</button>
+      <button type="button" class="gbtn" data-m="sonnet">Sonnet 5</button>
+    </div>
+    <div class="greveal" id="agxReveal" hidden></div>
+  </div>
+  <nav class="agx-nav">
+    <a class="home" href="calendar.html">← Kalender</a>
+    <a href="day-22.html">‹ forrige</a>
+    <a data-day="24" href="day-24.html">næste ›</a>
+  </nav>
+</aside>
+<script>(function(){var n=document.querySelector('.agx-nav a[data-day]');if(!n)return;var d=+n.getAttribute('data-day');
+if(new Date()<new Date(2026,6,d)){n.setAttribute('aria-disabled','true');n.textContent='næste (åbner '+d+'. juli)';}})();</script>
+<script>(function(){
+  var DAY=23, MODEL='opus', NAME="Nimbus";
+  var KEY='agx_guess_'+DAY;
+  var wrap=document.getElementById('agxGuess');
+  if(!wrap) return;
+  var btns=Array.prototype.slice.call(wrap.querySelectorAll('.gbtn'));
+  var reveal=document.getElementById('agxReveal');
+  var TXT={
+    opus:'🧠 Rigtigt svar: <b>Claude Opus 4.8</b> byggede '+NAME+'.',
+    sonnet:'⚡ Rigtigt svar: <b>Claude Sonnet 5</b> byggede '+NAME+'.'
+  };
+  function render(saved){
+    btns.forEach(function(b){
+      b.disabled=true;
+      var m=b.getAttribute('data-m');
+      if(m===MODEL) b.classList.add('correct');
+      else if(m===saved) b.classList.add('wrong'); else b.classList.add('dim');
+    });
+    var extra = saved===MODEL ? ' Du gættede rigtigt! 🎉' : ' Forkert gæt denne gang — bedre held i morgen.';
+    reveal.innerHTML=TXT[MODEL]+extra;
+    reveal.hidden=false;
+  }
+  var prior=localStorage.getItem(KEY);
+  if(prior){ render(prior); return; }
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      var g=b.getAttribute('data-m');
+      try{ localStorage.setItem(KEY, g); }catch(e){}
+      render(g);
+    });
+  });
+})();</script>

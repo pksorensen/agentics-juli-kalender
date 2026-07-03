@@ -1,0 +1,579 @@
+<title>agentics.dk — Tsuru</title>
+<style>
+  :root{
+    --paper-0:#f4ede0;
+    --paper-1:#efe6d6;
+    --paper-2:#e7dcc8;
+    --ink:#1c1a17;
+    --ink-soft:#4a463f;
+    --ink-faint:#8b8579;
+    --accent:#b83b2e;      /* single vermilion ink accent */
+    --accent-deep:#8f2c22;
+    --hair:rgba(28,26,23,.14);
+    --ease:cubic-bezier(.22,1,.36,1);
+    --fold-a:#fbf6ec;      /* lit facet */
+    --fold-b:#e9ddca;      /* shade facet */
+    --fold-c:#dccbb0;      /* deep fold */
+    --fold-d:#f6eee0;      /* soft lit */
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+    background:var(--paper-0);
+    color:var(--ink);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  #stage{position:fixed;inset:0;overflow:hidden}
+
+  /* ---------- layered background ---------- */
+  .bg{position:absolute;inset:0;pointer-events:none;will-change:transform}
+  .bg-wash{
+    background:
+      radial-gradient(120% 90% at 72% 18%, #fbf6ec 0%, rgba(251,246,236,0) 55%),
+      radial-gradient(140% 120% at 20% 100%, #e3d6bf 0%, rgba(227,214,191,0) 60%),
+      linear-gradient(160deg,#f6efe2 0%,#ece0cc 100%);
+  }
+  .bg-sun{
+    background:radial-gradient(38% 38% at 74% 30%, rgba(184,59,46,.10) 0%, rgba(184,59,46,0) 70%);
+    mix-blend-mode:multiply;
+  }
+  .bg-vignette{
+    box-shadow:inset 0 0 320px 60px rgba(40,32,20,.22);
+  }
+  .bg-grain{opacity:.05;mix-blend-mode:multiply}
+  .bg-grain canvas{width:100%;height:100%}
+
+  /* faint horizon line — zen ink stroke */
+  .horizon{
+    position:absolute;left:0;right:0;top:64%;height:1px;
+    background:linear-gradient(90deg,transparent,var(--hair) 18%,var(--hair) 82%,transparent);
+  }
+  .enso{
+    position:absolute;right:8vw;top:50%;transform:translateY(-50%);
+    width:min(46vh,440px);height:min(46vh,440px);opacity:.5;pointer-events:none;
+    will-change:transform;
+  }
+
+  /* particles canvas */
+  #petals{position:absolute;inset:0;pointer-events:none}
+
+  /* ---------- chrome ---------- */
+  nav{
+    position:absolute;top:0;left:0;right:0;z-index:20;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:26px clamp(24px,5vw,68px);
+  }
+  .wordmark{
+    display:flex;align-items:center;gap:11px;
+    font-weight:600;font-size:16px;letter-spacing:.02em;color:var(--ink);
+    text-decoration:none;
+  }
+  .wordmark .mk{
+    width:22px;height:22px;flex:0 0 auto;
+  }
+  .wordmark b{font-weight:600}
+  .wordmark .dk{color:var(--accent);font-weight:600}
+  .nav-links{display:flex;align-items:center;gap:clamp(18px,3vw,40px)}
+  .nav-links a{
+    color:var(--ink-soft);text-decoration:none;font-size:13.5px;
+    letter-spacing:.04em;font-weight:500;position:relative;padding:4px 0;
+    transition:color .4s var(--ease);
+  }
+  .nav-links a::after{
+    content:"";position:absolute;left:0;bottom:0;height:1px;width:0;
+    background:var(--accent);transition:width .45s var(--ease);
+  }
+  .nav-links a:hover{color:var(--ink)}
+  .nav-links a:hover::after{width:100%}
+  .nav-badge{
+    font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink-faint);font-weight:600;border:1px solid var(--hair);
+    padding:6px 11px;border-radius:999px;
+  }
+
+  /* ---------- hero layout ---------- */
+  main{
+    position:absolute;inset:0;z-index:10;
+    display:grid;
+    grid-template-columns:1.05fr .95fr;
+    align-items:center;
+    padding:0 clamp(24px,5vw,68px);
+    gap:clamp(12px,3vw,48px);
+  }
+  .copy{max-width:600px;grid-column:1}
+  .kicker{
+    display:inline-flex;align-items:center;gap:10px;
+    font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--ink-faint);font-weight:600;margin-bottom:26px;
+  }
+  .kicker .dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+  .kicker .jp{font-family:"Hiragino Mincho ProN","Yu Mincho",serif;letter-spacing:.3em;color:var(--ink-soft)}
+
+  h1{
+    font-weight:600;
+    font-size:clamp(40px,6.4vw,86px);
+    line-height:.98;
+    letter-spacing:-.028em;
+    color:var(--ink);
+  }
+  h1 .line{display:block;overflow:hidden}
+  h1 .line span{display:block;will-change:transform}
+  h1 em{font-style:normal;color:var(--accent)}
+  h1 .thin{font-weight:300;letter-spacing:-.01em;color:var(--ink-soft)}
+
+  .sub{
+    margin-top:28px;font-size:clamp(15px,1.5vw,18px);
+    line-height:1.62;color:var(--ink-soft);max-width:44ch;font-weight:400;
+  }
+  .actions{margin-top:38px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+
+  .cta{
+    position:relative;display:inline-flex;align-items:center;gap:12px;
+    padding:16px 30px;border-radius:999px;
+    background:var(--ink);color:var(--paper-0);
+    font-size:14.5px;font-weight:600;letter-spacing:.02em;
+    text-decoration:none;overflow:hidden;
+    will-change:transform;
+    transition:transform .5s var(--ease),box-shadow .5s var(--ease);
+    box-shadow:0 8px 26px -12px rgba(28,26,23,.5);
+  }
+  .cta .glow{
+    position:absolute;inset:-40%;
+    background:radial-gradient(closest-side, rgba(184,59,46,.9), rgba(184,59,46,0) 70%);
+    opacity:0;transition:opacity .5s var(--ease);pointer-events:none;
+    transform:translate(var(--gx,0),var(--gy,0));
+  }
+  .cta:hover{box-shadow:0 16px 40px -14px rgba(184,59,46,.6)}
+  .cta:hover .glow{opacity:.55}
+  .cta .arw{transition:transform .5s var(--ease)}
+  .cta:hover .arw{transform:translateX(4px)}
+  .cta span.lbl{position:relative;z-index:1}
+
+  .secondary{
+    display:inline-flex;align-items:center;gap:9px;
+    color:var(--ink-soft);text-decoration:none;font-size:14px;font-weight:500;
+    letter-spacing:.01em;position:relative;
+  }
+  .secondary .ln{width:26px;height:1px;background:var(--ink-faint);transition:width .45s var(--ease),background .45s var(--ease)}
+  .secondary:hover{color:var(--ink)}
+  .secondary:hover .ln{width:40px;background:var(--accent)}
+
+  /* ---------- crane column ---------- */
+  .crane-wrap{
+    grid-column:2;position:relative;
+    display:flex;align-items:center;justify-content:center;
+    height:100%;
+    will-change:transform;
+  }
+  #craneSvg{
+    width:min(52vh,560px);height:auto;overflow:visible;
+    filter:drop-shadow(0 30px 40px rgba(60,44,24,.22));
+    will-change:transform;
+  }
+  /* the crane's cast shadow on the paper */
+  .crane-shadow{
+    position:absolute;bottom:16%;left:50%;transform:translateX(-50%);
+    width:min(30vh,300px);height:34px;border-radius:50%;
+    background:radial-gradient(50% 50% at 50% 50%, rgba(60,44,24,.24), rgba(60,44,24,0) 70%);
+    filter:blur(2px);
+    will-change:transform,width,opacity;
+  }
+
+  /* scroll cue */
+  .cue{
+    position:absolute;left:clamp(24px,5vw,68px);bottom:30px;z-index:15;
+    display:flex;align-items:center;gap:12px;color:var(--ink-faint);
+    font-size:11px;letter-spacing:.2em;text-transform:uppercase;font-weight:600;
+  }
+  .cue .rail{width:1px;height:34px;background:var(--hair);position:relative;overflow:hidden}
+  .cue .rail::after{content:"";position:absolute;left:0;top:-34px;width:1px;height:34px;background:var(--accent);animation:drop 2.6s var(--ease) infinite}
+  @keyframes drop{0%{transform:translateY(0)}60%,100%{transform:translateY(68px)}}
+
+  .credit{
+    position:absolute;right:clamp(24px,5vw,68px);bottom:30px;z-index:15;
+    font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink-faint);font-weight:600;
+  }
+  .credit b{color:var(--ink-soft);font-weight:600}
+
+  /* entrance */
+  .reveal span,.fade{opacity:0}
+  .loaded h1 .line span{animation:rise 1s var(--ease) forwards}
+  .loaded .fade{animation:fade 1s var(--ease) forwards}
+  @keyframes rise{from{transform:translateY(110%)}to{transform:translateY(0);opacity:1}}
+  @keyframes fade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+
+  :focus-visible{outline:2px solid var(--accent);outline-offset:4px;border-radius:4px}
+
+  @media (max-width:880px){
+    main{grid-template-columns:1fr;grid-template-rows:1fr auto;padding-top:96px;align-content:center;gap:8px}
+    .copy{grid-column:1;grid-row:2;text-align:left}
+    .crane-wrap{grid-column:1;grid-row:1;height:auto}
+    #craneSvg{width:min(40vh,340px)}
+    .nav-links .hide-sm{display:none}
+    .enso{opacity:.28}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+    .reveal span,.fade{opacity:1}
+    .cue{display:none}
+    #petals{display:none}
+  }
+</style>
+
+<div id="stage">
+  <div class="bg bg-wash" data-depth="0.10"></div>
+  <div class="bg bg-sun" data-depth="0.22"></div>
+  <div class="horizon bg" data-depth="0.06"></div>
+
+  <svg class="enso bg" data-depth="0.14" viewBox="0 0 200 200" aria-hidden="true">
+    <path d="M148 42 A80 80 0 1 0 158 128" fill="none" stroke="var(--ink)" stroke-width="3.4"
+      stroke-linecap="round" opacity="0.5"
+      style="stroke-dasharray:0.02 0.985;stroke-dashoffset:0" pathLength="1"/>
+  </svg>
+
+  <canvas id="petals"></canvas>
+  <div class="bg bg-grain" data-depth="0"><canvas id="grain"></canvas></div>
+  <div class="bg bg-vignette"></div>
+
+  <nav>
+    <a class="wordmark" href="#" aria-label="agentics.dk home">
+      <svg class="mk" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M2 13 L12 5 L22 13 L12 10 Z" fill="var(--fold-a)" stroke="var(--ink)" stroke-width="1.1" stroke-linejoin="round"/>
+        <path d="M12 10 L22 13 L12 20 Z" fill="var(--accent)" stroke="var(--ink)" stroke-width="1.1" stroke-linejoin="round"/>
+      </svg>
+      <span><b>agentics</b><span class="dk">.dk</span></span>
+    </a>
+    <div class="nav-links">
+      <a class="hide-sm" href="#">Craft</a>
+      <a class="hide-sm" href="#">Studio</a>
+      <a href="#">Work</a>
+      <span class="nav-badge">明 · 2026</span>
+    </div>
+  </nav>
+
+  <main>
+    <div class="copy">
+      <div class="kicker fade" style="animation-delay:.5s">
+        <span class="dot"></span> Origami intelligence <span class="jp">折鶴</span>
+      </div>
+      <h1 class="reveal">
+        <span class="line"><span style="animation-delay:.05s">Fold intent</span></span>
+        <span class="line"><span class="thin" style="animation-delay:.14s">into precise</span></span>
+        <span class="line"><span style="animation-delay:.23s">motion, <em>Tsuru.</em></span></span>
+      </h1>
+      <p class="sub fade" style="animation-delay:.62s">
+        A patient studio for agentic systems — every crease considered, every fold deliberate.
+        We shape a single sheet of logic into something that quietly takes flight.
+      </p>
+      <div class="actions">
+        <a class="cta fade" href="#" style="animation-delay:.74s" id="cta">
+          <span class="glow"></span>
+          <span class="lbl">Begin the fold</span>
+          <svg class="arw" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M2 8h11M9 4l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <a class="secondary fade" href="#" style="animation-delay:.82s">
+          <span class="ln"></span> See the craft
+        </a>
+      </div>
+    </div>
+
+    <div class="crane-wrap">
+      <div class="crane-shadow" id="shadow"></div>
+      <!-- Tsuru: hand-built faceted origami crane -->
+      <svg id="craneSvg" viewBox="0 0 400 340" role="img" aria-labelledby="craneTitle craneDesc">
+        <title id="craneTitle">Tsuru, an origami paper crane</title>
+        <desc id="craneDesc">A faceted paper crane folded from warm paper, wings slowly flapping, its head turning toward the cursor.</desc>
+        <defs>
+          <linearGradient id="paperLit" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#fdf9f0"/>
+            <stop offset="1" stop-color="#efe4d0"/>
+          </linearGradient>
+          <linearGradient id="paperShade" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#e8dcc6"/>
+            <stop offset="1" stop-color="#d6c4a6"/>
+          </linearGradient>
+          <linearGradient id="paperDeep" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#d9c8ab"/>
+            <stop offset="1" stop-color="#c3ad88"/>
+          </linearGradient>
+        </defs>
+
+        <!-- BODY (central diamond of the crane) -->
+        <g id="body">
+          <polygon points="200,150 250,196 200,236 150,196"
+                   fill="url(#paperLit)" stroke="#b7a686" stroke-width="1" stroke-linejoin="round"/>
+          <polygon points="200,150 250,196 200,205"
+                   fill="url(#paperShade)" stroke="#b7a686" stroke-width="0.8" stroke-linejoin="round"/>
+          <polygon points="200,205 250,196 200,236"
+                   fill="url(#paperDeep)" stroke="#b7a686" stroke-width="0.8" stroke-linejoin="round"/>
+          <polygon points="200,205 150,196 200,236"
+                   fill="url(#paperShade)" stroke="#b7a686" stroke-width="0.8" stroke-linejoin="round"/>
+        </g>
+
+        <!-- TAIL (folded point to the left) -->
+        <g id="tail">
+          <polygon points="150,196 96,178 138,208"
+                   fill="url(#paperShade)" stroke="#b7a686" stroke-width="1" stroke-linejoin="round"/>
+          <polygon points="150,196 138,208 158,214"
+                   fill="url(#paperDeep)" stroke="#b7a686" stroke-width="0.8" stroke-linejoin="round"/>
+        </g>
+
+        <!-- LEFT WING (far) -->
+        <g id="wingL" style="transform-box:fill-box;transform-origin:88% 78%">
+          <polygon points="204,168 300,96 322,150 232,192"
+                   fill="url(#paperShade)" stroke="#b7a686" stroke-width="1" stroke-linejoin="round"/>
+          <polygon points="204,168 300,96 262,150"
+                   fill="url(#paperDeep)" stroke="#b7a686" stroke-width="0.8" stroke-linejoin="round"/>
+        </g>
+
+        <!-- RIGHT WING (near) -->
+        <g id="wingR" style="transform-box:fill-box;transform-origin:12% 82%">
+          <polygon points="196,170 92,92 66,150 168,196"
+                   fill="url(#paperLit)" stroke="#b7a686" stroke-width="1" stroke-linejoin="round"/>
+          <polygon points="196,170 92,92 128,152"
+                   fill="url(#paperShade)" stroke="#b7a686" stroke-width="0.8" stroke-linejoin="round"/>
+          <polygon points="196,170 128,152 168,196"
+                   fill="url(#paperDeep)" stroke="#b7a686" stroke-width="0.7" stroke-linejoin="round"/>
+        </g>
+
+        <!-- NECK + HEAD group (turns toward cursor) -->
+        <g id="head" style="transform-box:fill-box;transform-origin:8% 92%">
+          <!-- neck -->
+          <polygon points="248,192 268,120 282,126 262,196"
+                   fill="url(#paperLit)" stroke="#b7a686" stroke-width="1" stroke-linejoin="round"/>
+          <polygon points="268,120 282,126 275,124"
+                   fill="url(#paperShade)" stroke="#b7a686" stroke-width="0.6" stroke-linejoin="round"/>
+          <!-- head -->
+          <polygon points="268,120 282,126 300,116 284,104"
+                   fill="url(#paperLit)" stroke="#b7a686" stroke-width="1" stroke-linejoin="round"/>
+          <!-- beak -->
+          <polygon points="300,116 320,120 300,124"
+                   fill="url(#paperDeep)" stroke="#b7a686" stroke-width="0.8" stroke-linejoin="round"/>
+          <!-- crown accent — the single ink dot -->
+          <circle id="crown" cx="285" cy="110" r="4.2" fill="var(--accent)"/>
+          <!-- eye -->
+          <circle id="eye" cx="292" cy="115" r="1.7" fill="#1c1a17"/>
+        </g>
+      </svg>
+    </div>
+  </main>
+
+  <div class="cue fade" style="animation-delay:1s">
+    <span class="rail"></span> Scroll · 静
+  </div>
+  <div class="credit fade" style="animation-delay:1.05s">
+    Avatar <b>Tsuru</b> · vector origami
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+  var stage = document.getElementById("stage");
+
+  requestAnimationFrame(function(){ document.body.classList.add("loaded"); });
+
+  /* ---------- pointer state (smoothed) ---------- */
+  var W = innerWidth, H = innerHeight;
+  var tx = 0, ty = 0;   /* target -1..1 */
+  var px = 0, py = 0;   /* smoothed */
+  window.addEventListener("resize", function(){ W = innerWidth; H = innerHeight; });
+  window.addEventListener("pointermove", function(e){
+    tx = (e.clientX / W) * 2 - 1;
+    ty = (e.clientY / H) * 2 - 1;
+  }, {passive:true});
+  window.addEventListener("pointerleave", function(){ tx = 0; ty = 0; });
+
+  /* ---------- magnetic CTA ---------- */
+  var cta = document.getElementById("cta");
+  var glow = cta.querySelector(".glow");
+  var ctaHover = false;
+  cta.addEventListener("pointerenter", function(){ ctaHover = true; });
+  cta.addEventListener("pointerleave", function(){
+    ctaHover = false;
+    cta.style.transform = "";
+    glow.style.setProperty("--gx","0px"); glow.style.setProperty("--gy","0px");
+  });
+  cta.addEventListener("pointermove", function(e){
+    var r = cta.getBoundingClientRect();
+    var mx = e.clientX - (r.left + r.width/2);
+    var my = e.clientY - (r.top + r.height/2);
+    cta.style.transform = "translate(" + (mx*0.22) + "px," + (my*0.3) + "px)";
+    glow.style.setProperty("--gx", (mx*0.6) + "px");
+    glow.style.setProperty("--gy", (my*0.6) + "px");
+  });
+
+  /* ---------- background parallax layers ---------- */
+  var layers = [].slice.call(document.querySelectorAll(".bg[data-depth]"));
+  var enso = document.querySelector(".enso");
+  var craneWrap = document.querySelector(".crane-wrap");
+  var craneSvg = document.getElementById("craneSvg");
+  var wingL = document.getElementById("wingL");
+  var wingR = document.getElementById("wingR");
+  var head = document.getElementById("head");
+  var body = document.getElementById("body");
+  var tail = document.getElementById("tail");
+  var shadow = document.getElementById("shadow");
+
+  /* ---------- grain (static, drawn once) ---------- */
+  (function(){
+    var c = document.getElementById("grain");
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var w = c.width = Math.ceil(innerWidth * dpr);
+    var h = c.height = Math.ceil(innerHeight * dpr);
+    var g = c.getContext("2d");
+    var img = g.createImageData(w, h);
+    var d = img.data;
+    for (var i = 0; i < d.length; i += 4){
+      var v = (Math.random() * 255) | 0;
+      d[i] = d[i+1] = d[i+2] = v; d[i+3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+  })();
+
+  /* ---------- drifting paper / petal particles ---------- */
+  var petalC = document.getElementById("petals");
+  var pctx = petalC.getContext("2d");
+  var dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var particles = [];
+  function sizePetals(){
+    petalC.width = Math.ceil(innerWidth * dpr);
+    petalC.height = Math.ceil(innerHeight * dpr);
+    pctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  sizePetals();
+  window.addEventListener("resize", sizePetals);
+
+  function makeParticle(initial){
+    return {
+      x: Math.random() * innerWidth,
+      y: initial ? Math.random() * innerHeight : -20,
+      s: 3 + Math.random() * 5,
+      sp: 0.15 + Math.random() * 0.5,
+      drift: (Math.random() - 0.5) * 0.5,
+      rot: Math.random() * Math.PI * 2,
+      vr: (Math.random() - 0.5) * 0.02,
+      wob: Math.random() * Math.PI * 2,
+      ink: Math.random() < 0.12,   /* rare vermilion fleck */
+      a: 0.25 + Math.random() * 0.4
+    };
+  }
+  if (!reduce){
+    var count = innerWidth < 700 ? 16 : 30;
+    for (var k = 0; k < count; k++) particles.push(makeParticle(true));
+  }
+
+  function drawPetal(p){
+    pctx.save();
+    pctx.translate(p.x, p.y);
+    pctx.rotate(p.rot);
+    pctx.globalAlpha = p.a;
+    pctx.fillStyle = p.ink ? "rgba(184,59,46,0.9)" : "rgba(120,104,78,0.9)";
+    /* a folded paper sliver: two triangles */
+    pctx.beginPath();
+    pctx.moveTo(0, -p.s);
+    pctx.lineTo(p.s * 0.7, 0);
+    pctx.lineTo(0, p.s);
+    pctx.lineTo(-p.s * 0.4, 0);
+    pctx.closePath();
+    pctx.fill();
+    pctx.restore();
+  }
+
+  /* ---------- main loop ---------- */
+  var running = true, t0 = performance.now();
+  document.addEventListener("visibilitychange", function(){
+    running = !document.hidden;
+    if (running){ t0 = performance.now(); raf = requestAnimationFrame(loop); }
+  });
+
+  var raf;
+  function loop(now){
+    if (!running) return;
+    var t = (now - t0) / 1000;
+
+    /* smooth pointer */
+    px += (tx - px) * 0.06;
+    py += (ty - py) * 0.06;
+
+    if (!reduce){
+      /* parallax layers */
+      for (var i = 0; i < layers.length; i++){
+        var el = layers[i];
+        var d = parseFloat(el.getAttribute("data-depth")) || 0;
+        el.style.transform = "translate3d(" + (-px * d * 60) + "px," + (-py * d * 60) + "px,0)";
+      }
+      /* enso gets a slow independent sway too */
+      if (enso){
+        enso.style.transform = "translateY(-50%) translate3d(" + (-px*0.14*60) + "px," + (-py*0.14*60 + Math.sin(t*0.5)*6) + "px,0)";
+      }
+
+      /* --- crane idle + reactivity --- */
+      var breathe = Math.sin(t * 0.9) * 0.02;            /* scale pulse */
+      var bob = Math.sin(t * 0.9 + 0.4) * 6;             /* vertical bob */
+      var sway = Math.sin(t * 0.55) * 1.6;               /* gentle rotate */
+      /* wing flap: slow, graceful, eased */
+      var flapPhase = Math.sin(t * 1.15);
+      var flap = flapPhase * 15 - 4;                     /* degrees, biased down */
+
+      /* whole crane parallax + bob */
+      craneWrap.style.transform = "translate3d(" + (px*18) + "px," + (bob + py*14) + "px,0)";
+      craneSvg.style.transform = "rotate(" + (sway + px*3) + "deg) scale(" + (1 + breathe) + ")";
+
+      wingR.style.transform = "rotate(" + (flap) + "deg)";
+      wingL.style.transform = "rotate(" + (-flap) + "deg)";
+
+      /* head turns toward cursor (clamped) */
+      var hx = Math.max(-1, Math.min(1, tx));
+      var hy = Math.max(-1, Math.min(1, ty));
+      var headRot = hx * 12 + Math.sin(t * 0.9) * 1.2;   /* + tiny idle */
+      var headLift = hy * 5;
+      head.style.transform = "rotate(" + headRot + "deg) translate(0," + headLift + "px)";
+
+      /* body & tail very subtle counter-motion for life */
+      body.style.transform = "translateY(" + (Math.sin(t*0.9+1.2)*1.4) + "px)";
+      tail.style.transform = "rotate(" + (-flap*0.25 + Math.sin(t*0.7)*1) + "deg)";
+      tail.style.transformBox = "fill-box";
+      tail.style.transformOrigin = "100% 20%";
+
+      /* shadow reacts to bob & flap (tighter when wings up) */
+      var lift = (bob + 4) / 10;
+      shadow.style.transform = "translateX(-50%) scale(" + (1 - lift*0.06 + flapPhase*0.03) + ")";
+      shadow.style.opacity = (0.55 - lift*0.05 - flapPhase*0.04).toFixed(3);
+
+      /* particles */
+      pctx.clearRect(0, 0, innerWidth, innerHeight);
+      for (var j = 0; j < particles.length; j++){
+        var p = particles[j];
+        p.wob += 0.01;
+        p.y += p.sp;
+        p.x += p.drift + Math.sin(p.wob) * 0.3 - px * 0.4;
+        p.rot += p.vr;
+        if (p.y > innerHeight + 20 || p.x < -30 || p.x > innerWidth + 30){
+          particles[j] = makeParticle(false);
+        }
+        drawPetal(p);
+      }
+    }
+
+    raf = requestAnimationFrame(loop);
+  }
+
+  if (reduce){
+    /* composed static pose: a slight, pleasant tilt, wings settled */
+    craneSvg.style.transform = "rotate(-2deg)";
+    wingR.style.transform = "rotate(-6deg)";
+    wingL.style.transform = "rotate(6deg)";
+  } else {
+    raf = requestAnimationFrame(loop);
+  }
+})();
+</script>

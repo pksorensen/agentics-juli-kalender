@@ -1,0 +1,22 @@
+[
+  {
+    "created_at": "2026-07-03T18:22:45.918255Z",
+    "display_name": "GPT Image 2",
+    "id": "aafd7e29-7aca-48f4-bbf1-44cf8258d108",
+    "job_type": "gpt_image_2",
+    "min_result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3FrWNkY3JraLGlw9hIAsPuYA3WR/hf_20260703_182245_aafd7e29-7aca-48f4-bbf1-44cf8258d108_min.webp",
+    "params": {
+      "aspect_ratio": "16:9",
+      "height": 1520,
+      "medias": [],
+      "model": "videotape-alpha",
+      "prompt": "3D rendered character still, cinematic studio lighting: a low-poly origami-style geometric fox ('Ræv'), faceted angular paper-crease panels forming her fur — warm amber-orange facets with snow-white muzzle, chest and tail-tip — sitting alert on a dark rocky ridge dusted with snow. Cool teal-and-indigo Scandinavian night sky behind her with a soft aurora borealis ribbon, fine snowflakes drifting. One bold accent color: warm amber-orange #ff9a3d, subtle volumetric amber rim light tracing her faceted edges. Premium award-winning 3D render, Pixar-quality character still, centered-right composition with generous negative space on the left for headline text.",
+      "quality": "high",
+      "reference_elements": [],
+      "resolution": "2k",
+      "width": 2688
+    },
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3FrWNkY3JraLGlw9hIAsPuYA3WR/hf_20260703_182245_aafd7e29-7aca-48f4-bbf1-44cf8258d108.png",
+    "status": "completed"
+  }
+]

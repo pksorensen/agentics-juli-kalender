@@ -1,0 +1,863 @@
+<title>agentics.dk — Comet</title>
+<style>
+  :root{
+    --bg-0:#05070f;
+    --bg-1:#0a0f1f;
+    --bg-2:#111a33;
+    --ink:#eaf0ff;
+    --ink-dim:#9aa8c9;
+    --ink-faint:#5d6b8f;
+    --accent:#ff7a3d;      /* frontier orange, used with restraint */
+    --accent-soft:#ffb185;
+    --line:rgba(150,170,220,.14);
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,"Helvetica Neue",Arial,sans-serif;
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:var(--font);
+    background:var(--bg-0);
+    color:var(--ink);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    position:relative;
+  }
+
+  /* ---------- layered background ---------- */
+  .stage{position:fixed;inset:0;overflow:hidden}
+  #starfield{position:absolute;inset:0;display:block;z-index:0}
+
+  .glow-a,.glow-b{
+    position:absolute;border-radius:50%;filter:blur(60px);
+    z-index:1;pointer-events:none;will-change:transform;
+  }
+  .glow-a{
+    width:52vw;height:52vw;left:-10vw;top:-14vw;
+    background:radial-gradient(circle at 50% 50%, rgba(60,90,200,.34), rgba(60,90,200,0) 70%);
+  }
+  .glow-b{
+    width:44vw;height:44vw;right:-12vw;bottom:-16vw;
+    background:radial-gradient(circle at 50% 50%, rgba(255,122,61,.18), rgba(255,122,61,0) 70%);
+  }
+
+  /* distant planet */
+  .planet{
+    position:absolute;z-index:1;pointer-events:none;
+    right:8vw;top:16vh;width:230px;height:230px;
+    will-change:transform;
+  }
+
+  /* grain */
+  .grain{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.05;mix-blend-mode:screen}
+
+  /* vignette */
+  .vignette{
+    position:absolute;inset:0;z-index:3;pointer-events:none;
+    background:radial-gradient(120% 90% at 50% 40%, rgba(0,0,0,0) 40%, rgba(0,0,0,.55) 100%);
+  }
+
+  /* ---------- content shell ---------- */
+  .shell{position:relative;z-index:5;height:100%;display:flex;flex-direction:column}
+
+  nav{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:26px clamp(22px,5vw,64px);
+  }
+  .wordmark{
+    display:flex;align-items:center;gap:11px;
+    font-weight:650;font-size:16px;letter-spacing:-.01em;
+    color:var(--ink);
+  }
+  .wordmark .dot{
+    width:9px;height:9px;border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 14px 2px rgba(255,122,61,.7);
+    animation:pulse 3.4s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.72);opacity:.6}}
+  .wordmark b{font-weight:650}
+  .wordmark span{color:var(--ink-faint);font-weight:500}
+
+  .nav-links{display:flex;gap:clamp(18px,3vw,40px);align-items:center}
+  .nav-links a{
+    color:var(--ink-dim);text-decoration:none;font-size:13.5px;
+    letter-spacing:.02em;font-weight:500;
+    transition:color .25s ease;position:relative;
+  }
+  .nav-links a::after{
+    content:"";position:absolute;left:0;bottom:-5px;height:1px;width:0;
+    background:var(--accent);transition:width .3s ease;
+  }
+  .nav-links a:hover,.nav-links a:focus-visible{color:var(--ink)}
+  .nav-links a:hover::after,.nav-links a:focus-visible::after{width:100%}
+  .nav-badge{
+    font-size:12px;color:var(--ink-dim);
+    border:1px solid var(--line);border-radius:100px;
+    padding:6px 13px;letter-spacing:.04em;
+  }
+
+  /* ---------- hero ---------- */
+  main{
+    flex:1;display:grid;
+    grid-template-columns:1.1fr .9fr;
+    align-items:center;
+    padding:0 clamp(22px,5vw,64px);
+    gap:clamp(20px,4vw,60px);
+    min-height:0;
+  }
+
+  .copy{max-width:640px}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:9px;
+    font-size:12.5px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--accent-soft);font-weight:600;margin-bottom:24px;
+  }
+  .eyebrow .tick{width:22px;height:1px;background:var(--accent);opacity:.8}
+
+  h1{
+    font-size:clamp(40px,6.4vw,82px);
+    line-height:.98;letter-spacing:-.035em;font-weight:680;
+    color:var(--ink);
+  }
+  h1 .line{display:block;overflow:hidden}
+  h1 em{
+    font-style:normal;
+    background:linear-gradient(100deg,var(--accent) 0%,var(--accent-soft) 60%,#ffe0cc 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .sub{
+    margin-top:26px;font-size:clamp(15px,1.5vw,18px);
+    line-height:1.62;color:var(--ink-dim);max-width:490px;font-weight:400;
+  }
+
+  .cta-row{margin-top:38px;display:flex;align-items:center;gap:26px;flex-wrap:wrap}
+  .btn{
+    position:relative;
+    display:inline-flex;align-items:center;gap:11px;
+    background:var(--accent);color:#1a0d05;
+    font-family:var(--font);font-size:15px;font-weight:640;letter-spacing:.005em;
+    border:none;border-radius:100px;
+    padding:16px 30px;cursor:pointer;
+    text-decoration:none;
+    will-change:transform;
+    transition:box-shadow .35s ease, background .3s ease;
+    box-shadow:0 8px 30px -8px rgba(255,122,61,.55);
+    isolation:isolate;
+  }
+  .btn::before{
+    content:"";position:absolute;inset:0;border-radius:100px;z-index:-1;
+    background:radial-gradient(120% 160% at 50% 0%, rgba(255,210,180,.85), rgba(255,122,61,0) 60%);
+    opacity:0;transition:opacity .35s ease;
+  }
+  .btn:hover{box-shadow:0 14px 44px -6px rgba(255,122,61,.75)}
+  .btn:hover::before{opacity:1}
+  .btn .arrow{transition:transform .3s ease}
+  .btn:hover .arrow{transform:translateX(4px)}
+
+  .link-secondary{
+    color:var(--ink);text-decoration:none;font-size:14.5px;font-weight:520;
+    display:inline-flex;align-items:center;gap:9px;letter-spacing:.01em;
+    opacity:.86;transition:opacity .25s ease;
+  }
+  .link-secondary:hover,.link-secondary:focus-visible{opacity:1}
+  .link-secondary .play{
+    width:26px;height:26px;border-radius:50%;border:1px solid var(--line);
+    display:grid;place-items:center;transition:border-color .25s ease,transform .25s ease;
+  }
+  .link-secondary:hover .play{border-color:var(--accent);transform:scale(1.08)}
+
+  .meta-strip{
+    margin-top:52px;display:flex;gap:34px;flex-wrap:wrap;
+    color:var(--ink-faint);font-size:12.5px;letter-spacing:.03em;
+  }
+  .meta-strip b{display:block;color:var(--ink);font-size:19px;font-weight:640;letter-spacing:-.01em;margin-bottom:3px}
+
+  /* ---------- avatar column ---------- */
+  .avatar-wrap{
+    position:relative;display:grid;place-items:center;height:100%;
+    min-height:0;
+  }
+  #comet{
+    width:min(46vh,420px);height:min(46vh,420px);
+    overflow:visible;
+    will-change:transform;
+  }
+  .avatar-caption{
+    position:absolute;bottom:6%;left:50%;transform:translateX(-50%);
+    text-align:center;color:var(--ink-faint);font-size:11.5px;
+    letter-spacing:.26em;text-transform:uppercase;font-weight:600;
+    pointer-events:none;
+  }
+  .avatar-caption b{color:var(--accent-soft);font-weight:700}
+
+  /* focus states */
+  a:focus-visible,.btn:focus-visible{
+    outline:2px solid var(--accent-soft);outline-offset:3px;border-radius:100px;
+  }
+
+  /* entrance */
+  .reveal{opacity:0;transform:translateY(22px)}
+  .reveal.in{opacity:1;transform:none;transition:opacity .9s cubic-bezier(.2,.7,.2,1),transform .9s cubic-bezier(.2,.7,.2,1)}
+
+  @media (max-width:880px){
+    main{grid-template-columns:1fr;grid-template-rows:1fr auto;padding-bottom:20px}
+    .avatar-wrap{order:-1;height:auto}
+    #comet{width:min(40vh,300px);height:min(40vh,300px)}
+    .copy{text-align:center;margin:0 auto}
+    .eyebrow,.cta-row{justify-content:center}
+    .meta-strip{justify-content:center;margin-top:32px}
+    .nav-links .nav-hide{display:none}
+    .avatar-caption{display:none}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .wordmark .dot{animation:none}
+    .reveal{opacity:1;transform:none;transition:none}
+    *{scroll-behavior:auto}
+  }
+</style>
+
+<div class="stage" aria-hidden="true">
+  <canvas id="starfield"></canvas>
+  <div class="glow-a" data-depth="14"></div>
+  <div class="glow-b" data-depth="20"></div>
+
+  <!-- distant planet -->
+  <svg class="planet" data-depth="8" viewBox="0 0 200 200" fill="none">
+    <defs>
+      <radialGradient id="pl" cx="36%" cy="32%" r="80%">
+        <stop offset="0%" stop-color="#3a4f8a"/>
+        <stop offset="45%" stop-color="#20305e"/>
+        <stop offset="100%" stop-color="#0b1330"/>
+      </radialGradient>
+      <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="rgba(255,177,133,.0)"/>
+        <stop offset="50%" stop-color="rgba(255,177,133,.55)"/>
+        <stop offset="100%" stop-color="rgba(255,177,133,0)"/>
+      </linearGradient>
+    </defs>
+    <ellipse cx="100" cy="100" rx="96" ry="30" transform="rotate(-22 100 100)" stroke="url(#ring)" stroke-width="3" fill="none" opacity=".8"/>
+    <circle cx="100" cy="100" r="62" fill="url(#pl)"/>
+    <circle cx="100" cy="100" r="62" fill="none" stroke="rgba(120,150,220,.18)" stroke-width="1"/>
+    <ellipse cx="82" cy="84" rx="16" ry="9" fill="rgba(90,120,190,.35)"/>
+    <ellipse cx="118" cy="112" rx="22" ry="11" fill="rgba(20,30,60,.5)"/>
+    <ellipse cx="96" cy="128" rx="12" ry="6" fill="rgba(20,30,60,.4)"/>
+    <ellipse cx="100" cy="100" rx="96" ry="30" transform="rotate(-22 100 100)" stroke="url(#ring)" stroke-width="3" fill="none" opacity=".45" stroke-dasharray="4 220"/>
+  </svg>
+
+  <canvas class="grain" id="grain"></canvas>
+  <div class="vignette"></div>
+</div>
+
+<div class="shell">
+  <nav>
+    <div class="wordmark">
+      <span class="dot"></span>
+      <b>agentics<span>.dk</span></b>
+    </div>
+    <div class="nav-links">
+      <a class="nav-hide" href="#work">Missions</a>
+      <a class="nav-hide" href="#crew">Crew</a>
+      <a class="nav-hide" href="#lab">Lab</a>
+      <a href="#contact" class="nav-badge">Launch a project</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="copy">
+      <span class="eyebrow reveal"><span class="tick"></span>Deep-space digital studio</span>
+      <h1>
+        <span class="line reveal">Build for the</span>
+        <span class="line reveal"><em>frontier.</em></span>
+        <span class="line reveal">Ship past orbit.</span>
+      </h1>
+      <p class="sub reveal">
+        Meet Comet — our little explorer for the parts of the web nobody's mapped yet.
+        We design interfaces that float, react, and feel alive. No gravity required.
+      </p>
+      <div class="cta-row reveal">
+        <a href="#launch" class="btn" id="magneticBtn">
+          Start the expedition
+          <span class="arrow" aria-hidden="true">→</span>
+        </a>
+        <a href="#reel" class="link-secondary">
+          <span class="play" aria-hidden="true">
+            <svg width="9" height="10" viewBox="0 0 9 10" fill="none"><path d="M0 0.5L9 5L0 9.5V0.5Z" fill="#eaf0ff"/></svg>
+          </span>
+          Watch the flyby
+        </a>
+      </div>
+      <div class="meta-strip reveal">
+        <div><b>0g</b>friction, by design</div>
+        <div><b>60fps</b>every interaction</div>
+        <div><b>∞</b>curiosity on tap</div>
+      </div>
+    </div>
+
+    <div class="avatar-wrap">
+      <!-- Comet: hand-built SVG astronaut -->
+      <svg id="comet" viewBox="0 0 300 300" fill="none" role="img" aria-label="Comet, a floating cartoon astronaut explorer">
+        <defs>
+          <radialGradient id="suit" cx="42%" cy="34%" r="72%">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="55%" stop-color="#e7ecf7"/>
+            <stop offset="100%" stop-color="#b8c2da"/>
+          </radialGradient>
+          <radialGradient id="suitLimb" cx="40%" cy="30%" r="80%">
+            <stop offset="0%" stop-color="#f2f5fc"/>
+            <stop offset="100%" stop-color="#aeb8d2"/>
+          </radialGradient>
+          <radialGradient id="helmetGlass" cx="38%" cy="30%" r="80%">
+            <stop offset="0%" stop-color="#1b2a52"/>
+            <stop offset="55%" stop-color="#0d1836"/>
+            <stop offset="100%" stop-color="#060c22"/>
+          </radialGradient>
+          <linearGradient id="helmetRim" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="100%" stop-color="#c4cee4"/>
+          </linearGradient>
+          <radialGradient id="visorGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="rgba(255,177,133,.9)"/>
+            <stop offset="100%" stop-color="rgba(255,177,133,0)"/>
+          </radialGradient>
+          <linearGradient id="accentTube" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="var(--accent)"/>
+            <stop offset="100%" stop-color="#ffb185"/>
+          </linearGradient>
+          <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="3"/>
+          </filter>
+        </defs>
+
+        <!-- tether: drawn by JS with spring physics -->
+        <path id="tether" stroke="url(#accentTube)" stroke-width="4" stroke-linecap="round" fill="none" opacity=".85"/>
+        <circle id="tetherPlug" r="5" fill="#c4cee4" stroke="#8b97b6" stroke-width="1.5"/>
+
+        <!-- whole astronaut floats/rotates via this group -->
+        <g id="floatGroup">
+          <!-- thruster puffs (behind body) -->
+          <g id="thrusters"></g>
+
+          <!-- body group that tilts toward cursor -->
+          <g id="bodyTilt">
+
+            <!-- backpack -->
+            <rect x="112" y="150" width="76" height="70" rx="20" fill="url(#suitLimb)" stroke="#9aa6c4" stroke-width="1.5"/>
+            <rect x="126" y="160" width="48" height="20" rx="7" fill="#8c98b8" opacity=".55"/>
+            <circle cx="138" cy="196" r="5" fill="var(--accent)" opacity=".9"/>
+            <circle cx="162" cy="196" r="5" fill="#5b76c9" opacity=".9"/>
+
+            <!-- left arm -->
+            <g id="armL">
+              <path d="M108 168 q-30 6 -40 34" stroke="url(#suitLimb)" stroke-width="26" stroke-linecap="round" fill="none"/>
+              <circle cx="66" cy="204" r="15" fill="url(#suitLimb)" stroke="#9aa6c4" stroke-width="1.5"/>
+            </g>
+            <!-- right arm -->
+            <g id="armR">
+              <path d="M192 168 q30 4 44 -18" stroke="url(#suitLimb)" stroke-width="26" stroke-linecap="round" fill="none"/>
+              <circle cx="238" cy="148" r="15" fill="url(#suitLimb)" stroke="#9aa6c4" stroke-width="1.5"/>
+            </g>
+
+            <!-- legs -->
+            <path d="M128 212 q-8 30 -6 46" stroke="url(#suitLimb)" stroke-width="28" stroke-linecap="round" fill="none"/>
+            <path d="M172 212 q8 30 6 46" stroke="url(#suitLimb)" stroke-width="28" stroke-linecap="round" fill="none"/>
+            <ellipse cx="120" cy="262" rx="17" ry="12" fill="#c9d2e6" stroke="#9aa6c4" stroke-width="1.5"/>
+            <ellipse cx="180" cy="262" rx="17" ry="12" fill="#c9d2e6" stroke="#9aa6c4" stroke-width="1.5"/>
+
+            <!-- torso -->
+            <path d="M150 128
+                     c-34 0 -46 22 -46 48
+                     c0 26 16 44 46 44
+                     c30 0 46 -18 46 -44
+                     c0 -26 -12 -48 -46 -48Z"
+                  fill="url(#suit)" stroke="#9aa6c4" stroke-width="1.5"/>
+            <!-- chest control panel -->
+            <rect x="132" y="176" width="36" height="26" rx="6" fill="#e2e8f5" stroke="#a7b1cd" stroke-width="1.3"/>
+            <circle cx="141" cy="186" r="3" fill="var(--accent)"/>
+            <circle cx="151" cy="186" r="3" fill="#5b76c9"/>
+            <circle cx="161" cy="186" r="3" fill="#59c98f"/>
+            <rect x="138" y="194" width="24" height="3" rx="1.5" fill="#b7c0da"/>
+
+            <!-- accent chest stripe -->
+            <path d="M118 150 q32 12 64 0" stroke="var(--accent)" stroke-width="3" fill="none" opacity=".8" stroke-linecap="round"/>
+
+            <!-- HELMET -->
+            <g id="helmet">
+              <!-- outer rim -->
+              <circle cx="150" cy="104" r="58" fill="url(#helmetRim)"/>
+              <circle cx="150" cy="104" r="58" fill="none" stroke="#aab4d0" stroke-width="1"/>
+              <!-- glass -->
+              <circle id="glass" cx="150" cy="104" r="50" fill="url(#helmetGlass)"/>
+
+              <!-- reflected starfield hint -->
+              <circle cx="132" cy="92" r="1.4" fill="#bcd0ff" opacity=".8"/>
+              <circle cx="168" cy="110" r="1.1" fill="#bcd0ff" opacity=".6"/>
+              <circle cx="158" cy="86" r="1" fill="#bcd0ff" opacity=".5"/>
+              <circle cx="140" cy="120" r="1.2" fill="#bcd0ff" opacity=".55"/>
+
+              <!-- FACE (moves with cursor) -->
+              <g id="face">
+                <!-- eyes -->
+                <g id="eyes">
+                  <ellipse id="eyeL" cx="136" cy="102" rx="8.5" ry="10" fill="#eaf2ff"/>
+                  <ellipse id="eyeR" cx="164" cy="102" rx="8.5" ry="10" fill="#eaf2ff"/>
+                  <circle id="pupilL" cx="136" cy="103" r="4.2" fill="#101a30"/>
+                  <circle id="pupilR" cx="164" cy="103" r="4.2" fill="#101a30"/>
+                  <circle cx="134" cy="100" r="1.5" fill="#fff"/>
+                  <circle cx="162" cy="100" r="1.5" fill="#fff"/>
+                </g>
+                <!-- eyelids for blink -->
+                <rect id="lidL" x="126" y="90" width="20" height="0" rx="4" fill="url(#helmetGlass)"/>
+                <rect id="lidR" x="154" y="90" width="20" height="0" rx="4" fill="url(#helmetGlass)"/>
+                <!-- smile -->
+                <path id="smile" d="M140 122 q10 9 20 0" stroke="#cfe0ff" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+                <!-- cheek blush, frontier warmth -->
+                <ellipse cx="124" cy="114" rx="5" ry="3" fill="var(--accent)" opacity=".28"/>
+                <ellipse cx="176" cy="114" rx="5" ry="3" fill="var(--accent)" opacity=".28"/>
+              </g>
+
+              <!-- glint that tracks cursor -->
+              <ellipse id="glint" cx="132" cy="88" rx="20" ry="30" fill="rgba(180,205,255,.16)" transform="rotate(-28 132 88)"/>
+              <ellipse id="glintSmall" cx="122" cy="82" rx="6" ry="12" fill="rgba(220,235,255,.28)" transform="rotate(-28 122 82)"/>
+
+              <!-- rim highlight -->
+              <path d="M110 78 a52 52 0 0 1 40 -26" stroke="rgba(255,255,255,.6)" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <!-- antenna -->
+              <line x1="192" y1="70" x2="204" y2="52" stroke="#b7c0da" stroke-width="3" stroke-linecap="round"/>
+              <circle id="antennaTip" cx="204" cy="52" r="4.5" fill="var(--accent)"/>
+            </g>
+          </g>
+        </g>
+
+        <!-- ambient visor glow -->
+        <circle cx="150" cy="104" r="66" fill="url(#visorGlow)" opacity=".12" filter="url(#soft)"/>
+      </svg>
+      <div class="avatar-caption">Say hi to <b>Comet</b> · move your cursor</div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ============ entrance stagger ============ */
+  const reveals = Array.from(document.querySelectorAll(".reveal"));
+  if(reduce){
+    reveals.forEach(el=>el.classList.add("in"));
+  }else{
+    reveals.forEach((el,i)=>{
+      setTimeout(()=>el.classList.add("in"), 140 + i*110);
+    });
+  }
+
+  /* ============ pointer state (smoothed) ============ */
+  // px,py in -1..1 relative to viewport center
+  const ptr = {x:0, y:0};      // target
+  const sm  = {x:0, y:0};      // smoothed
+  let hasPointer = false;
+
+  window.addEventListener("pointermove", e=>{
+    hasPointer = true;
+    ptr.x = (e.clientX / window.innerWidth) * 2 - 1;
+    ptr.y = (e.clientY / window.innerHeight) * 2 - 1;
+  }, {passive:true});
+  window.addEventListener("pointerleave", ()=>{ ptr.x=0; ptr.y=0; });
+
+  /* ============ starfield canvas ============ */
+  const sky = document.getElementById("starfield");
+  const sctx = sky.getContext("2d");
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  let W=0,H=0, stars=[];
+
+  function makeStars(){
+    const count = Math.min(260, Math.round((W*H)/9000));
+    stars = [];
+    for(let i=0;i<count;i++){
+      const depth = Math.random();      // 0 far .. 1 near
+      stars.push({
+        x: Math.random()*W,
+        y: Math.random()*H,
+        z: depth,
+        r: 0.4 + depth*1.7,
+        base: 0.25 + depth*0.65,
+        tw: Math.random()*Math.PI*2,
+        tws: 0.6 + Math.random()*1.4
+      });
+    }
+  }
+  function resize(){
+    W = window.innerWidth; H = window.innerHeight;
+    sky.width = W*DPR; sky.height = H*DPR;
+    sky.style.width = W+"px"; sky.style.height = H+"px";
+    sctx.setTransform(DPR,0,0,DPR,0,0);
+    makeStars();
+    sizeGrain();
+  }
+
+  /* ============ grain (static, rendered once) ============ */
+  const grainC = document.getElementById("grain");
+  const gctx = grainC.getContext("2d");
+  function sizeGrain(){
+    const gw = Math.ceil(W/2), gh = Math.ceil(H/2);
+    grainC.width = gw; grainC.height = gh;
+    grainC.style.width = W+"px"; grainC.style.height = H+"px";
+    const img = gctx.createImageData(gw, gh);
+    const d = img.data;
+    for(let i=0;i<d.length;i+=4){
+      const v = (Math.random()*255)|0;
+      d[i]=d[i+1]=d[i+2]=v; d[i+3]=255;
+    }
+    gctx.putImageData(img,0,0);
+  }
+
+  /* ============ parallax layers ============ */
+  const depthEls = Array.from(document.querySelectorAll("[data-depth]"));
+
+  /* ============ SVG avatar refs ============ */
+  const svgFloat  = document.getElementById("floatGroup");
+  const bodyTilt  = document.getElementById("bodyTilt");
+  const face      = document.getElementById("face");
+  const pupilL    = document.getElementById("pupilL");
+  const pupilR    = document.getElementById("pupilR");
+  const eyeL      = document.getElementById("eyeL");
+  const eyeR      = document.getElementById("eyeR");
+  const lidL      = document.getElementById("lidL");
+  const lidR      = document.getElementById("lidR");
+  const glint     = document.getElementById("glint");
+  const glintSmall= document.getElementById("glintSmall");
+  const armL      = document.getElementById("armL");
+  const armR      = document.getElementById("armR");
+  const antennaTip= document.getElementById("antennaTip");
+  const tetherPath= document.getElementById("tether");
+  const tetherPlug= document.getElementById("tetherPlug");
+  const thrusters = document.getElementById("thrusters");
+
+  // helmet center in SVG coords
+  const HELM = {x:150, y:104};
+
+  /* ============ tether spring physics ============ */
+  // chain of points trailing from backpack anchor
+  const anchor = {x:150, y:200};
+  const seg = 5;
+  const pts = [];
+  for(let i=0;i<=seg;i++){
+    pts.push({x:anchor.x, y:anchor.y + i*14, px:anchor.x, py:anchor.y+i*14});
+  }
+
+  /* ============ thruster puff pool ============ */
+  const puffs = [];
+  function spawnPuff(){
+    if(reduce) return;
+    // emit from lower body, slightly randomized
+    puffs.push({
+      x: 150 + (Math.random()*20-10),
+      y: 232 + Math.random()*8,
+      vx:(Math.random()*0.5-0.25),
+      vy: 0.9 + Math.random()*0.7,
+      r: 3 + Math.random()*3,
+      life: 1
+    });
+  }
+  let puffTimer = 0;
+
+  /* ============ blink scheduling ============ */
+  let nextBlink = 1200 + Math.random()*3000;
+  let blinkT = -1; // -1 idle, else 0..1 progress
+
+  /* ============ main loop ============ */
+  let last = performance.now();
+  let t = 0;
+  let running = true;
+
+  function frame(now){
+    if(!running) return;
+    let dt = (now - last)/1000; last = now;
+    if(dt>0.05) dt = 0.05;   // clamp after tab-return
+    t += dt;
+
+    // smooth pointer
+    sm.x += (ptr.x - sm.x)*Math.min(1, dt*6);
+    sm.y += (ptr.y - sm.y)*Math.min(1, dt*6);
+
+    /* ---- starfield ---- */
+    sctx.clearRect(0,0,W,H);
+    const driftX = sm.x*18, driftY = sm.y*12;
+    for(let i=0;i<stars.length;i++){
+      const s = stars[i];
+      s.tw += dt*s.tws;
+      const tw = 0.6 + 0.4*Math.sin(s.tw);
+      const px = s.x + driftX*s.z;
+      const py = s.y + driftY*s.z + t*4*s.z; // slow downward drift
+      const yy = ((py % H)+H)%H;
+      sctx.globalAlpha = s.base*tw;
+      sctx.fillStyle = s.z>0.75 ? "#dfe8ff" : "#aebfe6";
+      sctx.beginPath();
+      sctx.arc(px, yy, s.r, 0, 6.2832);
+      sctx.fill();
+    }
+    sctx.globalAlpha = 1;
+
+    /* ---- parallax bg layers ---- */
+    for(const el of depthEls){
+      const d = parseFloat(el.dataset.depth)||0;
+      el.style.transform = `translate3d(${-sm.x*d}px, ${-sm.y*d}px, 0)`;
+    }
+
+    if(!reduce){
+      /* ---- zero-g float + slow rotation of whole astronaut ---- */
+      const floatY = Math.sin(t*0.9)*10;
+      const floatX = Math.cos(t*0.6)*6;
+      const rot    = Math.sin(t*0.35)*5;   // slow sway rotation
+      // gentle pointer lean of the whole figure
+      const leanX = sm.x*10, leanY = sm.y*8;
+      svgFloat.setAttribute("transform",
+        `translate(${floatX+leanX} ${floatY+leanY}) rotate(${rot} 150 150)`);
+
+      /* ---- body tilt toward cursor ---- */
+      const tilt = sm.x*6;
+      bodyTilt.setAttribute("transform", `rotate(${tilt} 150 150)`);
+
+      /* ---- arms subtle drift ---- */
+      armL.setAttribute("transform", `rotate(${Math.sin(t*0.9)*4 - sm.y*4} 108 168)`);
+      armR.setAttribute("transform", `rotate(${-Math.sin(t*0.9+1)*4 + sm.y*4} 192 168)`);
+
+      /* ---- face/eyes track cursor ---- */
+      const gx = sm.x*4, gy = sm.y*3;        // face parallax
+      face.setAttribute("transform", `translate(${gx} ${gy})`);
+      const pdx = sm.x*3.2, pdy = sm.y*2.8;   // pupils
+      pupilL.setAttribute("cx", 136+pdx); pupilL.setAttribute("cy", 103+pdy);
+      pupilR.setAttribute("cx", 164+pdx); pupilR.setAttribute("cy", 103+pdy);
+
+      /* ---- visor glint tracks cursor (opposite side = reflection) ---- */
+      const glx = 132 - sm.x*22;
+      const gly = 88  - sm.y*18;
+      glint.setAttribute("cx", glx); glint.setAttribute("cy", gly);
+      glint.setAttribute("transform", `rotate(-28 ${glx} ${gly})`);
+      glintSmall.setAttribute("cx", glx-10); glintSmall.setAttribute("cy", gly-6);
+      glintSmall.setAttribute("transform", `rotate(-28 ${glx-10} ${gly-6})`);
+
+      /* ---- antenna tip pulse ---- */
+      antennaTip.setAttribute("r", 4.5 + Math.sin(t*4)*1.1);
+
+      /* ---- blink ---- */
+      nextBlink -= dt*1000;
+      if(blinkT<0 && nextBlink<=0){ blinkT = 0; }
+      if(blinkT>=0){
+        blinkT += dt*7;
+        // triangle wave 0->1->0 close/open
+        const p = blinkT<0.5 ? blinkT*2 : (1-blinkT)*2;
+        const h = Math.max(0, Math.min(1,p))*11;
+        lidL.setAttribute("height", h); lidR.setAttribute("height", h);
+        eyeL.setAttribute("ry", 10 - Math.max(0,Math.min(1,p))*7);
+        eyeR.setAttribute("ry", 10 - Math.max(0,Math.min(1,p))*7);
+        if(blinkT>=1){ blinkT=-1; nextBlink = 1600 + Math.random()*3600;
+          lidL.setAttribute("height",0); lidR.setAttribute("height",0);
+          eyeL.setAttribute("ry",10); eyeR.setAttribute("ry",10);
+        }
+      }
+
+      /* ---- thruster puffs ---- */
+      puffTimer -= dt*1000;
+      if(puffTimer<=0){ spawnPuff(); puffTimer = 90 + Math.random()*120; }
+      let puffMarkup = "";
+      for(let i=puffs.length-1;i>=0;i--){
+        const p = puffs[i];
+        p.x += p.vx; p.y += p.vy; p.vy += 0.03;
+        p.life -= dt*1.3;
+        p.r += dt*6;
+        if(p.life<=0){ puffs.splice(i,1); continue; }
+        const op = Math.max(0,p.life)*0.5;
+        const col = p.life>0.6 ? "255,177,133" : "150,170,220";
+        puffMarkup += `<circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="${p.r.toFixed(1)}" fill="rgba(${col},${op.toFixed(2)})"/>`;
+      }
+      thrusters.innerHTML = puffMarkup;
+
+      /* ---- tether spring (verlet) ---- */
+      // whole astronaut offset (so tether appears attached while it floats)
+      const aOffX = floatX+leanX, aOffY = floatY+leanY;
+      pts[0].x = anchor.x + aOffX; pts[0].y = anchor.y + aOffY;
+      const grav = 26*dt;
+      for(let i=1;i<pts.length;i++){
+        const p = pts[i];
+        const vx = (p.x-p.px)*0.94;
+        const vy = (p.y-p.py)*0.94;
+        p.px = p.x; p.py = p.y;
+        // pointer nudges the free end for playful sway
+        p.x += vx + sm.x*0.6*i;
+        p.y += vy + grav + Math.sin(t*1.2 + i)*0.25;
+      }
+      // constraints
+      const restLen = 15;
+      for(let k=0;k<6;k++){
+        for(let i=1;i<pts.length;i++){
+          const a=pts[i-1], b=pts[i];
+          let dx=b.x-a.x, dy=b.y-a.y;
+          let dist=Math.hypot(dx,dy)||0.001;
+          const diff=(dist-restLen)/dist;
+          const mA = i===1?0:0.5, mB = i===1?1:0.5;
+          b.x -= dx*diff*mB; b.y -= dy*diff*mB;
+          a.x += dx*diff*mA; a.y += dy*diff*mA;
+        }
+        pts[0].x = anchor.x + aOffX; pts[0].y = anchor.y + aOffY;
+      }
+      // build smooth path
+      let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+      for(let i=1;i<pts.length;i++){
+        const p0=pts[i-1], p1=pts[i];
+        const mx=(p0.x+p1.x)/2, my=(p0.y+p1.y)/2;
+        d += ` Q ${p0.x.toFixed(1)} ${p0.y.toFixed(1)} ${mx.toFixed(1)} ${my.toFixed(1)}`;
+      }
+      const end = pts[pts.length-1];
+      d += ` L ${end.x.toFixed(1)} ${end.y.toFixed(1)}`;
+      tetherPath.setAttribute("d", d);
+      tetherPlug.setAttribute("cx", end.x.toFixed(1));
+      tetherPlug.setAttribute("cy", end.y.toFixed(1));
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  /* ============ magnetic CTA ============ */
+  const btn = document.getElementById("magneticBtn");
+  if(btn && !reduce){
+    const strength = 0.32;
+    btn.addEventListener("pointermove", e=>{
+      const r = btn.getBoundingClientRect();
+      const mx = e.clientX - (r.left + r.width/2);
+      const my = e.clientY - (r.top + r.height/2);
+      btn.style.transform = `translate(${mx*strength}px, ${my*strength}px)`;
+    });
+    btn.addEventListener("pointerleave", ()=>{
+      btn.style.transform = "translate(0,0)";
+    });
+  }
+
+  /* ============ static fallback for reduced motion ============ */
+  if(reduce){
+    // render one static starfield + tether so page looks composed
+    resize();
+    sctx.clearRect(0,0,W,H);
+    for(const s of stars){
+      sctx.globalAlpha = s.base;
+      sctx.fillStyle = s.z>0.75 ? "#dfe8ff" : "#aebfe6";
+      sctx.beginPath(); sctx.arc(s.x, s.y, s.r,0,6.2832); sctx.fill();
+    }
+    sctx.globalAlpha=1;
+    // straight-ish tether
+    let d = `M ${anchor.x} ${anchor.y}`;
+    for(let i=1;i<pts.length;i++){ d += ` L ${anchor.x + Math.sin(i)*4} ${anchor.y + i*15}`; }
+    tetherPath.setAttribute("d", d);
+    const e = pts[pts.length-1];
+    tetherPlug.setAttribute("cx", anchor.x); tetherPlug.setAttribute("cy", anchor.y + seg*15);
+  }
+
+  /* ============ lifecycle ============ */
+  window.addEventListener("resize", resize);
+  resize();
+
+  document.addEventListener("visibilitychange", ()=>{
+    if(document.hidden){ running = false; }
+    else if(!reduce){ running = true; last = performance.now(); requestAnimationFrame(frame); }
+  });
+
+  if(!reduce){ requestAnimationFrame(frame); }
+})();
+</script>
+
+<style id="agx-chrome-css">
+.agx{position:fixed;z-index:2147483000;font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;box-sizing:border-box}
+.agx a{cursor:pointer}
+.agx-badge{right:16px;bottom:16px;display:flex;gap:7px;align-items:center;padding:8px 13px;border-radius:999px;
+  background:rgba(9,11,17,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
+.agx-badge b{color:var(--agx);font-size:13px}
+.agx-story{left:16px;bottom:16px;max-width:min(360px,calc(100vw - 32px));padding:16px 16px 13px;border-radius:16px;
+  background:rgba(9,11,17,.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;box-shadow:0 24px 70px -26px rgba(0,0,0,.85)}
+.agx-story .h{display:flex;align-items:center;gap:11px;margin-bottom:9px}
+.agx-story .em{font-size:26px;line-height:1;filter:drop-shadow(0 3px 11px var(--agx))}
+.agx-story .nm{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.agx-story .tl{color:var(--agx);font-size:12px;font-weight:600;margin-top:3px}
+.agx-story p{margin:0 0 11px;color:#c6ccd9;font-size:13px;line-height:1.56}
+.agx-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.agx-tags span{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#aeb6c6;
+  border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px 9px}
+.agx-guess{margin:0 0 12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.09)}
+.agx-guess .gq{font-size:11.5px;color:#aeb6c6;margin-bottom:8px;letter-spacing:.01em}
+.agx-guess .gbtns{display:flex;gap:8px}
+.agx-guess .gbtn{flex:1;padding:8px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.03);color:#eef1f7;font-size:12px;font-weight:600;cursor:pointer;
+  transition:transform .15s,border-color .15s,background .15s,opacity .15s;font-family:inherit}
+.agx-guess .gbtn:hover:not(:disabled){border-color:var(--agx);background:rgba(255,255,255,.07);transform:translateY(-1px)}
+.agx-guess .gbtn:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
+.agx-guess .gbtn:disabled{cursor:default}
+.agx-guess .gbtn.correct{border-color:#5eea8f;background:rgba(94,234,143,.16);color:#a4f5be;opacity:1}
+.agx-guess .gbtn.wrong{border-color:#ff6a6a;background:rgba(255,106,106,.14);color:#ffb9b9;opacity:1}
+.agx-guess .gbtn.dim{opacity:.45}
+.agx-guess .greveal{margin-top:9px;font-size:11.5px;line-height:1.55;color:#c6ccd9}
+.agx-guess .greveal b{color:#eef1f7}
+.agx-nav{display:flex;align-items:center;gap:13px;font-size:12.5px;border-top:1px solid rgba(255,255,255,.09);padding-top:11px}
+.agx-nav a{color:#eef1f7;text-decoration:none;opacity:.82}
+.agx-nav a:hover{opacity:1;color:var(--agx)}
+.agx-nav .home{margin-right:auto;font-weight:600}
+.agx-nav a[aria-disabled=true]{opacity:.32;pointer-events:none}
+@media (max-width:560px){.agx-story{left:12px;right:12px;bottom:12px;max-width:none}.agx-badge{display:none}}
+@media (prefers-reduced-motion:reduce){.agx-story .em{filter:none}}
+</style>
+<div class="agx agx-badge" style="--agx:#ff7a3d">AGENTICS · JULI <b>05</b></div>
+<aside class="agx agx-story" style="--agx:#ff7a3d" aria-label="Avatarens historie">
+  <div class="h"><div class="em">👨‍🚀</div><div><div class="nm">Comet</div><div class="tl">Kortlægger det ukendte, før du spørger.</div></div></div>
+  <p>Comet drømte som barn om at rejse længere end nogen kort viste, og nu gør han præcis det — udforsker nye data, ukendte edge cases og systemer, ingen har rørt før. Han vender altid hjem med noget nyttigt: et mønster, en genvej, en advarsel. Grænser er bare startpunkter for ham.</p>
+  <div class="agx-tags"><span>Nysgerrig</span><span>Modig</span><span>Opdagende</span></div>
+  <div class="agx-guess" id="agxGuess">
+    <div class="gq">🤖 Hvilken Claude-model byggede Comet?</div>
+    <div class="gbtns">
+      <button type="button" class="gbtn" data-m="opus">Opus 4.8</button>
+      <button type="button" class="gbtn" data-m="sonnet">Sonnet 5</button>
+    </div>
+    <div class="greveal" id="agxReveal" hidden></div>
+  </div>
+  <nav class="agx-nav">
+    <a class="home" href="calendar.html">← Kalender</a>
+    <a href="day-4.html">‹ forrige</a>
+    <a data-day="6" href="day-6.html">næste ›</a>
+  </nav>
+</aside>
+<script>(function(){var n=document.querySelector('.agx-nav a[data-day]');if(!n)return;var d=+n.getAttribute('data-day');
+if(new Date()<new Date(2026,6,d)){n.setAttribute('aria-disabled','true');n.textContent='næste (åbner '+d+'. juli)';}})();</script>
+<script>(function(){
+  var DAY=5, MODEL='opus', NAME="Comet";
+  var KEY='agx_guess_'+DAY;
+  var wrap=document.getElementById('agxGuess');
+  if(!wrap) return;
+  var btns=Array.prototype.slice.call(wrap.querySelectorAll('.gbtn'));
+  var reveal=document.getElementById('agxReveal');
+  var TXT={
+    opus:'🧠 Rigtigt svar: <b>Claude Opus 4.8</b> byggede '+NAME+'.',
+    sonnet:'⚡ Rigtigt svar: <b>Claude Sonnet 5</b> byggede '+NAME+'.'
+  };
+  function render(saved){
+    btns.forEach(function(b){
+      b.disabled=true;
+      var m=b.getAttribute('data-m');
+      if(m===MODEL) b.classList.add('correct');
+      else if(m===saved) b.classList.add('wrong'); else b.classList.add('dim');
+    });
+    var extra = saved===MODEL ? ' Du gættede rigtigt! 🎉' : ' Forkert gæt denne gang — bedre held i morgen.';
+    reveal.innerHTML=TXT[MODEL]+extra;
+    reveal.hidden=false;
+  }
+  var prior=localStorage.getItem(KEY);
+  if(prior){ render(prior); return; }
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      var g=b.getAttribute('data-m');
+      try{ localStorage.setItem(KEY, g); }catch(e){}
+      render(g);
+    });
+  });
+})();</script>

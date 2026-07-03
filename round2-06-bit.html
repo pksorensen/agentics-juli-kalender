@@ -1,0 +1,600 @@
+<title>agentics.dk — Bit</title>
+<style>
+  :root {
+    --bg-0: #07070c;
+    --bg-1: #0d0b18;
+    --ink: #f4f3ff;
+    --muted: #9a97b8;
+    --faint: #58547a;
+    --accent: #00f0c8;      /* neon mint */
+    --accent-2: #ff3fa4;    /* neon magenta (used with heavy restraint) */
+    --line: rgba(255,255,255,0.08);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg-0);
+    color: var(--ink);
+    font-family: var(--font);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* ---------- layered cinematic background ---------- */
+  .stage { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+  .layer { position: absolute; inset: -8%; will-change: transform; }
+
+  .bg-grad {
+    background:
+      radial-gradient(120% 90% at 50% 8%, #171334 0%, rgba(23,19,52,0) 60%),
+      radial-gradient(90% 70% at 50% 108%, #051f1c 0%, rgba(5,31,28,0) 55%),
+      linear-gradient(180deg, var(--bg-1), var(--bg-0));
+  }
+  /* arcade floor grid */
+  .bg-grid {
+    background-image:
+      linear-gradient(rgba(0,240,200,0.10) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,240,200,0.10) 1px, transparent 1px);
+    background-size: 46px 46px;
+    -webkit-mask-image: radial-gradient(70% 55% at 50% 78%, #000 0%, transparent 72%);
+    mask-image: radial-gradient(70% 55% at 50% 78%, #000 0%, transparent 72%);
+    opacity: 0.5;
+  }
+  .bg-glow {
+    background:
+      radial-gradient(38% 30% at 50% 46%, rgba(0,240,200,0.16), transparent 70%),
+      radial-gradient(26% 22% at 66% 40%, rgba(255,63,164,0.08), transparent 70%);
+    filter: blur(6px);
+  }
+
+  #stars { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  /* grain + scanline + vignette overlays (whole screen CRT vibe) */
+  .fx { position: fixed; inset: 0; z-index: 6; pointer-events: none; }
+  .fx-scan {
+    background: repeating-linear-gradient(
+      to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 2px, rgba(0,0,0,0.22) 3px, rgba(0,0,0,0) 4px);
+    mix-blend-mode: multiply;
+    opacity: 0.55;
+  }
+  .fx-flicker { background: rgba(0,240,200,0.015); animation: flick 5.5s steps(2) infinite; }
+  @keyframes flick { 0%,97%{opacity:0} 98%{opacity:1} 100%{opacity:0} }
+  .fx-vignette {
+    box-shadow: inset 0 0 220px 40px rgba(0,0,0,0.85);
+    background: radial-gradient(120% 100% at 50% 50%, transparent 55%, rgba(0,0,0,0.55) 100%);
+  }
+  .fx-grain { opacity: 0.05; mix-blend-mode: overlay; }
+
+  /* ---------- content ---------- */
+  .wrap { position: relative; z-index: 3; height: 100%; display: flex; flex-direction: column; }
+
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 26px clamp(20px, 5vw, 64px);
+  }
+  .brand {
+    display: flex; align-items: center; gap: 11px;
+    font-weight: 620; letter-spacing: -0.02em; font-size: 18px;
+  }
+  .brand .dot {
+    width: 12px; height: 12px; border-radius: 2px; background: var(--accent);
+    box-shadow: 0 0 12px var(--accent); animation: blinkdot 1.6s steps(2) infinite;
+  }
+  @keyframes blinkdot { 0%,70%{opacity:1} 71%,100%{opacity:0.25} }
+  .brand b { font-weight: 620; }
+  .brand span { color: var(--faint); font-weight: 500; }
+
+  .navlinks { display: flex; gap: 30px; align-items: center; }
+  .navlinks a {
+    color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500;
+    letter-spacing: 0.01em; position: relative; padding: 4px 2px;
+    transition: color 0.25s ease;
+  }
+  .navlinks a::after {
+    content: ""; position: absolute; left: 0; bottom: -2px; height: 1px; width: 100%;
+    background: var(--accent); transform: scaleX(0); transform-origin: left;
+    transition: transform 0.3s cubic-bezier(.2,.8,.2,1);
+  }
+  .navlinks a:hover { color: var(--ink); }
+  .navlinks a:hover::after,
+  .navlinks a:focus-visible::after { transform: scaleX(1); }
+  .navlinks .pill {
+    border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px;
+    color: var(--ink);
+  }
+  .navlinks .pill:hover { border-color: rgba(0,240,200,0.5); }
+
+  /* hero split: mascot left, copy right (stacks on small) */
+  .hero {
+    flex: 1; display: grid; grid-template-columns: 1.05fr 1fr;
+    align-items: center; gap: clamp(16px, 4vw, 60px);
+    padding: 0 clamp(20px, 5vw, 64px) 40px;
+    max-width: 1360px; margin: 0 auto; width: 100%;
+  }
+
+  .stagewrap {
+    position: relative; display: flex; align-items: center; justify-content: center;
+    will-change: transform;
+  }
+  /* pedestal shadow beneath sprite */
+  .pedestal {
+    position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%);
+    width: 46%; height: 34px; border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(0,240,200,0.30), transparent 72%);
+    filter: blur(3px);
+  }
+  #bit {
+    width: min(430px, 78%); height: auto; display: block;
+    image-rendering: pixelated; image-rendering: crisp-edges;
+    filter: drop-shadow(0 22px 34px rgba(0,240,200,0.14));
+  }
+  .badge {
+    position: absolute; top: 6%; right: 8%;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent); border: 1px solid rgba(0,240,200,0.35);
+    padding: 5px 10px; border-radius: 6px; background: rgba(0,240,200,0.06);
+    backdrop-filter: blur(2px);
+  }
+
+  .copy { max-width: 560px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-size: 12.5px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 22px;
+  }
+  .eyebrow::before {
+    content: ""; width: 26px; height: 1px; background: linear-gradient(90deg, var(--accent), transparent);
+  }
+  h1 {
+    margin: 0; font-weight: 680; letter-spacing: -0.035em; line-height: 0.98;
+    font-size: clamp(38px, 6.4vw, 82px);
+  }
+  h1 .glitch { color: var(--accent); position: relative; display: inline-block; }
+  .sub {
+    margin: 26px 0 0; color: var(--muted); font-size: clamp(15px, 1.5vw, 18.5px);
+    line-height: 1.6; max-width: 460px; font-weight: 450;
+  }
+  .cta-row { display: flex; align-items: center; gap: 26px; margin-top: 40px; flex-wrap: wrap; }
+
+  .cta {
+    position: relative; border: none; cursor: pointer;
+    font-family: var(--font); font-size: 15px; font-weight: 600; letter-spacing: 0.01em;
+    color: #04120f; background: var(--accent);
+    padding: 15px 30px; border-radius: 12px;
+    will-change: transform; transition: box-shadow 0.3s ease, transform 0.12s ease;
+    box-shadow: 0 0 0 rgba(0,240,200,0);
+  }
+  .cta:hover { box-shadow: 0 10px 40px rgba(0,240,200,0.45), 0 0 0 1px rgba(0,240,200,0.6); }
+  .cta:active { transform: scale(0.97); }
+  .cta:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+
+  .link {
+    color: var(--ink); text-decoration: none; font-size: 15px; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 9px; opacity: 0.9;
+  }
+  .link .arrow { transition: transform 0.28s cubic-bezier(.2,.8,.2,1); color: var(--accent); }
+  .link:hover .arrow { transform: translateX(5px); }
+  .link:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
+
+  .footnote {
+    position: fixed; bottom: 20px; left: clamp(20px,5vw,64px); z-index: 4;
+    font-size: 12px; color: var(--faint); letter-spacing: 0.04em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .footnote .k { color: var(--muted); font-weight: 600; }
+
+  /* staggered entrance */
+  .reveal { opacity: 0; transform: translateY(22px); }
+  .in .reveal { animation: rise 0.9s cubic-bezier(.2,.8,.2,1) forwards; }
+  .in .reveal:nth-child(1){animation-delay:.05s}
+  .r1{animation-delay:.10s!important}.r2{animation-delay:.20s!important}
+  .r3{animation-delay:.32s!important}.r4{animation-delay:.46s!important}
+  .r5{animation-delay:.60s!important}
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  .stagewrap.reveal { transform: translateY(22px) scale(0.985); }
+  .in .stagewrap.reveal { animation: riseScale 1s cubic-bezier(.2,.8,.2,1) forwards; animation-delay:.15s; }
+  @keyframes riseScale { to { opacity: 1; transform: none; } }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .hero { grid-template-columns: 1fr; text-align: center; padding-top: 10px; gap: 20px; }
+    .copy { margin: 0 auto; }
+    .eyebrow, .cta-row { justify-content: center; }
+    .navlinks .hide-sm { display: none; }
+    #bit { width: min(300px, 62%); }
+    .footnote { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal, .stagewrap.reveal { opacity: 1 !important; transform: none !important; animation: none !important; }
+    .brand .dot, .fx-flicker { animation: none !important; }
+  }
+</style>
+
+<div class="stage" id="stage">
+  <div class="layer bg-grad" data-depth="6"></div>
+  <div class="layer bg-glow" data-depth="26"></div>
+  <canvas id="stars" data-depth="14"></canvas>
+  <div class="layer bg-grid" data-depth="18"></div>
+</div>
+
+<div class="fx fx-scan"></div>
+<div class="fx fx-flicker"></div>
+<div class="fx fx-vignette"></div>
+
+<div class="wrap" id="wrap">
+  <nav>
+    <div class="brand reveal r1">
+      <span class="dot"></span>
+      <b>agentics<span>.dk</span></b>
+    </div>
+    <div class="navlinks reveal r1">
+      <a href="#" class="hide-sm">Work</a>
+      <a href="#" class="hide-sm">Playbook</a>
+      <a href="#" class="hide-sm">About</a>
+      <a href="#" class="pill">Start a build</a>
+    </div>
+  </nav>
+
+  <main class="hero">
+    <div class="stagewrap reveal" id="stagewrap">
+      <div class="pedestal"></div>
+      <span class="badge">Player 1 · Ready</span>
+      <canvas id="bit" width="256" height="256" aria-label="Bit, a pixel-art robot mascot"></canvas>
+    </div>
+
+    <div class="copy">
+      <div class="eyebrow reveal r2">Insert coin — no quarters required</div>
+      <h1 class="reveal r3">Meet <span class="glitch" id="glitch">Bit</span>.<br>Your co-op<br>build partner.</h1>
+      <p class="sub reveal r4">A tiny sprite with big-boss energy. Bit ships pixel-perfect, high-score interfaces and cinematic web builds — one power-up at a time. Nostalgic on the surface, ruthless on the details.</p>
+      <div class="cta-row reveal r5">
+        <button class="cta" id="cta">Press Start &nbsp;▸</button>
+        <a href="#" class="link">Watch the demo reel <span class="arrow">→</span></a>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="footnote">
+  <span class="k">TIP</span> move your cursor — Bit is watching.
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ===== entrance ===== */
+  requestAnimationFrame(function () {
+    document.getElementById("wrap").classList.add("in");
+    document.getElementById("stagewrap").classList.add("in");
+    document.body.classList.add("in");
+  });
+
+  /* pointer state (normalized -1..1 from screen center) */
+  var px = 0, py = 0, tpx = 0, tpy = 0;
+  window.addEventListener("pointermove", function (e) {
+    tpx = (e.clientX / window.innerWidth) * 2 - 1;
+    tpy = (e.clientY / window.innerHeight) * 2 - 1;
+  }, { passive: true });
+
+  /* ===== starfield canvas ===== */
+  var starC = document.getElementById("stars");
+  var sctx = starC.getContext("2d");
+  var DPR = Math.min(window.devicePixelRatio || 1, 2);
+  var stars = [];
+  function sizeStars() {
+    starC.width = Math.floor(window.innerWidth * DPR);
+    starC.height = Math.floor(window.innerHeight * DPR);
+    var count = Math.min(120, Math.floor(window.innerWidth * window.innerHeight / 14000));
+    stars = [];
+    for (var i = 0; i < count; i++) {
+      stars.push({
+        x: Math.random() * starC.width,
+        y: Math.random() * starC.height,
+        s: (Math.random() * 1.6 + 0.4) * DPR,
+        a: Math.random() * Math.PI * 2,
+        sp: Math.random() * 0.7 + 0.15
+      });
+    }
+  }
+  sizeStars();
+
+  /* ===== BIT — pixel sprite drawn on canvas =====
+     We render into a low-res buffer of PX×PX "pixels" then blit
+     up with nearest-neighbor for crisp chunky blocks. */
+  var bit = document.getElementById("bit");
+  var bctx = bit.getContext("2d");
+  bctx.imageSmoothingEnabled = false;
+
+  var GRID = 32;             // logical pixel grid (32x32 sprite)
+  var CELL = bit.width / GRID; // device px per sprite pixel (256/32 = 8)
+
+  // palette
+  var C = {
+    body:   "#14e0c0",
+    bodyHi: "#5cffe6",
+    bodyLo: "#0aa389",
+    dark:   "#053b34",
+    panel:  "#0d2b2f",
+    panelHi:"#134048",
+    eyewhite:"#eafffb",
+    pupil:  "#04241f",
+    screen: "#02110f",
+    accent: "#ff3fa4",
+    bolt:   "#ffd84a",
+    ant:    "#ff3fa4"
+  };
+
+  function cell(x, y, col) {
+    bctx.fillStyle = col;
+    bctx.fillRect(Math.round(x * CELL), Math.round(y * CELL), Math.ceil(CELL), Math.ceil(CELL));
+  }
+  // filled rect in grid coords
+  function box(x, y, w, h, col) {
+    bctx.fillStyle = col;
+    bctx.fillRect(Math.round(x * CELL), Math.round(y * CELL),
+                  Math.round(w * CELL), Math.round(h * CELL));
+  }
+
+  /* draw one frame of Bit.
+     bob: vertical offset in grid pixels
+     blink: 0..1 (1 = fully closed)
+     lookX/lookY: -1..1 snapped gaze
+     squash: subtle body scale for breathing
+     armWave: 0..1 for the wave/idle arm
+     antenna: sway offset for antenna tip */
+  function drawBit(bob, blink, lookX, lookY, antenna, wave) {
+    bctx.clearRect(0, 0, bit.width, bit.height);
+
+    // everything shifted by bob (rounded to whole grid pixels = true pixel motion)
+    var oy = Math.round(bob);
+    function C_(x, y, col) { cell(x, y + oy, col); }
+    function B_(x, y, w, h, col) { box(x, y + oy, w, h, col); }
+
+    // ---- antenna ----
+    var at = Math.round(antenna); // -1,0,1 tip sway
+    B_(15, 1, 2, 3, C.bodyLo);          // stalk
+    C_(15 + at, 0, C.ant);              // tip pixel
+    C_(16 + at, 0, C.ant);
+    C_(15 + at, 1, "#ff8fc9");          // tip highlight
+
+    // ---- head / body shell (rounded pixel blob) ----
+    // main head block
+    B_(7, 4, 18, 16, C.body);
+    // corner rounding by carving transparent pixels
+    bctx.clearRect(Math.round(7*CELL), Math.round((4+oy)*CELL), Math.ceil(CELL), Math.ceil(CELL));
+    bctx.clearRect(Math.round(24*CELL), Math.round((4+oy)*CELL), Math.ceil(CELL), Math.ceil(CELL));
+    bctx.clearRect(Math.round(7*CELL), Math.round((19+oy)*CELL), Math.ceil(CELL), Math.ceil(CELL));
+    bctx.clearRect(Math.round(24*CELL), Math.round((19+oy)*CELL), Math.ceil(CELL), Math.ceil(CELL));
+
+    // top highlight band
+    B_(9, 4, 14, 1, C.bodyHi);
+    C_(8, 5, C.bodyHi);
+    C_(23, 5, C.bodyHi);
+    // left rim light
+    B_(7, 6, 1, 12, C.bodyHi);
+    // right / bottom shade
+    B_(24, 6, 1, 12, C.bodyLo);
+    B_(9, 19, 14, 1, C.bodyLo);
+
+    // ---- face screen (dark inset) ----
+    B_(9, 7, 14, 9, C.screen);
+    // screen bezel
+    B_(9, 7, 14, 1, C.dark);
+    B_(9, 15, 14, 1, C.dark);
+    B_(9, 7, 1, 9, C.dark);
+    B_(22, 7, 1, 9, C.dark);
+    // faint screen scan line
+    B_(10, 11, 12, 1, "#031a17");
+
+    // ---- eyes (follow cursor, snapped) ----
+    var ex = lookX; // -1,0,1
+    var ey = lookY; // -1,0,1
+    var leftEyeX = 12 + ex;
+    var rightEyeX = 18 + ex;
+    var eyeY = 10 + ey;
+
+    if (blink > 0.5) {
+      // closed: a line
+      B_(11, eyeY + 1, 3, 1, C.accent);
+      B_(17, eyeY + 1, 3, 1, C.accent);
+    } else {
+      // eye glow blocks (2x2 with pupil)
+      B_(leftEyeX, eyeY, 2, 2, C.eyewhite);
+      B_(rightEyeX, eyeY, 2, 2, C.eyewhite);
+      // pupils shift a touch more with gaze
+      cell(leftEyeX + (ex > 0 ? 1 : 0), eyeY + (ey > 0 ? 1 : 0) + oy, C.pupil);
+      cell(rightEyeX + (ex > 0 ? 1 : 0), eyeY + (ey > 0 ? 1 : 0) + oy, C.pupil);
+      // sparkle
+      cell(leftEyeX, eyeY, "#ffffff");
+      cell(rightEyeX, eyeY, "#ffffff");
+    }
+
+    // ---- little smile (pixel mouth) ----
+    B_(13, 14, 6, 1, C.accent);
+    C_(13, 13, C.accent);
+    C_(18, 13, C.accent);
+
+    // ---- cheek pixels ----
+    C_(10, 13, "#0f5f54");
+    C_(21, 13, "#0f5f54");
+
+    // ---- body / torso below head ----
+    B_(10, 20, 12, 6, C.body);
+    // torso shading
+    B_(10, 20, 1, 6, C.bodyHi);
+    B_(21, 20, 1, 6, C.bodyLo);
+    B_(10, 25, 12, 1, C.bodyLo);
+    // chest panel (little screen with heartbeat)
+    B_(13, 21, 6, 3, C.panel);
+    B_(13, 21, 6, 1, C.panelHi);
+    // blinking core
+    var core = (Math.floor(Date.now() / 380) % 2 === 0) ? C.accent : C.bolt;
+    B_(15, 22, 2, 1, core);
+
+    // ---- arms ----
+    // left arm (static, hand on hip-ish)
+    B_(7, 21, 2, 4, C.bodyLo);
+    C_(7, 24, C.dark);
+    // right arm — waves with `wave`
+    var wv = Math.round(wave); // 0..2 raise
+    B_(23, 21, 2, 4 - wv, C.bodyLo);      // upper
+    C_(24, 20 - wv, C.body);              // raised hand
+    C_(24, 19 - wv, C.bodyHi);            // hand top
+
+    // ---- feet ----
+    B_(11, 26, 3, 2, C.dark);
+    B_(18, 26, 3, 2, C.dark);
+    B_(11, 26, 3, 1, C.panelHi);
+    B_(18, 26, 3, 1, C.panelHi);
+
+    // ---- bolt accents on shoulders ----
+    C_(9, 20, C.bolt);
+    C_(22, 20, C.bolt);
+  }
+
+  /* snap a continuous value to -1/0/1 with a deadzone (pixel-step gaze) */
+  function snap3(v) {
+    if (v > 0.28) return 1;
+    if (v < -0.28) return -1;
+    return 0;
+  }
+
+  /* ===== parallax layers ===== */
+  var layers = Array.prototype.slice.call(document.querySelectorAll(".layer, #stars"));
+  var stagewrap = document.getElementById("stagewrap");
+
+  /* ===== main loop ===== */
+  var t = 0;
+  var lastBlink = 0, blinkPhase = 0; // blink timing
+  var nextBlink = 1.6 + Math.random() * 3;
+  var running = true;
+
+  function frame(ts) {
+    if (!running) return;
+    t += 0.016;
+
+    // ease pointer
+    px += (tpx - px) * 0.08;
+    py += (tpy - py) * 0.08;
+
+    /* --- starfield --- */
+    sctx.clearRect(0, 0, starC.width, starC.height);
+    for (var i = 0; i < stars.length; i++) {
+      var st = stars[i];
+      st.a += 0.02 * st.sp;
+      var tw = 0.55 + 0.45 * Math.sin(st.a);
+      sctx.globalAlpha = tw * 0.9;
+      sctx.fillStyle = (i % 11 === 0) ? "#ff3fa4" : "#bfeee6";
+      sctx.fillRect(st.x, st.y, st.s, st.s);
+    }
+    sctx.globalAlpha = 1;
+
+    /* --- parallax --- */
+    if (!reduce) {
+      for (var j = 0; j < layers.length; j++) {
+        var el = layers[j];
+        var d = parseFloat(el.getAttribute("data-depth")) || 10;
+        el.style.transform = "translate3d(" + (-px * d) + "px," + (-py * d * 0.7) + "px,0)";
+      }
+      // stage subtle tilt toward cursor
+      stagewrap.style.transform =
+        "translate3d(" + (px * 14) + "px," + (py * 10) + "px,0) rotateX(" +
+        (-py * 4) + "deg) rotateY(" + (px * 5) + "deg)";
+    }
+
+    /* --- Bit animation --- */
+    var bob, blink = 0, antenna, wave;
+    if (reduce) {
+      bob = 0; antenna = 0; wave = 0;
+    } else {
+      // idle bob (snapped to whole pixels for authentic sprite feel)
+      bob = Math.round(Math.sin(t * 1.9) * 1.4) ; // -1..1 px steps
+      // antenna sway responds to cursor + idle
+      antenna = snap3(px * 1.4 + Math.sin(t * 1.3) * 0.5);
+      // occasional wave: pulse every ~5s
+      var wcycle = (t % 5.2);
+      wave = (wcycle < 0.9) ? Math.round(Math.sin(wcycle / 0.9 * Math.PI) * 2) : 0;
+
+      // blink timing
+      blinkPhase -= 0.016;
+      if (blinkPhase <= 0) {
+        // schedule / execute blink
+        var since = t - lastBlink;
+        if (since > nextBlink) {
+          lastBlink = t;
+          nextBlink = 1.8 + Math.random() * 3.4;
+        }
+      }
+      var bt = (t - lastBlink);
+      blink = (bt < 0.14) ? 1 : 0; // quick closed frame
+    }
+
+    // gaze: pupils toward cursor, snapped to pixel steps
+    var gx = reduce ? 0 : snap3(px * 1.3);
+    var gy = reduce ? 0 : snap3(py * 1.3 + 0.1);
+
+    drawBit(bob, blink, gx, gy, antenna, wave);
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  /* draw a composed static frame for reduced-motion */
+  if (reduce) drawBit(0, 0, 0, 0, 0, 0);
+
+  /* pause loop when tab hidden */
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) {
+      running = false;
+    } else if (!reduce) {
+      running = true;
+      requestAnimationFrame(frame);
+    }
+  });
+
+  /* ===== magnetic CTA ===== */
+  var cta = document.getElementById("cta");
+  if (!reduce) {
+    var cr;
+    cta.addEventListener("pointermove", function (e) {
+      cr = cta.getBoundingClientRect();
+      var mx = e.clientX - (cr.left + cr.width / 2);
+      var my = e.clientY - (cr.top + cr.height / 2);
+      cta.style.transform = "translate(" + (mx * 0.28) + "px," + (my * 0.34) + "px)";
+    });
+    cta.addEventListener("pointerleave", function () {
+      cta.style.transform = "translate(0,0)";
+    });
+  }
+  cta.addEventListener("click", function () {
+    // playful nudge: bounce Bit
+    lastBlink = t - 0; // trigger a blink
+  });
+
+  /* ===== glitch flicker on the accent word ===== */
+  var glitch = document.getElementById("glitch");
+  if (!reduce && glitch) {
+    setInterval(function () {
+      if (document.hidden) return;
+      glitch.style.textShadow = "2px 0 var(--accent-2), -2px 0 var(--accent)";
+      setTimeout(function () { glitch.style.textShadow = "none"; }, 90);
+    }, 2600);
+  }
+
+  /* ===== resize ===== */
+  var rz;
+  window.addEventListener("resize", function () {
+    clearTimeout(rz);
+    rz = setTimeout(function () {
+      DPR = Math.min(window.devicePixelRatio || 1, 2);
+      sizeStars();
+    }, 120);
+  });
+})();
+</script>

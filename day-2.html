@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>agentics.dk — Ræv</title>
+<style>
+  :root{
+    --accent:#ff9a3d;
+    --bg:#07080c;
+    --ink:#f2ede6;
+    --dim:#98917f;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:auto}
+  body{background:var(--bg);color:var(--ink);font-family:ui-monospace,'SF Mono','Cascadia Code',Menlo,Consolas,monospace}
+
+  /* ------- scroll runway: the page is tall; the hero stays pinned ------- */
+  .runway{height:400vh;position:relative}
+  .stage{position:sticky;top:0;height:100vh;overflow:hidden}
+
+  /* ------- fixed video background, playhead scrubbed by scroll ------- */
+  video.hero{
+    position:absolute;inset:0;width:100%;height:100%;
+    object-fit:cover;filter:saturate(1.05) contrast(1.02);
+  }
+  .vignette{position:absolute;inset:0;pointer-events:none;
+    background:
+      radial-gradient(120% 90% at 70% 50%, transparent 40%, rgba(7,8,12,.72) 100%),
+      linear-gradient(90deg, rgba(7,8,12,.88) 0%, rgba(7,8,12,.45) 34%, transparent 60%);
+  }
+  .grain{position:absolute;inset:0;pointer-events:none;opacity:.07;mix-blend-mode:overlay}
+
+  /* ------- kinetic per-character headline ------- */
+  .copy{position:absolute;left:6vw;top:46%;transform:translateY(-50%);max-width:44ch;z-index:2}
+  .lockup{display:flex;align-items:center;gap:.55em;color:var(--accent);font-size:clamp(14px,1.3vw,18px);letter-spacing:.08em;margin-bottom:2.2rem}
+  .lockup .caret{animation:blink 1.1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  h1{font-size:clamp(2.2rem,4.6vw,4.1rem);line-height:1.06;font-weight:700;letter-spacing:-.015em}
+  h1 .char{display:inline-block;will-change:transform,opacity}
+  .sub{margin-top:1.6rem;color:var(--dim);font-size:clamp(.95rem,1.25vw,1.15rem);line-height:1.65;max-width:34ch}
+  .sub b{color:var(--ink);font-weight:600}
+  .cta{display:inline-flex;align-items:center;gap:.6em;margin-top:2.4rem;padding:.95em 1.7em;
+    border:1px solid var(--accent);color:var(--accent);text-decoration:none;
+    font-size:.95rem;letter-spacing:.06em;transition:background .25s,color .25s,transform .25s}
+  .cta:hover{background:var(--accent);color:var(--bg);transform:translateY(-2px)}
+  .cta:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+  .scrollcue{position:absolute;bottom:4vh;left:50%;transform:translateX(-50%);color:var(--dim);
+    font-size:.75rem;letter-spacing:.25em;z-index:2;animation:cue 2.2s ease-in-out infinite}
+  @keyframes cue{0%,100%{opacity:.35;transform:translate(-50%,0)}50%{opacity:.9;transform:translate(-50%,6px)}}
+
+  /* ------- below the fold ------- */
+  .below{min-height:100vh;display:grid;place-items:center;padding:14vh 6vw}
+  .below .inner{max-width:60ch}
+  .below h2{color:var(--accent);font-size:1rem;letter-spacing:.2em;margin-bottom:1.4rem}
+  .below p{color:var(--dim);line-height:1.8;margin-bottom:1.2rem}
+  .below p:last-child{margin-bottom:0}
+  .below b{color:var(--ink);font-weight:600}
+
+  @media (prefers-reduced-motion: reduce){
+    .runway{height:auto}
+    .stage{position:relative}
+    h1 .char{transform:none!important;opacity:1!important}
+    .scrollcue{display:none}
+    .lockup .caret{animation:none}
+  }
+</style>
+</head>
+<body>
+
+<section class="runway" id="runway">
+  <div class="stage">
+    <video class="hero" id="heroVideo" muted playsinline preload="auto" poster="assets/day-2/poster.jpg">
+      <!-- all-intra encodes (every frame a keyframe) — required for smooth scrubbing -->
+      <source src="assets/day-2/avatar-scrub.mp4" type="video/mp4">
+      <source src="assets/day-2/avatar-scrub.webm" type="video/webm">
+    </video>
+    <div class="vignette"></div>
+    <canvas class="grain" id="grain"></canvas>
+
+    <div class="copy">
+      <div class="lockup">&gt;|&nbsp; agentics — dag 02<span class="caret">▍</span></div>
+      <h1 id="headline">Ræven finder genvejen, du ikke så.</h1>
+      <p class="sub">Mød <b>Ræv</b> — agenten der finder genveje gennem systemet:
+        hurtigere, billigere, klogere.</p>
+      <a class="cta" href="https://agentics.dk">Start et projekt &nbsp;→</a>
+    </div>
+
+    <div class="scrollcue">SCROLL</div>
+  </div>
+</section>
+
+<section class="below">
+  <div class="inner">
+    <h2>// DAG 02 — RÆV</h2>
+    <p>Ræven blev bygget af kanter og vinkler, fordi ligetil ikke er hendes stil.
+    Hun er low-poly på ydersiden og fuld af genveje indeni — den agent i holdet,
+    der finder vejen gennem systemet, ingen har tænkt på.</p>
+    <p>Denne udgave er en <b>rigtig video-avatar</b>: karakter-still genereret med
+    GPT Image 2 på Higgsfield, sat i bevægelse med Seedance 2.0 (image-to-video)
+    og integreret som fixed video-baggrund, hvor afspilningshovedet er bundet til
+    din scroll-position. Scroll op og ned — hun bevæger sig med dig.</p>
+  </div>
+</section>
+
+<script>
+(() => {
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // --- split headline into chars (word-wrap-safe: chars live inside nowrap word spans) ---
+  const h = document.getElementById('headline');
+  const text = h.textContent;
+  h.textContent = '';
+  const chars = [];
+  for (const word of text.split(' ')){
+    const w = document.createElement('span');
+    w.style.display = 'inline-block';
+    w.style.whiteSpace = 'nowrap';
+    for (const c of word){
+      const s = document.createElement('span');
+      s.className = 'char';
+      s.textContent = c;
+      w.appendChild(s);
+      chars.push(s);
+    }
+    h.appendChild(w);
+    h.appendChild(document.createTextNode(' '));
+  }
+
+  // --- film grain ---
+  const g = document.getElementById('grain'), gx = g.getContext('2d');
+  function drawGrain(){
+    const w = g.width = Math.min(innerWidth, 960), hgt = g.height = Math.min(innerHeight, 540);
+    const img = gx.createImageData(w, hgt);
+    for (let i = 0; i < img.data.length; i += 4){
+      const v = (Math.random()*255)|0;
+      img.data[i]=img.data[i+1]=img.data[i+2]=v; img.data[i+3]=28;
+    }
+    gx.putImageData(img,0,0);
+  }
+  drawGrain(); addEventListener('resize', drawGrain);
+
+  if (reduced) return;
+
+  // --- scroll-scrubbed video + kinetic type, single rAF loop ---
+  const video = document.getElementById('heroVideo');
+  const runway = document.getElementById('runway');
+  let targetT = 0, currentT = 0, raf = null, running = true, seeking = false;
+  video.addEventListener('seeked', () => { seeking = false; });
+
+  function progress(){
+    const r = runway.getBoundingClientRect();
+    const total = r.height - innerHeight;
+    return Math.min(1, Math.max(0, -r.top / total));
+  }
+
+  function tick(){
+    if (!running) return;
+    const p = progress();
+
+    // scrub: ease current playhead toward the scroll-driven target
+    const duration = (video.readyState >= 1 && isFinite(video.duration)) ? video.duration : 0;
+    if (duration){
+      targetT = p * (duration - 0.05);
+      currentT += (targetT - currentT) * 0.18;
+      // never queue a seek while one is in flight — stacked seeks are what causes jank
+      if (!seeking && Math.abs(video.currentTime - currentT) > 0.02){
+        seeking = true;
+        video.currentTime = currentT;
+      }
+    }
+
+    // kinetic type: chars settle in over the first 25% of the runway
+    const n = chars.length;
+    for (let i = 0; i < n; i++){
+      const local = Math.min(1, Math.max(0, (p*4) - i/n));
+      const e = 1 - Math.pow(1-local, 3);
+      chars[i].style.opacity = (0.15 + 0.85*e).toFixed(3);
+      chars[i].style.transform = `translateY(${(1-e)*0.6}em) scale(${0.92 + 0.08*e})`;
+    }
+
+    raf = requestAnimationFrame(tick);
+  }
+
+  document.addEventListener('visibilitychange', () => {
+    running = !document.hidden;
+    if (running) tick(); else cancelAnimationFrame(raf);
+  });
+
+  tick();
+})();
+</script>
+
+<style id="agx-chrome-css">
+.agx{position:fixed;z-index:2147483000;font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;box-sizing:border-box}
+.agx a{cursor:pointer}
+.agx-badge{right:16px;bottom:16px;display:flex;gap:7px;align-items:center;padding:8px 13px;border-radius:999px;
+  background:rgba(9,11,17,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
+.agx-badge b{color:var(--agx);font-size:13px}
+.agx-story{left:16px;bottom:16px;max-width:min(360px,calc(100vw - 32px));padding:16px 16px 13px;border-radius:16px;
+  background:rgba(9,11,17,.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;box-shadow:0 24px 70px -26px rgba(0,0,0,.85)}
+.agx-story .h{display:flex;align-items:center;gap:11px;margin-bottom:9px}
+.agx-story .em{font-size:26px;line-height:1;filter:drop-shadow(0 3px 11px var(--agx))}
+.agx-story .nm{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.agx-story .tl{color:var(--agx);font-size:12px;font-weight:600;margin-top:3px}
+.agx-story p{margin:0 0 11px;color:#c6ccd9;font-size:13px;line-height:1.56}
+.agx-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.agx-tags span{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#aeb6c6;
+  border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px 9px}
+.agx-guess{margin:0 0 12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.09)}
+.agx-guess .gq{font-size:11.5px;color:#aeb6c6;margin-bottom:8px;letter-spacing:.01em}
+.agx-guess .gbtns{display:flex;gap:8px}
+.agx-guess .gbtn{flex:1;padding:8px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.03);color:#eef1f7;font-size:12px;font-weight:600;cursor:pointer;
+  transition:transform .15s,border-color .15s,background .15s,opacity .15s;font-family:inherit}
+.agx-guess .gbtn:hover:not(:disabled){border-color:var(--agx);background:rgba(255,255,255,.07);transform:translateY(-1px)}
+.agx-guess .gbtn:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
+.agx-guess .gbtn:disabled{cursor:default}
+.agx-guess .gbtn.correct{border-color:#5eea8f;background:rgba(94,234,143,.16);color:#a4f5be;opacity:1}
+.agx-guess .gbtn.wrong{border-color:#ff6a6a;background:rgba(255,106,106,.14);color:#ffb9b9;opacity:1}
+.agx-guess .gbtn.dim{opacity:.45}
+.agx-guess .greveal{margin-top:9px;font-size:11.5px;line-height:1.55;color:#c6ccd9}
+.agx-guess .greveal b{color:#eef1f7}
+.agx-nav{display:flex;align-items:center;gap:13px;font-size:12.5px;border-top:1px solid rgba(255,255,255,.09);padding-top:11px}
+.agx-nav a{color:#eef1f7;text-decoration:none;opacity:.82}
+.agx-nav a:hover{opacity:1;color:var(--agx)}
+.agx-nav .home{margin-right:auto;font-weight:600}
+.agx-nav a[aria-disabled=true]{opacity:.32;pointer-events:none}
+@media (max-width:560px){.agx-story{left:12px;right:12px;bottom:12px;max-width:none}.agx-badge{display:none}}
+@media (prefers-reduced-motion:reduce){.agx-story .em{filter:none}}
+</style>
+<div class="agx agx-badge" style="--agx:#ff9a3d">AGENTICS · JULI <b>02</b></div>
+<aside class="agx agx-story" style="--agx:#ff9a3d" aria-label="Avatarens historie">
+  <div class="h"><div class="em">🦊</div><div><div class="nm">Ræv</div><div class="tl">Finder genvejen, du ikke så.</div></div></div>
+  <p>Ræven blev bygget af kanter og vinkler, fordi ligetil ikke er hendes stil. Hvor andre agenter følger den lige linje, snuser Ræven rundt om hjørnet og finder den vej gennem systemet, ingen har tænkt på — hurtigere, billigere, klogere. Hun er low-poly på ydersiden og fuld af genveje indeni.</p>
+  <div class="agx-tags"><span>Snu</span><span>Opfindsom</span><span>Selvstændig</span></div>
+  <div class="agx-guess" id="agxGuess">
+    <div class="gq">🤖 Hvilken Claude-model byggede Ræv?</div>
+    <div class="gbtns">
+      <button type="button" class="gbtn" data-m="opus">Opus 4.8</button>
+      <button type="button" class="gbtn" data-m="sonnet">Sonnet 5</button>
+    </div>
+    <div class="greveal" id="agxReveal" hidden></div>
+  </div>
+  <nav class="agx-nav">
+    <a class="home" href="calendar.html">← Kalender</a>
+    <a href="day-1.html">‹ forrige</a>
+    <a data-day="3" href="day-3.html">næste ›</a>
+  </nav>
+</aside>
+<script>(function(){var n=document.querySelector('.agx-nav a[data-day]');if(!n)return;var d=+n.getAttribute('data-day');
+if(new Date()<new Date(2026,6,d)){n.setAttribute('aria-disabled','true');n.textContent='næste (åbner '+d+'. juli)';}})();</script>
+<script>(function(){
+  var DAY=2, MODEL='opus', NAME="R\u00e6v";
+  var KEY='agx_guess_'+DAY;
+  var wrap=document.getElementById('agxGuess');
+  if(!wrap) return;
+  var btns=Array.prototype.slice.call(wrap.querySelectorAll('.gbtn'));
+  var reveal=document.getElementById('agxReveal');
+  var TXT={
+    opus:'🧠 Rigtigt svar: <b>Claude Opus 4.8</b> byggede '+NAME+'.',
+    sonnet:'⚡ Rigtigt svar: <b>Claude Sonnet 5</b> byggede '+NAME+'.'
+  };
+  function render(saved){
+    btns.forEach(function(b){
+      b.disabled=true;
+      var m=b.getAttribute('data-m');
+      if(m===MODEL) b.classList.add('correct');
+      else if(m===saved) b.classList.add('wrong'); else b.classList.add('dim');
+    });
+    var extra = saved===MODEL ? ' Du gættede rigtigt! 🎉' : ' Forkert gæt denne gang — bedre held i morgen.';
+    reveal.innerHTML=TXT[MODEL]+extra;
+    reveal.hidden=false;
+  }
+  var prior=localStorage.getItem(KEY);
+  if(prior){ render(prior); return; }
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      var g=b.getAttribute('data-m');
+      try{ localStorage.setItem(KEY, g); }catch(e){}
+      render(g);
+    });
+  });
+})();</script>
+<style>
+/* day-2 layout override: story card right, badge left — frees the left rail for copy+CTA */
+.agx-story{left:auto;right:16px}
+.agx-badge{right:auto;left:16px}
+@media (max-width:560px){.agx-story{left:12px;right:12px}}
+</style>
+</body>
+</html>

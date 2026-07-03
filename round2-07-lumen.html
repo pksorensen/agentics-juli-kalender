@@ -1,0 +1,790 @@
+<style>
+  :root{
+    --bg-0:#03060a;
+    --bg-1:#061019;
+    --bg-2:#0a1f2e;
+    --ink:#e8f4f6;
+    --ink-dim:#8fb0b8;
+    --ink-faint:#476069;
+    --accent:#3ff0d8;      /* luminous cyan-teal */
+    --accent-2:#7c8bff;    /* indigo bloom */
+    --accent-glow:rgba(63,240,216,.55);
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box}
+
+  html,body{height:100%}
+  body{
+    background:var(--bg-0);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    overflow:hidden;
+    position:relative;
+    height:100vh;
+    cursor:none;
+  }
+
+  /* ---- layered cinematic background ---- */
+  .bg{position:fixed;inset:0;z-index:0;pointer-events:none}
+  .bg-grad{
+    position:absolute;inset:-10%;
+    background:
+      radial-gradient(120% 90% at 50% 118%, rgba(63,240,216,.10), transparent 55%),
+      radial-gradient(90% 70% at 50% 8%, rgba(124,139,255,.10), transparent 60%),
+      radial-gradient(140% 120% at 50% 50%, var(--bg-2) 0%, var(--bg-1) 42%, var(--bg-0) 78%);
+    will-change:transform;
+  }
+  .bg-vignette{
+    position:absolute;inset:0;
+    background:radial-gradient(120% 100% at 50% 46%, transparent 52%, rgba(0,0,0,.62) 100%);
+  }
+  /* light shafts drifting from the surface */
+  .bg-shafts{
+    position:absolute;inset:-20% -10% 0;
+    background:
+      linear-gradient(102deg, transparent 46%, rgba(124,139,255,.05) 48%, transparent 51%),
+      linear-gradient(84deg, transparent 60%, rgba(63,240,216,.05) 63%, transparent 66%),
+      linear-gradient(96deg, transparent 30%, rgba(124,139,255,.04) 33%, transparent 37%);
+    mix-blend-mode:screen;
+    will-change:transform;
+  }
+  #particles{position:fixed;inset:0;z-index:1;pointer-events:none}
+  .grain{
+    position:fixed;inset:0;z-index:2;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+  }
+
+  /* ---- stage ---- */
+  .stage{position:relative;z-index:3;height:100%;display:flex;flex-direction:column}
+
+  /* ---- nav ---- */
+  nav{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:26px clamp(22px,4vw,64px);
+    opacity:0;transform:translateY(-12px);
+    animation:fadeDown .9s .1s cubic-bezier(.2,.7,.2,1) forwards;
+  }
+  .wordmark{
+    display:flex;align-items:center;gap:11px;
+    font-weight:600;font-size:17px;letter-spacing:-.02em;
+  }
+  .wordmark .dot{
+    width:9px;height:9px;border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 12px var(--accent-glow),0 0 26px var(--accent-glow);
+    animation:pulseDot 3.4s ease-in-out infinite;
+  }
+  .wordmark b{font-weight:600}
+  .wordmark span{color:var(--ink-dim);font-weight:400}
+  .navlinks{display:flex;gap:clamp(16px,2.4vw,38px);align-items:center}
+  .navlinks a{
+    color:var(--ink-dim);text-decoration:none;font-size:14px;font-weight:450;
+    letter-spacing:.01em;transition:color .35s ease;position:relative;
+  }
+  .navlinks a:hover{color:var(--ink)}
+  .navlinks a:focus-visible{outline:2px solid var(--accent);outline-offset:6px;border-radius:3px;color:var(--ink)}
+  .navlinks .ghost{
+    padding:9px 18px;border:1px solid rgba(143,176,184,.28);border-radius:100px;
+    transition:border-color .35s ease,color .35s ease,background .35s ease;
+  }
+  .navlinks .ghost:hover{border-color:var(--accent);color:var(--ink);background:rgba(63,240,216,.06)}
+
+  /* ---- hero ---- */
+  .hero{
+    flex:1;display:grid;grid-template-columns:1fr;
+    align-items:center;justify-items:center;
+    position:relative;
+  }
+  .avatar-wrap{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    z-index:1;
+  }
+  #lumen{display:block;width:min(78vh,640px);height:min(78vh,640px);will-change:transform}
+
+  .copy{
+    position:relative;z-index:2;text-align:center;
+    padding:0 24px;max-width:940px;
+    transform:translateY(-2vh);
+    pointer-events:none;
+  }
+  .copy a,.copy button{pointer-events:auto}
+
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:10px;
+    font-size:12.5px;letter-spacing:.34em;text-transform:uppercase;
+    color:var(--ink-dim);margin-bottom:26px;
+    opacity:0;transform:translateY(14px);
+    animation:rise .95s .35s cubic-bezier(.2,.7,.2,1) forwards;
+  }
+  .eyebrow::before,.eyebrow::after{
+    content:"";width:34px;height:1px;
+    background:linear-gradient(90deg,transparent,var(--ink-faint));
+  }
+  .eyebrow::after{transform:scaleX(-1)}
+
+  h1{
+    font-size:clamp(2.6rem,7.4vw,5.9rem);
+    line-height:.98;font-weight:600;letter-spacing:-.035em;
+    margin-bottom:24px;
+  }
+  h1 .line{display:block;overflow:hidden}
+  h1 .line>span{
+    display:inline-block;transform:translateY(112%);
+    animation:reveal 1.05s cubic-bezier(.16,.84,.3,1) forwards;
+  }
+  h1 .l1>span{animation-delay:.42s}
+  h1 .l2>span{animation-delay:.54s}
+  h1 .glow{
+    background:linear-gradient(180deg,#eafffb,var(--accent) 130%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 0 42px var(--accent-glow);
+    filter:drop-shadow(0 0 20px rgba(63,240,216,.25));
+  }
+  .sub{
+    font-size:clamp(1rem,1.55vw,1.24rem);line-height:1.65;font-weight:400;
+    color:var(--ink-dim);max-width:600px;margin:0 auto 40px;
+    opacity:0;transform:translateY(16px);
+    animation:rise 1s .82s cubic-bezier(.2,.7,.2,1) forwards;
+  }
+
+  .actions{
+    display:flex;gap:20px;align-items:center;justify-content:center;flex-wrap:wrap;
+    opacity:0;transform:translateY(16px);
+    animation:rise 1s .98s cubic-bezier(.2,.7,.2,1) forwards;
+  }
+  .cta{
+    position:relative;display:inline-flex;align-items:center;gap:11px;
+    padding:16px 30px;border-radius:100px;
+    font-size:15px;font-weight:550;letter-spacing:.005em;
+    color:#02110f;text-decoration:none;border:none;cursor:none;
+    background:linear-gradient(180deg,#8ffcec,var(--accent));
+    box-shadow:0 0 0 1px rgba(63,240,216,.5),0 10px 40px -8px var(--accent-glow),0 0 60px -20px var(--accent-glow);
+    transition:transform .28s cubic-bezier(.2,.7,.2,1),box-shadow .35s ease;
+    will-change:transform;
+    overflow:hidden;
+  }
+  .cta::after{
+    content:"";position:absolute;inset:0;border-radius:inherit;
+    background:radial-gradient(140px 90px at var(--mx,50%) var(--my,50%),rgba(255,255,255,.55),transparent 60%);
+    opacity:0;transition:opacity .35s ease;
+  }
+  .cta:hover::after{opacity:1}
+  .cta:hover{box-shadow:0 0 0 1px rgba(63,240,216,.75),0 16px 60px -8px var(--accent-glow),0 0 90px -16px var(--accent-glow)}
+  .cta:focus-visible{outline:2px solid #fff;outline-offset:4px}
+  .cta .arrow{transition:transform .3s cubic-bezier(.2,.7,.2,1)}
+  .cta:hover .arrow{transform:translateX(4px)}
+
+  .secondary{
+    display:inline-flex;align-items:center;gap:9px;
+    color:var(--ink-dim);text-decoration:none;font-size:15px;font-weight:450;
+    transition:color .35s ease;
+  }
+  .secondary:hover{color:var(--ink)}
+  .secondary:focus-visible{outline:2px solid var(--accent);outline-offset:5px;border-radius:4px;color:var(--ink)}
+  .secondary .play{
+    width:30px;height:30px;border-radius:50%;
+    border:1px solid rgba(143,176,184,.35);
+    display:grid;place-items:center;transition:border-color .35s ease,background .35s ease;
+  }
+  .secondary:hover .play{border-color:var(--accent);background:rgba(63,240,216,.06)}
+
+  .scrollhint{
+    position:absolute;bottom:26px;left:50%;transform:translateX(-50%);
+    font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-faint);
+    display:flex;flex-direction:column;align-items:center;gap:10px;
+    opacity:0;animation:rise 1s 1.3s cubic-bezier(.2,.7,.2,1) forwards;z-index:4;
+  }
+  .scrollhint .rail{width:1px;height:34px;background:linear-gradient(var(--ink-faint),transparent);position:relative;overflow:hidden}
+  .scrollhint .rail::after{content:"";position:absolute;top:0;left:0;width:100%;height:12px;background:var(--accent);animation:drip 2.4s ease-in-out infinite}
+
+  /* ---- custom cursor ---- */
+  .cursor{
+    position:fixed;top:0;left:0;z-index:60;pointer-events:none;
+    width:9px;height:9px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 14px var(--accent-glow);
+    transform:translate(-50%,-50%);mix-blend-mode:screen;
+  }
+  .cursor-ring{
+    position:fixed;top:0;left:0;z-index:59;pointer-events:none;
+    width:38px;height:38px;border-radius:50%;
+    border:1px solid rgba(63,240,216,.4);
+    transform:translate(-50%,-50%);transition:width .25s ease,height .25s ease,border-color .25s ease;
+  }
+  .cursor-ring.hot{width:56px;height:56px;border-color:var(--accent)}
+
+  @keyframes fadeDown{to{opacity:1;transform:translateY(0)}}
+  @keyframes rise{to{opacity:1;transform:translateY(0)}}
+  @keyframes reveal{to{transform:translateY(0)}}
+  @keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.82)}}
+  @keyframes drip{0%{transform:translateY(-14px)}60%,100%{transform:translateY(46px)}}
+
+  @media (max-width:640px){
+    #lumen{width:92vw;height:92vw}
+    .navlinks .hide-sm{display:none}
+    .copy{transform:translateY(0)}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.001s!important;animation-delay:0s!important;transition-duration:.001s!important}
+    body{cursor:auto}
+    .cursor,.cursor-ring,.scrollhint .rail::after,.wordmark .dot{animation:none}
+    #particles{display:none}
+    .copy a,.copy button{pointer-events:auto}
+    .eyebrow,.sub,.actions,.scrollhint,nav{opacity:1;transform:none}
+    h1 .line>span{transform:none}
+  }
+</style>
+
+<div class="bg" aria-hidden="true">
+  <div class="bg-grad" id="bgGrad"></div>
+  <div class="bg-shafts" id="bgShafts"></div>
+  <div class="bg-vignette"></div>
+</div>
+<canvas id="particles" aria-hidden="true"></canvas>
+<canvas class="grain" id="grain" aria-hidden="true"></canvas>
+
+<div class="stage">
+  <nav>
+    <div class="wordmark">
+      <span class="dot"></span>
+      <span><b>agentics</b><span>.dk</span></span>
+    </div>
+    <div class="navlinks">
+      <a href="#" class="hide-sm">Depths</a>
+      <a href="#" class="hide-sm">Bioluminescence</a>
+      <a href="#" class="hide-sm">Studio</a>
+      <a href="#" class="ghost">Dive in</a>
+    </div>
+  </nav>
+
+  <div class="hero">
+    <div class="avatar-wrap">
+      <canvas id="lumen" aria-label="Lumen, a bioluminescent jellyfish that drifts toward your cursor" role="img"></canvas>
+    </div>
+
+    <div class="copy">
+      <div class="eyebrow">Meet&nbsp;Lumen</div>
+      <h1>
+        <span class="line l1"><span>Intelligence that</span></span>
+        <span class="line l2"><span>drifts in the <span class="glow">deep</span>.</span></span>
+      </h1>
+      <p class="sub">
+        A calm, luminous presence built for the quiet frontier —
+        Lumen senses where you are and follows the current of your attention,
+        turning stillness into signal.
+      </p>
+      <div class="actions">
+        <a href="#" class="cta" id="cta">
+          Begin the descent
+          <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h9M8.5 4l4 4-4 4" stroke="#02110f" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <a href="#" class="secondary">
+          <span class="play"><svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 1.5v7l6-3.5-6-3.5Z" fill="currentColor"/></svg></span>
+          Watch it breathe
+        </a>
+      </div>
+    </div>
+
+    <div class="scrollhint"><span>Descend</span><span class="rail"></span></div>
+  </div>
+</div>
+
+<div class="cursor-ring" id="cursorRing" aria-hidden="true"></div>
+<div class="cursor" id="cursor" aria-hidden="true"></div>
+
+<script>
+(function(){
+  "use strict";
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+  // ---------- pointer state ----------
+  const pointer = { x: innerWidth/2, y: innerHeight*0.5, tx: innerWidth/2, ty: innerHeight*0.5, active:false };
+  window.addEventListener("pointermove", (e)=>{
+    pointer.tx = e.clientX; pointer.ty = e.clientY; pointer.active = true;
+  }, {passive:true});
+  window.addEventListener("pointerdown", ()=>{ pointer.pressed = true; });
+  window.addEventListener("pointerup", ()=>{ pointer.pressed = false; });
+
+  // ---------- custom cursor ----------
+  const cur = document.getElementById("cursor");
+  const ring = document.getElementById("cursorRing");
+  let rx = pointer.x, ry = pointer.y;
+  document.querySelectorAll("a,button,.cta").forEach(el=>{
+    el.addEventListener("pointerenter",()=>ring.classList.add("hot"));
+    el.addEventListener("pointerleave",()=>ring.classList.remove("hot"));
+  });
+  const cta = document.getElementById("cta");
+  if(cta){
+    cta.addEventListener("pointermove",(e)=>{
+      const r = cta.getBoundingClientRect();
+      cta.style.setProperty("--mx",(e.clientX-r.left)+"px");
+      cta.style.setProperty("--my",(e.clientY-r.top)+"px");
+      const mx = (e.clientX-r.left-r.width/2), my=(e.clientY-r.top-r.height/2);
+      cta.style.transform = `translate(${mx*0.14}px,${my*0.22}px)`;
+    });
+    cta.addEventListener("pointerleave",()=>{ cta.style.transform="translate(0,0)"; });
+  }
+
+  // ---------- background parallax ----------
+  const bgGrad = document.getElementById("bgGrad");
+  const bgShafts = document.getElementById("bgShafts");
+
+  // ---------- particles: drifting spores + current motes ----------
+  const pCanvas = document.getElementById("particles");
+  const pctx = pCanvas.getContext("2d");
+  let spores = [];
+  function sizeParticles(){
+    pCanvas.width = innerWidth*DPR; pCanvas.height = innerHeight*DPR;
+    pCanvas.style.width = innerWidth+"px"; pCanvas.style.height = innerHeight+"px";
+    pctx.setTransform(DPR,0,0,DPR,0,0);
+    const count = Math.round(Math.min(90, (innerWidth*innerHeight)/16000));
+    spores = [];
+    for(let i=0;i<count;i++){
+      spores.push({
+        x: Math.random()*innerWidth,
+        y: Math.random()*innerHeight,
+        r: Math.random()*1.7+0.3,
+        vy: -(Math.random()*0.18+0.04),
+        drift: Math.random()*Math.PI*2,
+        driftSpd: Math.random()*0.01+0.003,
+        amp: Math.random()*0.5+0.15,
+        glow: Math.random()*0.6+0.25,
+        hue: Math.random()<0.72 ? 0 : 1
+      });
+    }
+  }
+  sizeParticles();
+
+  // ---------- grain ----------
+  const grain = document.getElementById("grain");
+  const gctx = grain.getContext("2d");
+  function makeGrain(){
+    const s = 150;
+    grain.width = s; grain.height = s;
+    grain.style.width = innerWidth+"px"; grain.style.height = innerHeight+"px";
+    const img = gctx.createImageData(s,s);
+    for(let i=0;i<img.data.length;i+=4){
+      const v = Math.random()*255;
+      img.data[i]=img.data[i+1]=img.data[i+2]=v; img.data[i+3]=255;
+    }
+    gctx.putImageData(img,0,0);
+  }
+  makeGrain();
+
+  // ---------- Lumen jellyfish ----------
+  const canvas = document.getElementById("lumen");
+  const ctx = canvas.getContext("2d");
+  let W=0,H=0,CX=0,CY=0;
+  function sizeLumen(){
+    const rect = canvas.getBoundingClientRect();
+    W = rect.width; H = rect.height;
+    canvas.width = Math.round(W*DPR); canvas.height = Math.round(H*DPR);
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    CX = W/2; CY = H/2;
+  }
+  sizeLumen();
+
+  // jellyfish body state — drifts toward pointer relative to its own screen anchor
+  const jelly = {
+    x:0, y:0,            // offset from center (drift toward pointer)
+    vx:0, vy:0,
+    pulse:0,             // 0..1 bell contraction phase
+    pulseT:0,
+    bob:0,
+    tilt:0, tiltV:0,
+    aimX:0, aimY:0       // smoothed aim direction (normalized-ish)
+  };
+
+  // tentacle chains — each is an array of points solved with verlet-ish lag
+  const TENT_LONG = 6;   // long trailing tentacles
+  const TENT_SHORT = 8;  // shorter oral arms
+  function buildTentacles(count, segs, spread, len, kind){
+    const arr=[];
+    for(let i=0;i<count;i++){
+      const t = count>1 ? (i/(count-1)-0.5) : 0;
+      const pts=[];
+      for(let s=0;s<segs;s++) pts.push({x:0,y:0,px:0,py:0});
+      arr.push({ base:t*spread, segs, len, pts, phase:Math.random()*Math.PI*2, kind, thick: kind==="long"?1:0.6 });
+    }
+    return arr;
+  }
+  const bellRadius = () => Math.min(W,H)*0.17;
+  let tentaclesLong = buildTentacles(TENT_LONG, 22, 1.0, () => bellRadius()*4.4, "long");
+  let tentaclesShort = buildTentacles(TENT_SHORT, 12, 0.62, () => bellRadius()*2.0, "short");
+
+  window.addEventListener("resize", ()=>{
+    sizeLumen(); sizeParticles(); makeGrain();
+    tentaclesLong = buildTentacles(TENT_LONG, 22, 1.0, () => bellRadius()*4.4, "long");
+    tentaclesShort = buildTentacles(TENT_SHORT, 12, 0.62, () => bellRadius()*2.0, "short");
+  });
+
+  // solve a tentacle: anchor at bell rim, each segment lags toward the previous
+  function solveTentacle(t, ax, ay, gravity, sway, time, driftX, driftY){
+    const pts = t.pts;
+    const segLen = t.len() / pts.length;
+    // anchor
+    pts[0].x = ax; pts[0].y = ay;
+    for(let i=1;i<pts.length;i++){
+      const p = pts[i], prev = pts[i-1];
+      if(p.px===0 && p.py===0){ p.x=ax; p.y=ay; p.px=ax; p.py=ay; }
+      // verlet inertia
+      let vx = (p.x - p.px)*0.86;
+      let vy = (p.y - p.py)*0.86;
+      p.px = p.x; p.py = p.y;
+      const ii = i/pts.length;
+      // gentle wave along the length + horizontal drift from body motion
+      const wave = Math.sin(time*1.6 + t.phase + i*0.5) * sway * ii;
+      p.x += vx + wave + driftX*ii*0.5;
+      p.y += vy + gravity*(0.6+ii*0.9) + driftY*ii*0.4;
+      // constrain distance to previous
+      const dx = p.x-prev.x, dy=p.y-prev.y;
+      const d = Math.hypot(dx,dy)||0.0001;
+      const diff = (d - segLen)/d;
+      p.x -= dx*diff; p.y -= dy*diff;
+    }
+  }
+
+  function drawTentacle(t, alpha, colorStops){
+    const pts = t.pts;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for(let i=1;i<pts.length-1;i++){
+      const mx=(pts[i].x+pts[i+1].x)/2, my=(pts[i].y+pts[i+1].y)/2;
+      ctx.quadraticCurveTo(pts[i].x, pts[i].y, mx, my);
+    }
+    const grad = ctx.createLinearGradient(pts[0].x,pts[0].y, pts[pts.length-1].x, pts[pts.length-1].y);
+    grad.addColorStop(0, colorStops[0]);
+    grad.addColorStop(0.5, colorStops[1]);
+    grad.addColorStop(1, colorStops[2]);
+    ctx.strokeStyle = grad;
+    ctx.lineCap="round"; ctx.lineJoin="round";
+    ctx.globalAlpha = alpha;
+    ctx.lineWidth = (t.kind==="long"?2.4:1.7)*t.thick;
+    ctx.stroke();
+    // luminous nodes trailing down long tentacles
+    if(t.kind==="long"){
+      for(let i=6;i<pts.length;i+=5){
+        const glowA = alpha*(i/pts.length)*0.9;
+        ctx.globalAlpha = glowA;
+        ctx.beginPath();
+        ctx.arc(pts[i].x, pts[i].y, 1.8, 0, Math.PI*2);
+        ctx.fillStyle = "rgba(150,255,240,1)";
+        ctx.shadowColor = "rgba(63,240,216,.9)";
+        ctx.shadowBlur = 10;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ---------- main loop ----------
+  let last = performance.now();
+  let time = 0;
+  let running = true;
+
+  function frame(now){
+    if(!running) return;
+    const dt = Math.min((now-last)/1000, 0.05);
+    last = now;
+    time += dt;
+
+    // smooth pointer
+    pointer.x += (pointer.tx - pointer.x)*0.12;
+    pointer.y += (pointer.ty - pointer.y)*0.12;
+
+    // custom cursor easing
+    rx += (pointer.tx - rx)*0.35; ry += (pointer.ty - ry)*0.35;
+    if(cur){ cur.style.transform = `translate(${pointer.tx}px,${pointer.ty}px) translate(-50%,-50%)`; }
+    if(ring){ ring.style.transform = `translate(${rx}px,${ry}px) translate(-50%,-50%)`; }
+
+    // background parallax
+    const px = (pointer.x/innerWidth - 0.5);
+    const py = (pointer.y/innerHeight - 0.5);
+    if(bgGrad) bgGrad.style.transform = `translate(${px*-24}px,${py*-24}px)`;
+    if(bgShafts) bgShafts.style.transform = `translate(${px*36}px,${py*22}px)`;
+
+    drawParticles(dt);
+    drawLumen(dt, px, py);
+
+    requestAnimationFrame(frame);
+  }
+
+  function drawParticles(dt){
+    pctx.clearRect(0,0,innerWidth,innerHeight);
+    for(const s of spores){
+      s.drift += s.driftSpd;
+      s.y += s.vy;
+      const sx = s.x + Math.sin(s.drift)*s.amp*8;
+      if(s.y < -6){ s.y = innerHeight+6; s.x = Math.random()*innerWidth; }
+      const twinkle = 0.5 + 0.5*Math.sin(time*1.4 + s.drift*3);
+      const a = s.glow*twinkle;
+      pctx.beginPath();
+      pctx.arc(sx, s.y, s.r, 0, Math.PI*2);
+      if(s.hue===0){
+        pctx.fillStyle = `rgba(120,240,225,${a})`;
+        pctx.shadowColor="rgba(63,240,216,.8)";
+      }else{
+        pctx.fillStyle = `rgba(150,160,255,${a})`;
+        pctx.shadowColor="rgba(124,139,255,.8)";
+      }
+      pctx.shadowBlur = 8;
+      pctx.fill();
+    }
+    pctx.shadowBlur = 0;
+  }
+
+  function drawLumen(dt, px, py){
+    ctx.clearRect(0,0,W,H);
+
+    // --- body drift toward pointer (relative to canvas center on screen) ---
+    const rect = canvas.getBoundingClientRect();
+    const anchorX = rect.left + rect.width/2;
+    const anchorY = rect.top + rect.height/2;
+    // desired offset: pull a fraction of the way to the pointer, capped
+    const cap = Math.min(W,H)*0.16;
+    let dx = pointer.x - anchorX;
+    let dy = pointer.y - anchorY;
+    const dist = Math.hypot(dx,dy)||1;
+    const pull = Math.min(dist, cap*2.2);
+    const tgX = (dx/dist)*pull*0.28;
+    const tgY = (dy/dist)*pull*0.28;
+
+    // spring toward target
+    jelly.vx += (tgX - jelly.x)*0.045; jelly.vy += (tgY - jelly.y)*0.045;
+    jelly.vx *= 0.90; jelly.vy *= 0.90;
+    jelly.x += jelly.vx; jelly.y += jelly.vy;
+
+    // smoothed aim (for tilt & gaze)
+    jelly.aimX += ((dx/dist) - jelly.aimX)*0.06;
+    jelly.aimY += ((dy/dist) - jelly.aimY)*0.06;
+
+    // pulse propulsion cycle — contract fast, relax slow
+    jelly.pulseT += dt* (reduceMotion?0:1);
+    const period = 3.0;
+    let ph = (jelly.pulseT % period)/period;              // 0..1
+    // contraction curve
+    let contract;
+    if(ph < 0.22){ contract = Math.sin((ph/0.22)*Math.PI*0.5); }      // quick squeeze
+    else { const r=(ph-0.22)/0.78; contract = Math.cos(r*Math.PI*0.5); } // slow release
+    jelly.pulse = contract; // 0..1
+
+    // subtle vertical bob synced to pulse (propulsion kick)
+    jelly.bob = -contract * Math.min(W,H)*0.02;
+
+    const bob = jelly.bob + Math.sin(time*0.9)*Math.min(W,H)*0.01;
+    const bx = CX + jelly.x;
+    const by = CY + jelly.y + bob;
+
+    // tilt toward horizontal aim
+    const targetTilt = jelly.aimX*0.32 + Math.sin(time*0.6)*0.03;
+    jelly.tiltV += (targetTilt - jelly.tilt)*0.05; jelly.tiltV*=0.85; jelly.tilt += jelly.tiltV;
+
+    ctx.save();
+    ctx.translate(bx, by);
+    ctx.rotate(jelly.tilt);
+
+    const R = bellRadius();
+    // bell squash from pulse: contract -> flatter & wider then extend
+    const squashY = 1 - jelly.pulse*0.30;
+    const squashX = 1 + jelly.pulse*0.16;
+
+    // motion-driven horizontal drag for tentacles
+    const driftX = -jelly.vx*3.2;
+    const driftY = -jelly.vy*3.2 + 2.4; // baseline downward
+
+    // ===== TENTACLES (behind bell) =====
+    // long trailing tentacles
+    for(const t of tentaclesLong){
+      const ax = t.base*R*0.9;
+      const ay = R*0.35*squashY;
+      const sway = Math.sin(time*0.8 + t.phase)*1.2;
+      solveTentacle(t, ax, ay, 0.9, sway, time, driftX, driftY);
+      drawTentacle(t, 0.55, [
+        "rgba(63,240,216,0.0)",
+        "rgba(90,220,255,0.55)",
+        "rgba(124,139,255,0.0)"
+      ]);
+    }
+    // shorter oral arms (frilly, denser)
+    for(const t of tentaclesShort){
+      const ax = t.base*R*0.5;
+      const ay = R*0.18*squashY;
+      const sway = Math.sin(time*1.3 + t.phase)*1.8;
+      solveTentacle(t, ax, ay, 1.15, sway, time, driftX*0.6, driftY*0.7);
+      drawTentacle(t, 0.5, [
+        "rgba(150,255,240,0.0)",
+        "rgba(120,240,225,0.6)",
+        "rgba(63,240,216,0.0)"
+      ]);
+    }
+
+    // ===== BELL =====
+    ctx.save();
+    ctx.scale(squashX, squashY);
+
+    // outer bloom halo
+    const halo = ctx.createRadialGradient(0,-R*0.1, R*0.2, 0,0, R*2.1);
+    halo.addColorStop(0, `rgba(63,240,216,${0.16+jelly.pulse*0.10})`);
+    halo.addColorStop(0.4, "rgba(90,140,220,0.06)");
+    halo.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = halo;
+    ctx.beginPath(); ctx.arc(0,0,R*2.1,0,Math.PI*2); ctx.fill();
+
+    // bell silhouette (dome + wavy rim)
+    ctx.beginPath();
+    const rim = R*0.86;
+    ctx.moveTo(-R, R*0.12);
+    ctx.bezierCurveTo(-R*1.02, -R*0.85, R*1.02, -R*0.85, R, R*0.12);
+    // scalloped bottom rim
+    const lobes = 7;
+    for(let i=0;i<=lobes;i++){
+      const tt = i/lobes;
+      const xx = R - tt*(2*R);
+      const wob = Math.sin(time*2.2 + i*1.1)* R*0.03 * (1-jelly.pulse*0.5);
+      const yy = R*0.12 + Math.sin(tt*Math.PI)*R*0.16 + wob;
+      ctx.lineTo(xx, yy);
+    }
+    ctx.closePath();
+
+    // translucent gel fill
+    const gel = ctx.createRadialGradient(0,-R*0.35, R*0.1, 0, R*0.1, R*1.25);
+    gel.addColorStop(0, "rgba(190,255,248,0.42)");
+    gel.addColorStop(0.35, "rgba(90,230,235,0.24)");
+    gel.addColorStop(0.7, "rgba(70,130,220,0.14)");
+    gel.addColorStop(1, "rgba(40,60,150,0.02)");
+    ctx.fillStyle = gel;
+    ctx.shadowColor = "rgba(63,240,216,0.5)";
+    ctx.shadowBlur = 40;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // inner luminous core (the "organs") — glows with pulse
+    const coreY = -R*0.05;
+    const coreR = R*(0.42 + jelly.pulse*0.06);
+    const core = ctx.createRadialGradient(0, coreY, 2, 0, coreY, coreR);
+    core.addColorStop(0, `rgba(255,255,255,${0.9})`);
+    core.addColorStop(0.25, `rgba(150,255,240,${0.7+jelly.pulse*0.2})`);
+    core.addColorStop(0.6, "rgba(63,240,216,0.28)");
+    core.addColorStop(1, "rgba(63,240,216,0)");
+    ctx.fillStyle = core;
+    ctx.beginPath(); ctx.arc(0, coreY, coreR, 0, Math.PI*2); ctx.fill();
+
+    // radial gonad ribs inside bell
+    ctx.globalAlpha = 0.5 + jelly.pulse*0.3;
+    ctx.lineWidth = 1.4;
+    for(let i=0;i<4;i++){
+      const a = -Math.PI/2 + (i-1.5)*0.42;
+      ctx.beginPath();
+      ctx.moveTo(0, coreY);
+      ctx.quadraticCurveTo(
+        Math.cos(a)*R*0.3, coreY+Math.sin(a)*R*0.25,
+        Math.cos(a)*R*0.62, R*0.1
+      );
+      ctx.strokeStyle = "rgba(160,255,245,0.55)";
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    // rim highlight
+    ctx.beginPath();
+    ctx.moveTo(-R*0.92, R*0.05);
+    ctx.bezierCurveTo(-R*0.95,-R*0.7, R*0.95,-R*0.7, R*0.92, R*0.05);
+    ctx.strokeStyle = `rgba(190,255,250,${0.5+jelly.pulse*0.25})`;
+    ctx.lineWidth = 1.6;
+    ctx.shadowColor="rgba(63,240,216,0.8)"; ctx.shadowBlur=12;
+    ctx.stroke();
+    ctx.shadowBlur=0;
+
+    // top specular glint (moves subtly with aim = "gaze")
+    const glX = jelly.aimX*R*0.18;
+    const glY = -R*0.5 + jelly.aimY*R*0.1;
+    const glint = ctx.createRadialGradient(glX,glY,0, glX,glY, R*0.4);
+    glint.addColorStop(0,"rgba(255,255,255,0.6)");
+    glint.addColorStop(1,"rgba(255,255,255,0)");
+    ctx.fillStyle=glint;
+    ctx.beginPath(); ctx.ellipse(glX,glY,R*0.34,R*0.22,0,0,Math.PI*2); ctx.fill();
+
+    ctx.restore(); // un-scale bell
+
+    ctx.restore(); // un-translate/rotate
+  }
+
+  // ---------- static render for reduced motion ----------
+  function renderStatic(){
+    drawParticlesStatic();
+    // seed tentacles hanging straight
+    for(const t of tentaclesLong.concat(tentaclesShort)){
+      for(let i=0;i<t.pts.length;i++){ t.pts[i].x=t.pts[i].y=t.pts[i].px=t.pts[i].py=0; }
+    }
+    jelly.pulse = 0.15;
+    jelly.x=jelly.y=0; jelly.tilt=0; jelly.aimX=0; jelly.aimY=0;
+    drawLumenStaticSettle();
+  }
+  function drawParticlesStatic(){
+    pctx.clearRect(0,0,innerWidth,innerHeight);
+    for(const s of spores){
+      pctx.beginPath(); pctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+      pctx.fillStyle = s.hue===0?"rgba(120,240,225,0.5)":"rgba(150,160,255,0.5)";
+      pctx.fill();
+    }
+  }
+  function drawLumenStaticSettle(){
+    // run solver a number of times without animation to let tentacles hang
+    for(let k=0;k<60;k++){
+      time += 0.016;
+      const R = bellRadius();
+      for(const t of tentaclesLong){
+        solveTentacle(t, t.base*R*0.9, R*0.35, 0.9, 0, time, 0, 2.4);
+      }
+      for(const t of tentaclesShort){
+        solveTentacle(t, t.base*R*0.5, R*0.18, 1.15, 0, time, 0, 1.6);
+      }
+    }
+    // draw one frame
+    reduceMotionDraw();
+  }
+  function reduceMotionDraw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.save();
+    ctx.translate(CX, CY);
+    const R = bellRadius();
+    for(const t of tentaclesLong) drawTentacle(t,0.5,["rgba(63,240,216,0)","rgba(90,220,255,0.5)","rgba(124,139,255,0)"]);
+    for(const t of tentaclesShort) drawTentacle(t,0.45,["rgba(150,255,240,0)","rgba(120,240,225,0.55)","rgba(63,240,216,0)"]);
+    // bell
+    const gel = ctx.createRadialGradient(0,-R*0.35,R*0.1,0,R*0.1,R*1.25);
+    gel.addColorStop(0,"rgba(190,255,248,0.42)");
+    gel.addColorStop(0.5,"rgba(80,200,225,0.2)");
+    gel.addColorStop(1,"rgba(40,60,150,0.02)");
+    ctx.beginPath();
+    ctx.moveTo(-R,R*0.12);
+    ctx.bezierCurveTo(-R*1.02,-R*0.85,R*1.02,-R*0.85,R,R*0.12);
+    ctx.closePath();
+    ctx.fillStyle=gel; ctx.shadowColor="rgba(63,240,216,0.5)"; ctx.shadowBlur=40; ctx.fill(); ctx.shadowBlur=0;
+    const core=ctx.createRadialGradient(0,-R*0.05,2,0,-R*0.05,R*0.42);
+    core.addColorStop(0,"rgba(255,255,255,0.9)");
+    core.addColorStop(0.4,"rgba(150,255,240,0.6)");
+    core.addColorStop(1,"rgba(63,240,216,0)");
+    ctx.fillStyle=core; ctx.beginPath(); ctx.arc(0,-R*0.05,R*0.42,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+
+  // ---------- visibility pause ----------
+  document.addEventListener("visibilitychange", ()=>{
+    if(document.hidden){ running=false; }
+    else if(!reduceMotion){ running=true; last=performance.now(); requestAnimationFrame(frame); }
+  });
+
+  // ---------- boot ----------
+  if(reduceMotion){
+    document.body.style.cursor="auto";
+    if(cur) cur.style.display="none";
+    if(ring) ring.style.display="none";
+    renderStatic();
+  } else {
+    requestAnimationFrame(frame);
+  }
+})();
+</script>

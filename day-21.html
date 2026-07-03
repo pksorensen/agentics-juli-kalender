@@ -1,0 +1,824 @@
+<title>agentics.dk — Volt</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg-0: #05060a;
+    --bg-1: #0a0d16;
+    --ink: #f6f7ff;
+    --muted: #969bb6;
+    --faint: #4d5270;
+    --accent: #ffe14a;        /* electric yellow */
+    --accent-soft: rgba(255,225,74,0.14);
+    --line: rgba(255,255,255,0.08);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background: var(--bg-0);
+    color: var(--ink);
+    font-family: var(--font);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* ---------- layered cinematic background ---------- */
+  .stage { position: fixed; inset: 0; z-index: 0; overflow: hidden; }
+  .layer { position: absolute; inset: -8%; will-change: transform; }
+
+  .bg-grad {
+    background:
+      radial-gradient(130% 100% at 50% 2%, #14172b 0%, rgba(20,23,43,0) 58%),
+      radial-gradient(80% 60% at 50% 106%, #1a180a 0%, rgba(26,24,10,0) 55%),
+      linear-gradient(180deg, var(--bg-1), var(--bg-0));
+  }
+  /* electric grid that pulses (opacity animated in JS) */
+  .bg-grid {
+    background-image:
+      linear-gradient(rgba(255,225,74,0.10) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,225,74,0.10) 1px, transparent 1px);
+    background-size: 52px 52px;
+    -webkit-mask-image: radial-gradient(72% 60% at 50% 46%, #000 0%, transparent 74%);
+    mask-image: radial-gradient(72% 60% at 50% 46%, #000 0%, transparent 74%);
+    opacity: 0.42;
+  }
+  .bg-glow {
+    background:
+      radial-gradient(34% 30% at 42% 48%, rgba(255,225,74,0.16), transparent 70%),
+      radial-gradient(24% 22% at 44% 44%, rgba(255,255,255,0.05), transparent 72%);
+    filter: blur(8px);
+  }
+
+  #fxcanvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  /* full-screen fx overlays */
+  .fx { position: fixed; inset: 0; z-index: 6; pointer-events: none; }
+  .fx-vignette {
+    box-shadow: inset 0 0 240px 50px rgba(0,0,0,0.86);
+    background: radial-gradient(120% 100% at 50% 46%, transparent 52%, rgba(0,0,0,0.6) 100%);
+  }
+  .fx-grain { opacity: 0.05; mix-blend-mode: overlay; }
+  .fx-flicker { background: rgba(255,225,74,0.02); animation: flick 6.5s steps(2) infinite; }
+  @keyframes flick { 0%,96%{opacity:0} 97%{opacity:1} 100%{opacity:0} }
+
+  /* ---------- content ---------- */
+  .wrap { position: relative; z-index: 3; height: 100%; display: flex; flex-direction: column; }
+
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 26px clamp(20px, 5vw, 64px);
+  }
+  .brand {
+    display: flex; align-items: center; gap: 11px;
+    font-weight: 640; letter-spacing: -0.02em; font-size: 18px;
+  }
+  .brand .bolt {
+    width: 22px; height: 22px; display: block;
+    filter: drop-shadow(0 0 8px rgba(255,225,74,0.7));
+    animation: boltpulse 2.4s ease-in-out infinite;
+  }
+  @keyframes boltpulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.7;transform:scale(0.94)} }
+  .brand b { font-weight: 640; }
+  .brand span { color: var(--faint); font-weight: 500; }
+
+  .navlinks { display: flex; gap: 30px; align-items: center; }
+  .navlinks a {
+    color: var(--muted); text-decoration: none; font-size: 14px; font-weight: 500;
+    letter-spacing: 0.01em; position: relative; padding: 4px 2px;
+    transition: color 0.25s ease;
+  }
+  .navlinks a::after {
+    content: ""; position: absolute; left: 0; bottom: -2px; height: 1px; width: 100%;
+    background: var(--accent); transform: scaleX(0); transform-origin: left;
+    transition: transform 0.3s cubic-bezier(.2,.8,.2,1);
+  }
+  .navlinks a:hover { color: var(--ink); }
+  .navlinks a:hover::after,
+  .navlinks a:focus-visible::after { transform: scaleX(1); }
+  .navlinks a:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 3px; }
+  .navlinks .pill {
+    border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px;
+    color: var(--ink);
+  }
+  .navlinks .pill:hover { border-color: rgba(255,225,74,0.5); }
+  .navlinks .pill::after { display: none; }
+
+  /* hero split: mascot left, copy right (stacks on small) */
+  .hero {
+    flex: 1; display: grid; grid-template-columns: 1.02fr 1fr;
+    align-items: center; gap: clamp(16px, 4vw, 56px);
+    padding: 0 clamp(20px, 5vw, 64px) 46px;
+    max-width: 1380px; margin: 0 auto; width: 100%;
+  }
+
+  .stagewrap {
+    position: relative; display: flex; align-items: center; justify-content: center;
+    will-change: transform; min-height: 0;
+  }
+  .pedestal {
+    position: absolute; bottom: 12%; left: 50%; transform: translateX(-50%);
+    width: 44%; height: 30px; border-radius: 50%;
+    background: radial-gradient(closest-side, rgba(255,225,74,0.28), transparent 72%);
+    filter: blur(4px);
+    animation: pedpulse 1.6s ease-in-out infinite;
+  }
+  @keyframes pedpulse { 0%,100%{opacity:0.85;transform:translateX(-50%) scale(1)} 50%{opacity:1;transform:translateX(-50%) scale(1.06)} }
+  #volt {
+    width: min(460px, 82%); height: auto; display: block;
+  }
+  .badge {
+    position: absolute; top: 5%; right: 6%;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent); border: 1px solid rgba(255,225,74,0.35);
+    padding: 5px 10px; border-radius: 6px; background: rgba(255,225,74,0.06);
+    backdrop-filter: blur(2px);
+  }
+
+  .copy { max-width: 570px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-size: 12.5px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 22px;
+  }
+  .eyebrow::before {
+    content: ""; width: 26px; height: 1px; background: linear-gradient(90deg, var(--accent), transparent);
+  }
+  h1 {
+    margin: 0; font-weight: 700; letter-spacing: -0.035em; line-height: 0.96;
+    font-size: clamp(40px, 6.6vw, 86px);
+  }
+  h1 .spark {
+    color: var(--accent); position: relative; display: inline-block;
+    text-shadow: 0 0 22px rgba(255,225,74,0.45);
+  }
+  .sub {
+    margin: 26px 0 0; color: var(--muted); font-size: clamp(15px, 1.5vw, 18.5px);
+    line-height: 1.6; max-width: 470px; font-weight: 450;
+  }
+  .cta-row { display: flex; align-items: center; gap: 26px; margin-top: 40px; flex-wrap: wrap; }
+
+  .cta {
+    position: relative; border: none; cursor: pointer;
+    font-family: var(--font); font-size: 15px; font-weight: 650; letter-spacing: 0.01em;
+    color: #1a1500; background: var(--accent);
+    padding: 15px 30px; border-radius: 12px;
+    will-change: transform; transition: box-shadow 0.3s ease, transform 0.12s ease;
+    box-shadow: 0 0 0 rgba(255,225,74,0);
+    overflow: hidden;
+  }
+  .cta span.lbl { position: relative; z-index: 2; }
+  .cta:hover { box-shadow: 0 10px 44px rgba(255,225,74,0.5), 0 0 0 1px rgba(255,225,74,0.65); }
+  .cta:active { transform: scale(0.97); }
+  .cta:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+  /* electric sweep on hover */
+  .cta::before {
+    content: ""; position: absolute; inset: 0; z-index: 1;
+    background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.55) 50%, transparent 80%);
+    transform: translateX(-120%); transition: none; opacity: 0;
+  }
+  .cta:hover::before { animation: sweep 0.7s ease forwards; opacity: 1; }
+  @keyframes sweep { to { transform: translateX(120%); } }
+
+  .link {
+    color: var(--ink); text-decoration: none; font-size: 15px; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 9px; opacity: 0.9;
+  }
+  .link .arrow { transition: transform 0.28s cubic-bezier(.2,.8,.2,1); color: var(--accent); }
+  .link:hover .arrow { transform: translateX(5px); }
+  .link:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 4px; }
+
+  .hint {
+    position: fixed; top: 50%; right: clamp(20px,5vw,64px); z-index: 4;
+    transform: translateY(-50%);
+    font-size: 12px; color: var(--faint); letter-spacing: 0.04em;
+    display: flex; align-items: center; gap: 8px; writing-mode: vertical-rl;
+  }
+  .hint .k { color: var(--muted); font-weight: 600; }
+
+  /* staggered entrance */
+  .reveal { opacity: 0; transform: translateY(22px); }
+  .in .reveal { animation: rise 0.9s cubic-bezier(.2,.8,.2,1) forwards; }
+  .r1{animation-delay:.10s!important}.r2{animation-delay:.20s!important}
+  .r3{animation-delay:.32s!important}.r4{animation-delay:.46s!important}
+  .r5{animation-delay:.60s!important}
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  .stagewrap.reveal { transform: translateY(22px) scale(0.985); }
+  .in .stagewrap.reveal { animation: riseScale 1s cubic-bezier(.2,.8,.2,1) forwards; animation-delay:.15s; }
+  @keyframes riseScale { to { opacity: 1; transform: none; } }
+
+  @media (max-width: 900px) {
+    body { overflow: auto; }
+    .hero { grid-template-columns: 1fr; text-align: center; padding-top: 8px; gap: 18px; }
+    .copy { margin: 0 auto; }
+    .eyebrow, .cta-row { justify-content: center; }
+    .navlinks .hide-sm { display: none; }
+    #volt { width: min(320px, 66%); }
+    .hint { display: none; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal, .stagewrap.reveal { opacity: 1 !important; transform: none !important; animation: none !important; }
+    .brand .bolt, .fx-flicker, .pedestal { animation: none !important; }
+  }
+</style>
+
+<div class="stage" id="stage">
+  <div class="layer bg-grad" data-depth="6"></div>
+  <div class="layer bg-glow" data-depth="30" id="bgglow"></div>
+  <div class="layer bg-grid" data-depth="20" id="bggrid"></div>
+  <canvas id="fxcanvas" data-depth="12"></canvas>
+</div>
+
+<div class="fx fx-flicker"></div>
+<div class="fx fx-vignette"></div>
+
+<div class="wrap" id="wrap">
+  <nav>
+    <div class="brand reveal r1">
+      <svg class="bolt" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="var(--accent)"/></svg>
+      <b>agentics<span>.dk</span></b>
+    </div>
+    <div class="navlinks reveal r1">
+      <a href="#" class="hide-sm">Work</a>
+      <a href="#" class="hide-sm">Systems</a>
+      <a href="#" class="hide-sm">About</a>
+      <a href="#" class="pill">Get charged</a>
+    </div>
+  </nav>
+
+  <main class="hero">
+    <div class="stagewrap reveal" id="stagewrap">
+      <div class="pedestal"></div>
+      <span class="badge">Live wire · 10,000 V</span>
+      <canvas id="volt" width="520" height="560" aria-label="Volt, a crackling electric spark creature with arcing lightning limbs"></canvas>
+    </div>
+
+    <div class="copy">
+      <div class="eyebrow reveal r2">Fully charged, zero latency</div>
+      <h1 class="reveal r3">Ship at the<br>speed of <span class="spark" id="spark">Volt</span>.</h1>
+      <p class="sub reveal r4">A pure jolt of momentum. Volt turns slow ideas into live current — prototyping, automating and shipping faster than your coffee cools. Point anywhere and watch the sparks follow.</p>
+      <div class="cta-row reveal r5">
+        <button class="cta" id="cta"><span class="lbl">Plug in &nbsp;⚡</span></button>
+        <a href="#" class="link">See what we power <span class="arrow">→</span></a>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="hint">
+  <span class="k">TIP</span> move your cursor — Volt arcs to it.
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+  /* ===== entrance ===== */
+  requestAnimationFrame(function () {
+    document.getElementById("wrap").classList.add("in");
+    document.getElementById("stagewrap").classList.add("in");
+    document.body.classList.add("in");
+  });
+
+  /* ===== pointer state ===== */
+  // normalized -1..1 from screen center (for parallax)
+  var px = 0, py = 0, tpx = 0, tpy = 0;
+  // absolute pointer in page coords (for the arc-to-cursor)
+  var pageX = window.innerWidth * 0.72, pageY = window.innerHeight * 0.5;
+  var pointerInside = false;
+  window.addEventListener("pointermove", function (e) {
+    tpx = (e.clientX / window.innerWidth) * 2 - 1;
+    tpy = (e.clientY / window.innerHeight) * 2 - 1;
+    pageX = e.clientX; pageY = e.clientY;
+    pointerInside = true;
+  }, { passive: true });
+  window.addEventListener("pointerleave", function () { pointerInside = false; });
+
+  /* ============================================================
+     FX CANVAS — full-screen background sparks + field particles
+     ============================================================ */
+  var fxc = document.getElementById("fxcanvas");
+  var fx = fxc.getContext("2d");
+  var motes = [];
+  function sizeFX() {
+    fxc.width = Math.floor(window.innerWidth * DPR);
+    fxc.height = Math.floor(window.innerHeight * DPR);
+    var count = Math.min(90, Math.floor(window.innerWidth * window.innerHeight / 20000));
+    motes = [];
+    for (var i = 0; i < count; i++) {
+      motes.push({
+        x: Math.random() * fxc.width,
+        y: Math.random() * fxc.height,
+        s: (Math.random() * 1.5 + 0.4) * DPR,
+        vy: (Math.random() * 0.35 + 0.08) * DPR,
+        vx: (Math.random() - 0.5) * 0.2 * DPR,
+        a: Math.random() * Math.PI * 2,
+        sp: Math.random() * 0.9 + 0.3
+      });
+    }
+  }
+  sizeFX();
+
+  /* ============================================================
+     VOLT — the spark elemental, drawn on canvas
+     A glowing core with a jittery electric body outline and
+     four arcing "limbs" made of jagged lightning that snap
+     toward the cursor. Glowing eyes track the pointer.
+     ============================================================ */
+  var vc = document.getElementById("volt");
+  var g = vc.getContext("2d");
+  // logical drawing space (we scale by DPR)
+  var VW = 520, VH = 560;
+  function sizeVolt() {
+    vc.width = Math.floor(VW * DPR);
+    vc.height = Math.floor(VH * DPR);
+    g.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  sizeVolt();
+
+  var ACCENT = "#ffe14a";
+  var ACCENT_HOT = "#fff7c4";
+  var ACCENT_DEEP = "#ffab2e";
+  var CORE_CX = VW / 2;
+  var CORE_CY = VH * 0.46;
+
+  // deterministic-ish pseudo random for stable-ish bolts per segment
+  function jitter(seed) {
+    var x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+    return x - Math.floor(x); // 0..1
+  }
+
+  /* draw a jagged lightning polyline from (x0,y0) to (x1,y1)
+     with `segs` segments, lateral `spread`, a time-varying seed. */
+  function bolt(x0, y0, x1, y1, segs, spread, seed, width, col, glow) {
+    var dx = x1 - x0, dy = y1 - y0;
+    var len = Math.sqrt(dx * dx + dy * dy) || 1;
+    var nx = -dy / len, ny = dx / len; // normal
+    g.beginPath();
+    g.moveTo(x0, y0);
+    for (var i = 1; i < segs; i++) {
+      var t = i / segs;
+      var jx = (jitter(seed + i * 7.3) - 0.5) * 2;
+      // taper spread near the endpoints
+      var envelope = Math.sin(t * Math.PI);
+      var off = jx * spread * envelope;
+      g.lineTo(x0 + dx * t + nx * off, y0 + dy * t + ny * off);
+    }
+    g.lineTo(x1, y1);
+    g.lineCap = "round";
+    g.lineJoin = "round";
+    if (glow) {
+      g.shadowColor = ACCENT;
+      g.shadowBlur = glow;
+    }
+    g.strokeStyle = col;
+    g.lineWidth = width;
+    g.stroke();
+    g.shadowBlur = 0;
+  }
+
+  /* draw a limb: a bolt from core toward an angle, with a
+     glowing "hand" node at the tip. limbs jitter each frame. */
+  function limb(ang, reach, t, seed, lean) {
+    var ox = Math.cos(ang) * 30;
+    var oy = Math.sin(ang) * 30;
+    var tx = CORE_CX + Math.cos(ang) * reach + lean.x;
+    var ty = CORE_CY + Math.sin(ang) * reach + lean.y;
+    // outer soft glow stroke
+    bolt(CORE_CX + ox, CORE_CY + oy, tx, ty, 6, 20,
+         seed + Math.floor(t * 22), 7, "rgba(255,225,74,0.18)", 18);
+    // mid stroke
+    bolt(CORE_CX + ox, CORE_CY + oy, tx, ty, 6, 18,
+         seed + Math.floor(t * 22), 3.4, ACCENT_DEEP, 12);
+    // hot core stroke
+    bolt(CORE_CX + ox, CORE_CY + oy, tx, ty, 6, 16,
+         seed + Math.floor(t * 22), 1.4, ACCENT_HOT, 8);
+    // tip node
+    g.beginPath();
+    g.arc(tx, ty, 5.5, 0, Math.PI * 2);
+    g.shadowColor = ACCENT; g.shadowBlur = 16;
+    g.fillStyle = ACCENT_HOT; g.fill();
+    g.shadowBlur = 0;
+    return { x: tx, y: ty };
+  }
+
+  /* the body — an irregular electric blob outline that flickers.
+     drawn as a wobbly closed path around the core. */
+  function drawBody(t, breathe, squash) {
+    var pts = 16;
+    var rBase = 62 * breathe;
+    g.beginPath();
+    for (var i = 0; i <= pts; i++) {
+      var a = (i / pts) * Math.PI * 2;
+      // wobble radius with a couple of sine harmonics + tiny jitter
+      var wob = 1
+        + 0.10 * Math.sin(a * 3 + t * 3.0)
+        + 0.06 * Math.sin(a * 5 - t * 4.2)
+        + (jitter(i * 3.1 + Math.floor(t * 30)) - 0.5) * 0.10;
+      var rx = rBase * wob * (1 / squash);
+      var ry = rBase * wob * squash;
+      var x = CORE_CX + Math.cos(a) * rx;
+      var y = CORE_CY + Math.sin(a) * ry;
+      if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+    }
+    g.closePath();
+
+    // filled glow gradient
+    var grd = g.createRadialGradient(CORE_CX, CORE_CY - 6, 6, CORE_CX, CORE_CY, 78 * breathe);
+    grd.addColorStop(0, "rgba(255,247,196,0.95)");
+    grd.addColorStop(0.35, "rgba(255,225,74,0.85)");
+    grd.addColorStop(0.75, "rgba(255,171,46,0.32)");
+    grd.addColorStop(1, "rgba(255,171,46,0)");
+    g.fillStyle = grd;
+    g.shadowColor = ACCENT; g.shadowBlur = 40;
+    g.fill();
+    g.shadowBlur = 0;
+
+    // crackle outline
+    g.lineWidth = 1.6;
+    g.strokeStyle = "rgba(255,247,196,0.7)";
+    g.stroke();
+  }
+
+  /* eyes: two glowing slits that track the pointer */
+  function drawFace(lookX, lookY, blink, t) {
+    var eyeGap = 20;
+    var eyeY = CORE_CY - 6;
+    var pupOffX = lookX * 6;
+    var pupOffY = lookY * 5;
+
+    for (var s = -1; s <= 1; s += 2) {
+      var ex = CORE_CX + s * eyeGap;
+      // eye socket dark
+      g.beginPath();
+      g.ellipse(ex, eyeY, 11, blink < 0.5 ? 13 : 2.2, 0, 0, Math.PI * 2);
+      g.fillStyle = "rgba(40,26,0,0.85)";
+      g.fill();
+
+      if (blink < 0.5) {
+        // glowing pupil
+        g.beginPath();
+        g.arc(ex + pupOffX, eyeY + pupOffY, 5.4, 0, Math.PI * 2);
+        g.shadowColor = ACCENT; g.shadowBlur = 14;
+        g.fillStyle = ACCENT_HOT; g.fill();
+        g.shadowBlur = 0;
+        // hot center
+        g.beginPath();
+        g.arc(ex + pupOffX, eyeY + pupOffY, 2.2, 0, Math.PI * 2);
+        g.fillStyle = "#ffffff"; g.fill();
+        // spark glint
+        g.beginPath();
+        g.arc(ex + pupOffX - 1.6, eyeY + pupOffY - 1.6, 1, 0, Math.PI * 2);
+        g.fillStyle = "#ffffff"; g.fill();
+      }
+    }
+
+    // little zig-zag mouth (energetic grin)
+    var my = CORE_CY + 20;
+    g.beginPath();
+    g.moveTo(CORE_CX - 14, my);
+    g.lineTo(CORE_CX - 6, my + 5);
+    g.lineTo(CORE_CX + 2, my);
+    g.lineTo(CORE_CX + 10, my + 5);
+    g.lineTo(CORE_CX + 16, my - 1);
+    g.lineWidth = 2.4; g.lineCap = "round"; g.lineJoin = "round";
+    g.strokeStyle = "rgba(60,40,0,0.85)";
+    g.stroke();
+  }
+
+  /* faint internal micro-arcs inside the body for texture */
+  function innerCrackle(t) {
+    for (var k = 0; k < 3; k++) {
+      var a0 = (jitter(k + Math.floor(t * 9)) ) * Math.PI * 2;
+      var a1 = a0 + Math.PI + (jitter(k * 5 + Math.floor(t * 9)) - 0.5);
+      var r = 34;
+      bolt(
+        CORE_CX + Math.cos(a0) * r, CORE_CY + Math.sin(a0) * r,
+        CORE_CX + Math.cos(a1) * r, CORE_CY + Math.sin(a1) * r,
+        5, 8, k * 11 + Math.floor(t * 18), 1, "rgba(255,255,255,0.55)", 6);
+    }
+  }
+
+  /* ===== parallax layers ===== */
+  var layers = Array.prototype.slice.call(document.querySelectorAll(".layer, #fxcanvas"));
+  var stagewrap = document.getElementById("stagewrap");
+  var grid = document.getElementById("bggrid");
+
+  /* ===== blink scheduling ===== */
+  var t = 0, lastBlink = 0, nextBlink = 1.6 + Math.random() * 3;
+  var running = true;
+  // spark burst pool (screen-space bursts on click)
+  var bursts = [];
+
+  /* map an on-screen page point into Volt-canvas local coords */
+  function pageToVolt(pxp, pyp) {
+    var r = vc.getBoundingClientRect();
+    var lx = ((pxp - r.left) / r.width) * VW;
+    var ly = ((pyp - r.top) / r.height) * VH;
+    return { x: lx, y: ly };
+  }
+
+  function frame() {
+    if (!running) return;
+    t += 0.016;
+
+    // ease pointer (parallax)
+    px += (tpx - px) * 0.08;
+    py += (tpy - py) * 0.08;
+
+    /* ---------- FX canvas: rising field motes + drifting sparks ---------- */
+    fx.clearRect(0, 0, fxc.width, fxc.height);
+    for (var i = 0; i < motes.length; i++) {
+      var m = motes[i];
+      m.y -= m.vy; m.x += m.vx;
+      m.a += 0.04 * m.sp;
+      if (m.y < -4) { m.y = fxc.height + 4; m.x = Math.random() * fxc.width; }
+      if (m.x < -4) m.x = fxc.width + 4;
+      if (m.x > fxc.width + 4) m.x = -4;
+      var tw = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(m.a));
+      fx.globalAlpha = tw * 0.8;
+      fx.fillStyle = (i % 9 === 0) ? "#ffffff" : ACCENT;
+      fx.fillRect(m.x, m.y, m.s, m.s);
+    }
+    fx.globalAlpha = 1;
+
+    /* ---------- parallax ---------- */
+    if (!reduce) {
+      for (var j = 0; j < layers.length; j++) {
+        var el = layers[j];
+        var d = parseFloat(el.getAttribute("data-depth")) || 10;
+        el.style.transform = "translate3d(" + (-px * d) + "px," + (-py * d * 0.7) + "px,0)";
+      }
+      stagewrap.style.transform =
+        "translate3d(" + (px * 16) + "px," + (py * 11) + "px,0) rotateX(" +
+        (-py * 3.5) + "deg) rotateY(" + (px * 4.5) + "deg)";
+      // grid pulse
+      grid.style.opacity = (0.34 + 0.12 * (0.5 + 0.5 * Math.sin(t * 2.4))).toFixed(3);
+    }
+
+    /* ---------- draw Volt ---------- */
+    g.clearRect(0, 0, VW, VH);
+
+    // idle bob + breathe + high-energy flicker
+    var bob = reduce ? 0 : Math.sin(t * 2.1) * 7;
+    var flick = reduce ? 1 : (1 + (jitter(Math.floor(t * 40)) - 0.5) * 0.05); // rapid tiny scale flicker
+    var breathe = (reduce ? 1 : (1 + Math.sin(t * 2.6) * 0.04)) * flick;
+    var squash = reduce ? 1 : (1 + Math.sin(t * 2.1 + 1.2) * 0.03);
+
+    // lean toward pointer (whole-body snap)
+    var leanX = reduce ? 0 : px * 26;
+    var leanY = reduce ? 0 : py * 20;
+
+    // save & translate for bob + lean
+    g.save();
+    g.translate(leanX, bob + leanY * 0.5);
+
+    // gaze target (normalized) — toward the actual pointer if inside
+    var gx, gy;
+    if (reduce) { gx = 0; gy = 0; }
+    else {
+      var vp = pageToVolt(pageX, pageY);
+      gx = Math.max(-1, Math.min(1, (vp.x - CORE_CX) / 220));
+      gy = Math.max(-1, Math.min(1, (vp.y - CORE_CY) / 220));
+    }
+
+    // blink logic
+    var blink = 0;
+    if (!reduce) {
+      if (t - lastBlink > nextBlink) { lastBlink = t; nextBlink = 1.8 + Math.random() * 3.4; }
+      var bt = t - lastBlink;
+      blink = (bt < 0.12) ? 1 : 0;
+    }
+
+    // ---- limbs: 4 arcing lightning arms/legs, jitter + reach toward pointer ----
+    var limbLean = { x: reduce ? 0 : gx * 16, y: reduce ? 0 : gy * 14 };
+    var pulse = reduce ? 0 : Math.sin(t * 3.4) * 8;
+    // arms (upper) and legs (lower)
+    limb(-2.5 + Math.sin(t * 2.0) * 0.12, 96 + pulse, t, 3, limbLean);   // upper-left
+    limb(-0.7 + Math.sin(t * 1.7) * 0.12, 96 + pulse, t, 17, limbLean);  // upper-right
+    limb(2.55 + Math.sin(t * 1.9) * 0.10, 104 + pulse, t, 31, { x: limbLean.x * 0.4, y: 6 }); // lower-left
+    limb(0.62 + Math.sin(t * 2.2) * 0.10, 104 + pulse, t, 47, { x: limbLean.x * 0.4, y: 6 }); // lower-right
+
+    // ---- body + face ----
+    drawBody(t, breathe, squash);
+    if (!reduce) innerCrackle(t);
+    drawFace(gx, gy, blink, t);
+
+    g.restore();
+
+    /* ---------- ARC TO CURSOR ---------- *
+       when the pointer is inside the window and reasonably near,
+       shoot a faint jagged arc from Volt's core to the cursor.   */
+    if (!reduce && pointerInside) {
+      var vp2 = pageToVolt(pageX, pageY);
+      var d2 = Math.hypot(vp2.x - (CORE_CX + leanX), vp2.y - (CORE_CY + bob));
+      // only within ~ a comfortable field range (in local units)
+      if (d2 < 620 && d2 > 70) {
+        var near = 1 - Math.min(1, (d2 - 70) / 520); // 1 near .. 0 far
+        var sx = CORE_CX + leanX, sy = CORE_CY + bob + 4;
+        // outer faint
+        bolt(sx, sy, vp2.x, vp2.y, 9, 26,
+             900 + Math.floor(t * 26), 3.2,
+             "rgba(255,225,74," + (0.10 + near * 0.16).toFixed(3) + ")", 14);
+        // bright core (flickers on/off for a live-wire feel)
+        if (jitter(Math.floor(t * 30)) > 0.35) {
+          bolt(sx, sy, vp2.x, vp2.y, 9, 20,
+               1700 + Math.floor(t * 26), 1.2,
+               "rgba(255,247,196," + (0.20 + near * 0.5).toFixed(3) + ")", 10);
+        }
+        // tiny landing spark at the cursor
+        g.beginPath();
+        g.arc(vp2.x, vp2.y, 2 + near * 2, 0, Math.PI * 2);
+        g.shadowColor = ACCENT; g.shadowBlur = 12;
+        g.fillStyle = ACCENT_HOT; g.fill();
+        g.shadowBlur = 0;
+      }
+    }
+
+    /* ---------- click bursts (local canvas) ---------- */
+    for (var b = bursts.length - 1; b >= 0; b--) {
+      var bu = bursts[b];
+      bu.life -= 0.045;
+      if (bu.life <= 0) { bursts.splice(b, 1); continue; }
+      var rr = (1 - bu.life) * 60;
+      for (var sp = 0; sp < bu.n; sp++) {
+        var aa = (sp / bu.n) * Math.PI * 2 + bu.rot;
+        var lx2 = bu.x + Math.cos(aa) * rr;
+        var ly2 = bu.y + Math.sin(aa) * rr;
+        bolt(bu.x, bu.y, lx2, ly2, 3, 6, sp * 13 + Math.floor(t * 40), 1.4,
+             "rgba(255,225,74," + (bu.life * 0.8).toFixed(3) + ")", 8);
+      }
+    }
+
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  /* static composed frame for reduced motion */
+  if (reduce) {
+    g.clearRect(0, 0, VW, VH);
+    var ll = { x: 0, y: 0 };
+    limb(-2.5, 96, 0, 3, ll); limb(-0.7, 96, 0, 17, ll);
+    limb(2.55, 104, 0, 31, ll); limb(0.62, 104, 0, 47, ll);
+    drawBody(0, 1, 1);
+    drawFace(0, 0, 0, 0);
+  }
+
+  /* pause loop when tab hidden */
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { running = false; }
+    else if (!reduce) { running = true; requestAnimationFrame(frame); }
+  });
+
+  /* ===== magnetic + electric CTA ===== */
+  var cta = document.getElementById("cta");
+  if (!reduce) {
+    cta.addEventListener("pointermove", function (e) {
+      var cr = cta.getBoundingClientRect();
+      var mx = e.clientX - (cr.left + cr.width / 2);
+      var my = e.clientY - (cr.top + cr.height / 2);
+      cta.style.transform = "translate(" + (mx * 0.26) + "px," + (my * 0.32) + "px)";
+    });
+    cta.addEventListener("pointerleave", function () { cta.style.transform = "translate(0,0)"; });
+  }
+  cta.addEventListener("click", function () {
+    // discharge: force a blink + spark burst near Volt's core
+    lastBlink = t;
+    bursts.push({ x: CORE_CX, y: CORE_CY, n: 12, life: 1, rot: Math.random() * 6.28 });
+  });
+  // clicking anywhere on the stage sparks toward that spot
+  document.getElementById("stagewrap").addEventListener("click", function (e) {
+    if (reduce) return;
+    var vp = pageToVolt(e.clientX, e.clientY);
+    bursts.push({ x: vp.x, y: vp.y, n: 9, life: 1, rot: Math.random() * 6.28 });
+  });
+
+  /* ===== spark flicker on the accent word ===== */
+  var spark = document.getElementById("spark");
+  if (!reduce && spark) {
+    setInterval(function () {
+      if (document.hidden) return;
+      spark.style.textShadow = "0 0 26px rgba(255,225,74,0.9), 1px 0 rgba(255,255,255,0.6)";
+      setTimeout(function () {
+        spark.style.textShadow = "0 0 22px rgba(255,225,74,0.45)";
+      }, 80);
+    }, 2200);
+  }
+
+  /* ===== resize ===== */
+  var rz;
+  window.addEventListener("resize", function () {
+    clearTimeout(rz);
+    rz = setTimeout(function () {
+      DPR = Math.min(window.devicePixelRatio || 1, 2);
+      sizeFX(); sizeVolt();
+      if (reduce) {
+        g.clearRect(0, 0, VW, VH);
+        var ll = { x: 0, y: 0 };
+        limb(-2.5, 96, 0, 3, ll); limb(-0.7, 96, 0, 17, ll);
+        limb(2.55, 104, 0, 31, ll); limb(0.62, 104, 0, 47, ll);
+        drawBody(0, 1, 1); drawFace(0, 0, 0, 0);
+      }
+    }, 120);
+  });
+})();
+</script>
+
+<style id="agx-chrome-css">
+.agx{position:fixed;z-index:2147483000;font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;box-sizing:border-box}
+.agx a{cursor:pointer}
+.agx-badge{right:16px;bottom:16px;display:flex;gap:7px;align-items:center;padding:8px 13px;border-radius:999px;
+  background:rgba(9,11,17,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
+.agx-badge b{color:var(--agx);font-size:13px}
+.agx-story{left:16px;bottom:16px;max-width:min(360px,calc(100vw - 32px));padding:16px 16px 13px;border-radius:16px;
+  background:rgba(9,11,17,.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;box-shadow:0 24px 70px -26px rgba(0,0,0,.85)}
+.agx-story .h{display:flex;align-items:center;gap:11px;margin-bottom:9px}
+.agx-story .em{font-size:26px;line-height:1;filter:drop-shadow(0 3px 11px var(--agx))}
+.agx-story .nm{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.agx-story .tl{color:var(--agx);font-size:12px;font-weight:600;margin-top:3px}
+.agx-story p{margin:0 0 11px;color:#c6ccd9;font-size:13px;line-height:1.56}
+.agx-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.agx-tags span{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#aeb6c6;
+  border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px 9px}
+.agx-guess{margin:0 0 12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.09)}
+.agx-guess .gq{font-size:11.5px;color:#aeb6c6;margin-bottom:8px;letter-spacing:.01em}
+.agx-guess .gbtns{display:flex;gap:8px}
+.agx-guess .gbtn{flex:1;padding:8px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.03);color:#eef1f7;font-size:12px;font-weight:600;cursor:pointer;
+  transition:transform .15s,border-color .15s,background .15s,opacity .15s;font-family:inherit}
+.agx-guess .gbtn:hover:not(:disabled){border-color:var(--agx);background:rgba(255,255,255,.07);transform:translateY(-1px)}
+.agx-guess .gbtn:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
+.agx-guess .gbtn:disabled{cursor:default}
+.agx-guess .gbtn.correct{border-color:#5eea8f;background:rgba(94,234,143,.16);color:#a4f5be;opacity:1}
+.agx-guess .gbtn.wrong{border-color:#ff6a6a;background:rgba(255,106,106,.14);color:#ffb9b9;opacity:1}
+.agx-guess .gbtn.dim{opacity:.45}
+.agx-guess .greveal{margin-top:9px;font-size:11.5px;line-height:1.55;color:#c6ccd9}
+.agx-guess .greveal b{color:#eef1f7}
+.agx-nav{display:flex;align-items:center;gap:13px;font-size:12.5px;border-top:1px solid rgba(255,255,255,.09);padding-top:11px}
+.agx-nav a{color:#eef1f7;text-decoration:none;opacity:.82}
+.agx-nav a:hover{opacity:1;color:var(--agx)}
+.agx-nav .home{margin-right:auto;font-weight:600}
+.agx-nav a[aria-disabled=true]{opacity:.32;pointer-events:none}
+@media (max-width:560px){.agx-story{left:12px;right:12px;bottom:12px;max-width:none}.agx-badge{display:none}}
+@media (prefers-reduced-motion:reduce){.agx-story .em{filter:none}}
+</style>
+<div class="agx agx-badge" style="--agx:#ffe14a">AGENTICS · JULI <b>21</b></div>
+<aside class="agx agx-story" style="--agx:#ffe14a" aria-label="Avatarens historie">
+  <div class="h"><div class="em">⚡</div><div><div class="nm">Volt</div><div class="tl">Fra tanke til handling på et øjeblik.</div></div></div>
+  <p>Volt kan ikke sidde stille, og det er meningen. Han er gnisten, der springer mellem &#x27;det burde vi automatisere&#x27; og &#x27;det er automatiseret&#x27; – uden det lange, trætte mellemrum. Hvor andre stadig planlægger, har Volt allerede eksekveret tre gange.</p>
+  <div class="agx-tags"><span>hurtig</span><span>impulsiv</span><span>elektrisk</span></div>
+  <div class="agx-guess" id="agxGuess">
+    <div class="gq">🤖 Hvilken Claude-model byggede Volt?</div>
+    <div class="gbtns">
+      <button type="button" class="gbtn" data-m="opus">Opus 4.8</button>
+      <button type="button" class="gbtn" data-m="sonnet">Sonnet 5</button>
+    </div>
+    <div class="greveal" id="agxReveal" hidden></div>
+  </div>
+  <nav class="agx-nav">
+    <a class="home" href="calendar.html">← Kalender</a>
+    <a href="day-20.html">‹ forrige</a>
+    <a data-day="22" href="day-22.html">næste ›</a>
+  </nav>
+</aside>
+<script>(function(){var n=document.querySelector('.agx-nav a[data-day]');if(!n)return;var d=+n.getAttribute('data-day');
+if(new Date()<new Date(2026,6,d)){n.setAttribute('aria-disabled','true');n.textContent='næste (åbner '+d+'. juli)';}})();</script>
+<script>(function(){
+  var DAY=21, MODEL='opus', NAME="Volt";
+  var KEY='agx_guess_'+DAY;
+  var wrap=document.getElementById('agxGuess');
+  if(!wrap) return;
+  var btns=Array.prototype.slice.call(wrap.querySelectorAll('.gbtn'));
+  var reveal=document.getElementById('agxReveal');
+  var TXT={
+    opus:'🧠 Rigtigt svar: <b>Claude Opus 4.8</b> byggede '+NAME+'.',
+    sonnet:'⚡ Rigtigt svar: <b>Claude Sonnet 5</b> byggede '+NAME+'.'
+  };
+  function render(saved){
+    btns.forEach(function(b){
+      b.disabled=true;
+      var m=b.getAttribute('data-m');
+      if(m===MODEL) b.classList.add('correct');
+      else if(m===saved) b.classList.add('wrong'); else b.classList.add('dim');
+    });
+    var extra = saved===MODEL ? ' Du gættede rigtigt! 🎉' : ' Forkert gæt denne gang — bedre held i morgen.';
+    reveal.innerHTML=TXT[MODEL]+extra;
+    reveal.hidden=false;
+  }
+  var prior=localStorage.getItem(KEY);
+  if(prior){ render(prior); return; }
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      var g=b.getAttribute('data-m');
+      try{ localStorage.setItem(KEY, g); }catch(e){}
+      render(g);
+    });
+  });
+})();</script>

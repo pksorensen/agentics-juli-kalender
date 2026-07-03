@@ -1,0 +1,748 @@
+<title>agentics.dk — Draco</title>
+<style>
+  :root{
+    --accent:#ff5a3c;
+    --accent-soft:#ff7a52;
+    --ink:#fdece4;
+    --ink-dim:#e9c3b0;
+    --ink-faint:#c79a86;
+    --bg0:#140705;
+    --bg1:#26100a;
+    --bg2:#3a160c;
+    --stroke:rgba(255,120,80,.16);
+    --card:rgba(30,12,8,.5);
+    font-synthesis-weight:none;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    background:var(--bg0);
+    color:var(--ink);
+    font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+    cursor:default;
+  }
+  .stage{position:fixed;inset:0;overflow:hidden}
+
+  /* layered background */
+  .bg-grad{
+    position:absolute;inset:0;
+    background:
+      radial-gradient(120% 90% at 50% 118%, rgba(255,90,60,.42) 0%, rgba(255,90,60,0) 46%),
+      radial-gradient(80% 70% at 78% 8%, rgba(255,150,70,.14) 0%, rgba(255,150,70,0) 55%),
+      radial-gradient(90% 80% at 15% 15%, rgba(120,40,20,.35) 0%, rgba(120,40,20,0) 60%),
+      linear-gradient(160deg, var(--bg1) 0%, var(--bg0) 60%, #0d0403 100%);
+    transform:translateZ(0);
+  }
+  .bg-glow{
+    position:absolute;left:50%;bottom:-24%;width:74vmax;height:74vmax;
+    transform:translateX(-50%);
+    background:radial-gradient(closest-side, rgba(255,90,60,.30), rgba(255,90,60,.06) 55%, transparent 72%);
+    filter:blur(6px);
+    will-change:transform;
+  }
+  .grain{
+    position:absolute;inset:-20%;
+    opacity:.055;pointer-events:none;mix-blend-mode:overlay;
+    background-image:var(--noise);
+    background-size:180px 180px;
+    animation:grain 6s steps(6) infinite;
+  }
+  @keyframes grain{
+    0%{transform:translate(0,0)}20%{transform:translate(-4%,3%)}40%{transform:translate(3%,-3%)}
+    60%{transform:translate(-3%,-2%)}80%{transform:translate(2%,4%)}100%{transform:translate(0,0)}
+  }
+  #embers{position:absolute;inset:0;pointer-events:none}
+  .vignette{
+    position:absolute;inset:0;pointer-events:none;
+    box-shadow:inset 0 0 26vmax rgba(0,0,0,.62), inset 0 -8vmax 14vmax rgba(255,90,60,.10);
+  }
+  .scanline{
+    position:absolute;inset:0;pointer-events:none;opacity:.4;
+    background:repeating-linear-gradient(0deg, rgba(255,255,255,.014) 0, rgba(255,255,255,.014) 1px, transparent 2px, transparent 3px);
+  }
+
+  /* top chrome */
+  header{
+    position:absolute;top:0;left:0;right:0;z-index:8;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:26px clamp(22px,4.4vw,64px);
+  }
+  .wordmark{
+    display:flex;align-items:center;gap:11px;
+    font-weight:640;font-size:17px;letter-spacing:-.02em;color:var(--ink);
+    text-decoration:none;
+  }
+  .wordmark .dot{
+    width:11px;height:11px;border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 12px 1px rgba(255,90,60,.85);
+    animation:pulse 3.6s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.78);opacity:.72}}
+  .wordmark b{font-weight:640}
+  .wordmark span{color:var(--ink-faint);font-weight:560}
+
+  nav{display:flex;align-items:center;gap:clamp(14px,2.4vw,36px)}
+  nav a{
+    color:var(--ink-dim);text-decoration:none;font-size:14px;font-weight:520;
+    letter-spacing:.01em;position:relative;padding:6px 2px;transition:color .25s;
+    border-radius:4px;
+  }
+  nav a::after{
+    content:"";position:absolute;left:0;right:100%;bottom:0;height:1.5px;
+    background:var(--accent);transition:right .3s cubic-bezier(.2,.7,.2,1);
+  }
+  nav a:hover{color:var(--ink)}
+  nav a:hover::after{right:0}
+  nav a.pill{
+    border:1px solid var(--stroke);border-radius:999px;padding:8px 16px;color:var(--ink);
+    background:rgba(255,255,255,.02);
+  }
+  nav a.pill::after{display:none}
+  nav a.pill:hover{border-color:rgba(255,120,80,.5);background:rgba(255,90,60,.10)}
+
+  /* hero layout */
+  .hero{
+    position:absolute;inset:0;z-index:6;
+    display:grid;
+    grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
+    align-items:center;
+    padding:0 clamp(22px,4.4vw,64px);
+    pointer-events:none;
+  }
+  .copy{max-width:620px;padding-top:34px;pointer-events:auto}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:9px;
+    font-size:12px;font-weight:600;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--accent-soft);margin-bottom:22px;
+  }
+  .eyebrow .spark{
+    width:6px;height:6px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 8px 1px var(--accent);
+  }
+  h1{
+    font-size:clamp(44px,7.6vw,104px);
+    line-height:.9;letter-spacing:-.045em;font-weight:720;
+    color:var(--ink);
+  }
+  h1 .row{display:block;overflow:hidden}
+  h1 .row i{display:block;font-style:normal;will-change:transform}
+  h1 .flame{
+    color:transparent;
+    background:linear-gradient(94deg,var(--accent) 0%, #ff8a4d 52%, #ffc06a 100%);
+    -webkit-background-clip:text;background-clip:text;
+  }
+  .sub{
+    margin-top:26px;font-size:clamp(15px,1.55vw,19px);line-height:1.55;
+    color:var(--ink-dim);max-width:46ch;font-weight:440;
+  }
+  .cta-row{margin-top:38px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
+  .cta{
+    --mx:0px;--my:0px;
+    position:relative;pointer-events:auto;
+    display:inline-flex;align-items:center;gap:11px;
+    font-size:15.5px;font-weight:600;letter-spacing:.005em;
+    color:#20090b;text-decoration:none;
+    padding:15px 26px;border-radius:999px;border:none;cursor:pointer;
+    background:linear-gradient(96deg,var(--accent),#ff8a4d);
+    transform:translate(var(--mx),var(--my));
+    transition:box-shadow .3s, transform .12s ease-out;
+    box-shadow:0 8px 26px -8px rgba(255,90,60,.7), 0 0 0 0 rgba(255,90,60,.4);
+    isolation:isolate;
+  }
+  .cta::before{
+    content:"";position:absolute;inset:-2px;border-radius:inherit;z-index:-1;
+    background:radial-gradient(120px 60px at var(--gx,50%) var(--gy,50%), rgba(255,180,120,.9), transparent 70%);
+    opacity:0;transition:opacity .3s;
+  }
+  .cta:hover{box-shadow:0 14px 40px -6px rgba(255,90,60,.85), 0 0 0 6px rgba(255,90,60,.10)}
+  .cta:hover::before{opacity:.55}
+  .cta .arw{transition:transform .3s cubic-bezier(.2,.8,.2,1)}
+  .cta:hover .arw{transform:translateX(4px)}
+  .cta:active{transform:translate(var(--mx),var(--my)) scale(.97)}
+
+  .ghost{
+    pointer-events:auto;display:inline-flex;align-items:center;gap:9px;
+    font-size:14.5px;font-weight:540;color:var(--ink-dim);text-decoration:none;
+    transition:color .25s;
+  }
+  .ghost .ring{
+    width:30px;height:30px;border-radius:50%;border:1px solid var(--stroke);
+    display:grid;place-items:center;transition:.3s;
+  }
+  .ghost:hover{color:var(--ink)}
+  .ghost:hover .ring{border-color:rgba(255,120,80,.55);background:rgba(255,90,60,.10);transform:scale(1.06)}
+
+  :where(a,button):focus-visible{outline:2px solid var(--accent-soft);outline-offset:3px;border-radius:6px}
+
+  /* dragon stage */
+  .avatar-wrap{
+    position:relative;height:100%;
+    display:flex;align-items:center;justify-content:center;
+    pointer-events:none;
+  }
+  .avatar{
+    width:min(50vw,560px);height:auto;
+    will-change:transform;overflow:visible;
+    filter:drop-shadow(0 30px 40px rgba(0,0,0,.5));
+  }
+  .avatar .glow-floor{
+    transform-origin:center;
+    animation:floorpulse 4s ease-in-out infinite;
+  }
+  @keyframes floorpulse{0%,100%{opacity:.55}50%{opacity:.9}}
+
+  .hint{
+    position:absolute;left:50%;bottom:30px;transform:translateX(-50%);
+    z-index:7;display:flex;align-items:center;gap:9px;
+    font-size:11.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-faint);
+    opacity:0;animation:hintin 1s ease 2.2s forwards;pointer-events:none;
+  }
+  @keyframes hintin{to{opacity:.8}}
+  .hint .mv{
+    width:34px;height:1px;background:linear-gradient(90deg,transparent,var(--accent-soft),transparent);
+    animation:sweep 2.6s ease-in-out infinite;
+  }
+  @keyframes sweep{0%,100%{opacity:.2}50%{opacity:1}}
+
+  /* entrance */
+  .reveal i,.copy .eyebrow,.copy .sub,.copy .cta-row{will-change:transform,opacity}
+  .pre .reveal i{transform:translateY(112%)}
+  .pre .eyebrow,.pre .sub,.pre .cta-row{opacity:0;transform:translateY(14px)}
+  .avatar-wrap{opacity:0;transform:translateY(18px) scale(.98);transition:opacity 1.1s ease,transform 1.1s cubic-bezier(.2,.8,.2,1)}
+  .ready .avatar-wrap{opacity:1;transform:none}
+
+  @media (max-width:860px){
+    .hero{grid-template-columns:1fr;grid-template-rows:1fr auto;padding-bottom:8vh}
+    .avatar-wrap{order:-1;align-items:flex-end}
+    .avatar{width:min(72vw,360px)}
+    .copy{padding-top:0;max-width:none}
+    nav .hide{display:none}
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+    .pre .reveal i,.pre .eyebrow,.pre .sub,.pre .cta-row{transform:none;opacity:1}
+    .avatar-wrap{opacity:1;transform:none}
+    .grain,.scanline{display:none}
+  }
+</style>
+
+<div class="stage" id="stage">
+  <div class="bg-grad"></div>
+  <div class="bg-glow" id="glow"></div>
+  <canvas id="embers"></canvas>
+  <div class="grain" id="grain"></div>
+  <div class="scanline"></div>
+  <div class="vignette"></div>
+
+  <header>
+    <a class="wordmark" href="#" aria-label="agentics.dk home">
+      <span class="dot"></span><b>agentics</b><span>.dk</span>
+    </a>
+    <nav aria-label="Primary">
+      <a class="hide" href="#work">Lair</a>
+      <a class="hide" href="#hoard">Hoard</a>
+      <a class="hide" href="#story">Legend</a>
+      <a class="pill" href="#summon">Summon Draco</a>
+    </nav>
+  </header>
+
+  <main class="hero" id="hero">
+    <div class="copy">
+      <span class="eyebrow"><span class="spark"></span>Avatar 17 · July</span>
+      <h1 class="reveal">
+        <span class="row"><i>Small dragon.</i></span>
+        <span class="row"><i class="flame">Big flame.</i></span>
+      </h1>
+      <p class="sub">Meet Draco — brave, playful, and always one breath away from a spark. He hatches ideas, guards your best ones, and torches the boring parts. Point anywhere; he's watching.</p>
+      <div class="cta-row">
+        <button class="cta" id="cta">
+          Wake the dragon
+          <svg class="arw" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" stroke="#20090b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <a class="ghost" href="#lore">
+          <span class="ring"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 5v14l11-7z" fill="#e9c3b0"/></svg></span>
+          Watch him breathe
+        </a>
+      </div>
+    </div>
+
+    <div class="avatar-wrap" id="avatarWrap">
+      <!-- Hand-built dragon: layers grouped for parallax + rig -->
+      <svg class="avatar" id="dragon" viewBox="0 0 420 460" role="img" aria-label="Draco, a small friendly dragon that follows the cursor">
+        <defs>
+          <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ff7a52"/>
+            <stop offset=".55" stop-color="#f0492a"/>
+            <stop offset="1" stop-color="#b62d18"/>
+          </linearGradient>
+          <linearGradient id="belly" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ffd9a8"/>
+            <stop offset="1" stop-color="#ffb072"/>
+          </linearGradient>
+          <linearGradient id="wing" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#ff9a5f"/>
+            <stop offset="1" stop-color="#e6431f"/>
+          </linearGradient>
+          <linearGradient id="horn" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#fff0d6"/>
+            <stop offset="1" stop-color="#f0b46b"/>
+          </linearGradient>
+          <radialGradient id="cheek" cx="50%" cy="50%" r="50%">
+            <stop offset="0" stop-color="#ff5a3c" stop-opacity=".7"/>
+            <stop offset="1" stop-color="#ff5a3c" stop-opacity="0"/>
+          </radialGradient>
+          <radialGradient id="floor" cx="50%" cy="50%" r="50%">
+            <stop offset="0" stop-color="#ff5a3c" stop-opacity=".55"/>
+            <stop offset="1" stop-color="#ff5a3c" stop-opacity="0"/>
+          </radialGradient>
+          <filter id="soft"><feGaussianBlur stdDeviation="2"/></filter>
+        </defs>
+
+        <!-- floor glow -->
+        <ellipse class="glow-floor" cx="210" cy="430" rx="128" ry="26" fill="url(#floor)"/>
+
+        <!-- BACK WING -->
+        <g id="wingL" style="transform-origin:150px 210px">
+          <path d="M150 205 C 96 150, 40 150, 18 196 C 54 190, 70 202, 74 214
+                   C 44 214, 22 236, 20 268 C 58 244, 80 250, 92 256
+                   C 82 280, 92 306, 118 322 C 120 288, 138 258, 158 244 Z"
+                fill="url(#wing)" opacity=".9" stroke="#a5240f" stroke-width="2"/>
+          <path d="M150 205 C 96 150, 40 150, 18 196 M74 214 C 44 214, 22 236, 20 268 M92 256 C 82 280, 92 306, 118 322"
+                fill="none" stroke="#a5240f" stroke-width="1.6" opacity=".5"/>
+        </g>
+
+        <!-- TAIL -->
+        <g id="tail" style="transform-origin:250px 350px">
+          <path id="tailPath" d="M244 356 C 300 372, 356 356, 366 306 C 372 274, 352 250, 330 258
+                   C 348 264, 356 286, 340 302 C 322 318, 292 312, 276 296
+                   C 262 282, 268 336, 244 356 Z"
+                fill="url(#bodyGrad)" stroke="#8f2210" stroke-width="2"/>
+          <!-- tail spade -->
+          <path d="M354 250 L 386 234 L 372 262 L 396 262 L 360 284 Z" fill="#ffb072" stroke="#8f2210" stroke-width="2" stroke-linejoin="round"/>
+        </g>
+
+        <!-- BODY -->
+        <g id="body">
+          <!-- back ridge spikes -->
+          <path d="M150 216 L164 188 L178 214 M182 200 L196 168 L212 198 M214 190 L230 162 L246 194"
+                fill="#ffb072" stroke="#8f2210" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M138 250 C 128 320, 160 392, 232 392 C 306 392, 320 316, 300 250
+                   C 288 214, 176 214, 138 250 Z"
+                fill="url(#bodyGrad)" stroke="#8f2210" stroke-width="2.4"/>
+          <!-- belly -->
+          <path d="M170 300 C 168 356, 200 384, 226 384 C 258 384, 280 352, 272 300
+                   C 258 262, 186 262, 170 300 Z"
+                fill="url(#belly)" opacity=".95"/>
+          <path d="M198 300 h44 M196 322 h48 M200 344 h40" stroke="#f0a86a" stroke-width="2" opacity=".55" stroke-linecap="round"/>
+          <!-- feet -->
+          <ellipse cx="178" cy="392" rx="26" ry="16" fill="#e6431f" stroke="#8f2210" stroke-width="2"/>
+          <ellipse cx="264" cy="392" rx="26" ry="16" fill="#e6431f" stroke="#8f2210" stroke-width="2"/>
+          <path d="M162 396 l-6 8 M178 400 l0 9 M194 396 l6 8" stroke="#8f2210" stroke-width="2.4" stroke-linecap="round"/>
+          <path d="M248 396 l-6 8 M264 400 l0 9 M280 396 l6 8" stroke="#8f2210" stroke-width="2.4" stroke-linecap="round"/>
+        </g>
+
+        <!-- FRONT WING (flaps more) -->
+        <g id="wingR" style="transform-origin:288px 214px">
+          <path d="M288 210 C 344 152, 402 154, 424 200 C 388 192, 372 206, 368 218
+                   C 398 216, 422 240, 422 272 C 384 246, 362 254, 350 260
+                   C 360 284, 350 310, 324 326 C 322 292, 302 262, 282 248 Z"
+                fill="url(#wing)" stroke="#a5240f" stroke-width="2"/>
+          <path d="M288 210 C 344 152, 402 154, 424 200 M368 218 C 398 216, 422 240, 422 272 M350 260 C 360 284, 350 310, 324 326"
+                fill="none" stroke="#a5240f" stroke-width="1.6" opacity=".5"/>
+        </g>
+
+        <!-- HEAD group (follows pointer) -->
+        <g id="head" style="transform-origin:220px 150px">
+          <!-- horns -->
+          <path d="M182 92 C 172 62, 178 44, 196 40 C 190 58, 196 76, 206 96 Z" fill="url(#horn)" stroke="#c98a3e" stroke-width="1.6"/>
+          <path d="M258 92 C 268 62, 262 44, 244 40 C 250 58, 244 76, 234 96 Z" fill="url(#horn)" stroke="#c98a3e" stroke-width="1.6"/>
+          <!-- head shape -->
+          <path d="M150 150 C 150 96, 190 70, 220 70 C 250 70, 292 96, 292 152
+                   C 292 206, 258 236, 220 236 C 182 236, 150 206, 150 150 Z"
+                fill="url(#bodyGrad)" stroke="#8f2210" stroke-width="2.4"/>
+          <!-- head ridge -->
+          <path d="M206 74 L220 54 L234 74" fill="#ffb072" stroke="#8f2210" stroke-width="2" stroke-linejoin="round"/>
+          <!-- snout / muzzle -->
+          <path d="M170 168 C 168 210, 196 232, 220 232 C 246 232, 272 210, 270 168
+                   C 262 150, 178 150, 170 168 Z" fill="url(#belly)" opacity=".9"/>
+          <!-- cheeks -->
+          <ellipse cx="178" cy="182" rx="20" ry="13" fill="url(#cheek)"/>
+          <ellipse cx="262" cy="182" rx="20" ry="13" fill="url(#cheek)"/>
+          <!-- nostrils (smoke origin) -->
+          <ellipse id="nostrilL" cx="204" cy="196" rx="5" ry="6.5" fill="#8f2210"/>
+          <ellipse id="nostrilR" cx="236" cy="196" rx="5" ry="6.5" fill="#8f2210"/>
+          <!-- mouth -->
+          <path id="mouth" d="M198 214 Q 220 226 242 214" fill="none" stroke="#8f2210" stroke-width="3" stroke-linecap="round"/>
+          <!-- little fang -->
+          <path d="M206 218 l3 8 3 -8 Z" fill="#fff3e0"/>
+
+          <!-- EYES (whole group tracks pointer a touch; pupils track more) -->
+          <g id="eyes">
+            <g id="eyeL">
+              <ellipse cx="190" cy="150" rx="24" ry="27" fill="#fff6ec" stroke="#8f2210" stroke-width="2"/>
+              <g class="lid" id="lidL"><rect x="164" y="121" width="52" height="58" rx="26" fill="url(#bodyGrad)" id="lidLrect" transform="translate(0,-58)"/></g>
+              <circle class="pupil" cx="190" cy="152" r="12" fill="#2a0d08"/>
+              <circle class="glint" cx="185" cy="146" r="4.4" fill="#fff"/>
+              <circle class="glint2" cx="196" cy="157" r="2" fill="#ffd9a8"/>
+            </g>
+            <g id="eyeR">
+              <ellipse cx="250" cy="150" rx="24" ry="27" fill="#fff6ec" stroke="#8f2210" stroke-width="2"/>
+              <g class="lid" id="lidR"><rect x="224" y="121" width="52" height="58" rx="26" fill="url(#bodyGrad)" id="lidRrect" transform="translate(0,-58)"/></g>
+              <circle class="pupil" cx="250" cy="152" r="12" fill="#2a0d08"/>
+              <circle class="glint" cx="245" cy="146" r="4.4" fill="#fff"/>
+              <circle class="glint2" cx="256" cy="157" r="2" fill="#ffd9a8"/>
+            </g>
+            <!-- brows for expression -->
+            <path id="browL" d="M170 120 q 20 -10 38 -2" fill="none" stroke="#8f2210" stroke-width="3.4" stroke-linecap="round"/>
+            <path id="browR" d="M232 118 q 18 -8 38 2" fill="none" stroke="#8f2210" stroke-width="3.4" stroke-linecap="round"/>
+          </g>
+        </g>
+
+        <!-- ember smoke puff container (drawn into via JS) -->
+        <g id="smoke"></g>
+      </svg>
+    </div>
+  </main>
+
+  <div class="hint"><span class="mv"></span>Move to make him look<span class="mv"></span></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
+  var stage = document.getElementById("stage");
+
+  // ---- generate noise texture as data URI (no network) ----
+  (function(){
+    var c=document.createElement("canvas");c.width=c.height=90;var x=c.getContext("2d");
+    var img=x.createImageData(90,90),d=img.data;
+    for(var i=0;i<d.length;i+=4){var v=Math.random()*255|0;d[i]=d[i+1]=d[i+2]=v;d[i+3]=255;}
+    x.putImageData(img,0,0);
+    document.documentElement.style.setProperty("--noise","url("+c.toDataURL()+")");
+  })();
+
+  // ---- entrance ----
+  document.body.classList.add("pre");
+  function stagger(){
+    var rows=document.querySelectorAll("h1 .row i");
+    rows.forEach(function(el,i){ el.style.transition="transform 1s cubic-bezier(.16,.9,.2,1) "+(0.15+i*0.12)+"s"; el.style.transform="translateY(0)"; });
+    var seq=[[".eyebrow",.05],[".sub",.5],[".cta-row",.62]];
+    seq.forEach(function(s){var el=document.querySelector(".copy "+s[0]);if(el){el.style.transition="opacity .8s ease "+s[1]+"s, transform .8s cubic-bezier(.2,.8,.2,1) "+s[1]+"s";el.style.opacity=1;el.style.transform="none";}});
+    document.body.classList.remove("pre");
+    stage.classList.add("ready");
+  }
+  requestAnimationFrame(function(){requestAnimationFrame(stagger);});
+
+  // ---- pointer state (smoothed) ----
+  var pointer={x:.5,y:.4}, tgt={x:.5,y:.4}, hasPointer=false;
+  addEventListener("pointermove",function(e){
+    tgt.x=e.clientX/innerWidth; tgt.y=e.clientY/innerHeight; hasPointer=true;
+  },{passive:true});
+  addEventListener("pointerleave",function(){tgt.x=.5;tgt.y=.4;hasPointer=false;});
+
+  // ---- rig references ----
+  var head=document.getElementById("head"),
+      eyesG=document.getElementById("eyes"),
+      pupils=Array.prototype.slice.call(document.querySelectorAll(".pupil")),
+      glints=Array.prototype.slice.call(document.querySelectorAll(".glint")),
+      glints2=Array.prototype.slice.call(document.querySelectorAll(".glint2")),
+      pupBase=pupils.map(function(p){return {x:+p.getAttribute("cx"),y:+p.getAttribute("cy")};}),
+      wingL=document.getElementById("wingL"),
+      wingR=document.getElementById("wingR"),
+      tail=document.getElementById("tail"),
+      bodyG=document.getElementById("body"),
+      lidL=document.getElementById("lidLrect"),
+      lidR=document.getElementById("lidRrect"),
+      browL=document.getElementById("browL"),
+      browR=document.getElementById("browR"),
+      glow=document.getElementById("glow"),
+      wrap=document.getElementById("avatarWrap"),
+      smokeG=document.getElementById("smoke"),
+      SVG="http://www.w3.org/2000/svg";
+
+  // ---- blink scheduler ----
+  var blink=0,nextBlink=1.6;
+  // ---- ember smoke puffs ----
+  var puffs=[], nextPuff=2.4;
+  function spawnPuff(){
+    // two nostrils
+    [[204,196],[236,196]].forEach(function(n,k){
+      var el=document.createElementNS(SVG,"circle");
+      el.setAttribute("r",3);
+      el.setAttribute("fill", k? "#ff7a52":"#ffb072");
+      smokeG.appendChild(el);
+      puffs.push({el:el,x:n[0],y:n[1],vx:(Math.random()-.5)*6,vy:-18-Math.random()*10,life:0,max:1.1+Math.random()*.5,r:3,seed:Math.random()*6});
+    });
+  }
+
+  // ---- embers canvas ----
+  var cv=document.getElementById("embers"),cx=cv.getContext("2d"),W,H,DPR=Math.min(devicePixelRatio||1,2),sparks=[];
+  function resize(){
+    W=cv.width=innerWidth*DPR;H=cv.height=innerHeight*DPR;
+    cv.style.width=innerWidth+"px";cv.style.height=innerHeight+"px";
+  }
+  resize();addEventListener("resize",resize);
+  function seedSparks(){
+    var n=reduce?26:70;sparks=[];
+    for(var i=0;i<n;i++)sparks.push(mkSpark(true));
+  }
+  function mkSpark(init){
+    return{
+      x:Math.random()*W,
+      y:init?Math.random()*H:H+10,
+      r:(Math.random()*1.8+.6)*DPR,
+      vy:-(Math.random()*.5+.28)*DPR,
+      vx:(Math.random()-.5)*.28*DPR,
+      a:Math.random()*.6+.25,
+      tw:Math.random()*6.28,
+      sw:Math.random()*.05+.02,
+      hue:20+Math.random()*22
+    };
+  }
+  seedSparks();
+
+  // ---- main loop ----
+  var t=0,last=performance.now(),running=true;
+  function frame(now){
+    if(!running)return;
+    var dt=Math.min((now-last)/1000,.05);last=now;t+=dt;
+
+    // smooth pointer
+    pointer.x+=(tgt.x-pointer.x)*Math.min(1,dt*7);
+    pointer.y+=(tgt.y-pointer.y)*Math.min(1,dt*7);
+    var dx=(pointer.x-.5), dy=(pointer.y-.42);
+
+    if(!reduce){
+      // idle timing
+      var bob=Math.sin(t*1.5)*7;
+      var sway=Math.sin(t*0.9)*2.2;
+      var breathe=1+Math.sin(t*1.6)*0.012;
+
+      // whole avatar bob + subtle parallax toward cursor
+      wrap.style.transform="translate("+(dx*22)+"px,"+(bob+dy*14)+"px)";
+
+      // body breathe + lean
+      bodyG.style.transform="translateY("+(bob*0.25)+"px) rotate("+(sway*0.4+dx*3)+"deg) scale("+breathe+")";
+      bodyG.style.transformOrigin="220px 320px";
+
+      // head follows pointer (rotation + offset), plus counter-bob
+      var hRot=dx*12, hx=dx*16, hy=dy*14 - bob*0.5;
+      head.style.transform="translate("+hx+"px,"+hy+"px) rotate("+hRot+"deg)";
+
+      // eyes group subtle shift, pupils track further
+      eyesG.style.transform="translate("+(dx*5)+"px,"+(dy*4)+"px)";
+      pupils.forEach(function(p,i){
+        var px=dx*9, py=dy*8;
+        p.setAttribute("cx",pupBase[i].x+px);
+        p.setAttribute("cy",pupBase[i].y+py);
+        glints[i].setAttribute("cx",pupBase[i].x-5+px*.85);
+        glints[i].setAttribute("cy",pupBase[i].y-6+py*.85);
+        glints2[i].setAttribute("cx",pupBase[i].x+6+px*.9);
+        glints2[i].setAttribute("cy",pupBase[i].y+5+py*.9);
+      });
+
+      // brows lift a touch when cursor is high (curious)
+      var brow = -dy*6;
+      browL.setAttribute("transform","translate("+(dx*4)+","+brow+")");
+      browR.setAttribute("transform","translate("+(dx*4)+","+brow+")");
+
+      // wings flap — front wing bigger amplitude, offset phase
+      var flap=Math.sin(t*5.2);
+      wingR.style.transform="rotate("+(flap*20-6)+"deg) scaleX("+(1+flap*0.04)+")";
+      var flap2=Math.sin(t*5.2+0.5);
+      wingL.style.transform="rotate("+(-flap2*15+5)+"deg)";
+
+      // tail sway
+      tail.style.transform="rotate("+(Math.sin(t*1.3)*10)+"deg)";
+
+      // blink
+      nextBlink-=dt;
+      if(nextBlink<=0){ blink=1; nextBlink=1.4+Math.random()*3.4; }
+      if(blink>0){ blink-=dt*7; if(blink<0)blink=0; }
+      var open=1-Math.abs(Math.sin((1-blink)*Math.PI*0.5)); // quick close/open
+      var closed = blink>0 ? (1-Math.abs(1-blink*2)) : 0; // triangle 0..1..0
+      var lidY = -58 + 58*closed;
+      lidL.setAttribute("transform","translate(0,"+lidY+")");
+      lidR.setAttribute("transform","translate(0,"+lidY+")");
+
+      // smoke puffs
+      nextPuff-=dt;
+      if(nextPuff<=0){ spawnPuff(); nextPuff=2.6+Math.random()*3.2; }
+      for(var i=puffs.length-1;i>=0;i--){
+        var p=puffs[i];p.life+=dt;
+        var k=p.life/p.max;
+        if(k>=1){ p.el.remove(); puffs.splice(i,1); continue; }
+        p.x+=p.vx*dt + Math.sin(t*3+p.seed)*0.3;
+        p.y+=p.vy*dt;
+        p.vy*=0.985; p.r=3+k*10;
+        p.el.setAttribute("cx",p.x + hx*0.4); // drift with head a bit
+        p.el.setAttribute("cy",p.y + hy*0.4);
+        p.el.setAttribute("r",p.r);
+        p.el.setAttribute("opacity",(1-k)*0.7);
+      }
+
+      // background glow parallax
+      glow.style.transform="translateX(calc(-50% + "+(-dx*30)+"px)) translateY("+(-dy*18)+"px)";
+    }
+
+    // ---- embers canvas ----
+    cx.clearRect(0,0,W,H);
+    cx.globalCompositeOperation="lighter";
+    for(var s,j=0;j<sparks.length;j++){
+      s=sparks[j];
+      if(!reduce){
+        s.y+=s.vy; s.x+=s.vx+Math.sin(s.tw)*0.3*DPR; s.tw+=s.sw;
+        // gentle pull toward pointer horizontally for life
+        s.x+=(pointer.x*W - s.x)*0.0006;
+        if(s.y<-10){ Object.assign(s,mkSpark(false)); }
+      }
+      var fl=0.6+0.4*Math.sin(s.tw*2);
+      cx.beginPath();
+      cx.arc(s.x,s.y,s.r*fl,0,6.283);
+      cx.fillStyle="hsla("+s.hue+",100%,"+(58+fl*10)+"%,"+(s.a*fl)+")";
+      cx.fill();
+    }
+    cx.globalCompositeOperation="source-over";
+
+    requestAnimationFrame(frame);
+  }
+  if(!reduce){ requestAnimationFrame(frame); }
+  else { // reduced: one static ember pass + composed pose
+    cx.globalCompositeOperation="lighter";
+    for(var j=0;j<sparks.length;j++){var s=sparks[j];cx.beginPath();cx.arc(s.x,s.y,s.r,0,6.283);cx.fillStyle="hsla("+s.hue+",100%,62%,"+s.a+")";cx.fill();}
+    cx.globalCompositeOperation="source-over";
+    // slight downward gaze default
+    pupils.forEach(function(p,i){p.setAttribute("cy",pupBase[i].y+3);});
+  }
+
+  // ---- pause on hidden tab ----
+  document.addEventListener("visibilitychange",function(){
+    if(document.hidden){ running=false; }
+    else if(!reduce){ running=true; last=performance.now(); requestAnimationFrame(frame); }
+  });
+
+  // ---- magnetic CTA ----
+  var cta=document.getElementById("cta");
+  if(cta && !reduce){
+    var box, mag=false;
+    cta.addEventListener("pointerenter",function(){box=cta.getBoundingClientRect();mag=true;});
+    cta.addEventListener("pointermove",function(e){
+      if(!box)box=cta.getBoundingClientRect();
+      var rx=e.clientX-(box.left+box.width/2), ry=e.clientY-(box.top+box.height/2);
+      cta.style.setProperty("--mx",(rx*0.28)+"px");
+      cta.style.setProperty("--my",(ry*0.34)+"px");
+      cta.style.setProperty("--gx",((e.clientX-box.left)/box.width*100)+"%");
+      cta.style.setProperty("--gy",((e.clientY-box.top)/box.height*100)+"%");
+    });
+    cta.addEventListener("pointerleave",function(){
+      cta.style.setProperty("--mx","0px");cta.style.setProperty("--my","0px");mag=false;
+    });
+  }
+  // playful click: quick ember burst from dragon + press feedback
+  if(cta){
+    cta.addEventListener("click",function(){
+      if(reduce)return;
+      for(var b=0;b<8;b++){ setTimeout(spawnPuff, b*40); }
+    });
+  }
+})();
+</script>
+
+<style id="agx-chrome-css">
+.agx{position:fixed;z-index:2147483000;font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;box-sizing:border-box}
+.agx a{cursor:pointer}
+.agx-badge{right:16px;bottom:16px;display:flex;gap:7px;align-items:center;padding:8px 13px;border-radius:999px;
+  background:rgba(9,11,17,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
+.agx-badge b{color:var(--agx);font-size:13px}
+.agx-story{left:16px;bottom:16px;max-width:min(360px,calc(100vw - 32px));padding:16px 16px 13px;border-radius:16px;
+  background:rgba(9,11,17,.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;box-shadow:0 24px 70px -26px rgba(0,0,0,.85)}
+.agx-story .h{display:flex;align-items:center;gap:11px;margin-bottom:9px}
+.agx-story .em{font-size:26px;line-height:1;filter:drop-shadow(0 3px 11px var(--agx))}
+.agx-story .nm{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.agx-story .tl{color:var(--agx);font-size:12px;font-weight:600;margin-top:3px}
+.agx-story p{margin:0 0 11px;color:#c6ccd9;font-size:13px;line-height:1.56}
+.agx-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.agx-tags span{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#aeb6c6;
+  border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px 9px}
+.agx-guess{margin:0 0 12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.09)}
+.agx-guess .gq{font-size:11.5px;color:#aeb6c6;margin-bottom:8px;letter-spacing:.01em}
+.agx-guess .gbtns{display:flex;gap:8px}
+.agx-guess .gbtn{flex:1;padding:8px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.03);color:#eef1f7;font-size:12px;font-weight:600;cursor:pointer;
+  transition:transform .15s,border-color .15s,background .15s,opacity .15s;font-family:inherit}
+.agx-guess .gbtn:hover:not(:disabled){border-color:var(--agx);background:rgba(255,255,255,.07);transform:translateY(-1px)}
+.agx-guess .gbtn:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
+.agx-guess .gbtn:disabled{cursor:default}
+.agx-guess .gbtn.correct{border-color:#5eea8f;background:rgba(94,234,143,.16);color:#a4f5be;opacity:1}
+.agx-guess .gbtn.wrong{border-color:#ff6a6a;background:rgba(255,106,106,.14);color:#ffb9b9;opacity:1}
+.agx-guess .gbtn.dim{opacity:.45}
+.agx-guess .greveal{margin-top:9px;font-size:11.5px;line-height:1.55;color:#c6ccd9}
+.agx-guess .greveal b{color:#eef1f7}
+.agx-nav{display:flex;align-items:center;gap:13px;font-size:12.5px;border-top:1px solid rgba(255,255,255,.09);padding-top:11px}
+.agx-nav a{color:#eef1f7;text-decoration:none;opacity:.82}
+.agx-nav a:hover{opacity:1;color:var(--agx)}
+.agx-nav .home{margin-right:auto;font-weight:600}
+.agx-nav a[aria-disabled=true]{opacity:.32;pointer-events:none}
+@media (max-width:560px){.agx-story{left:12px;right:12px;bottom:12px;max-width:none}.agx-badge{display:none}}
+@media (prefers-reduced-motion:reduce){.agx-story .em{filter:none}}
+</style>
+<div class="agx agx-badge" style="--agx:#ff5a3c">AGENTICS · JULI <b>17</b></div>
+<aside class="agx agx-story" style="--agx:#ff5a3c" aria-label="Avatarens historie">
+  <div class="h"><div class="em">🐉</div><div><div class="nm">Draco</div><div class="tl">Lille drage, stor opgave-appetit.</div></div></div>
+  <p>Draco fødtes af et enkelt prompt og har ikke stoppet med at vokse siden. Hver gang du giver ham en ny opgave, spytter han ikke ild – han spytter workflows. Han samler skæl af automatiseringer, ét for hver proces han har spist sig igennem.</p>
+  <div class="agx-tags"><span>ambitiøs</span><span>flammende</span><span>vedholdende</span></div>
+  <div class="agx-guess" id="agxGuess">
+    <div class="gq">🤖 Hvilken Claude-model byggede Draco?</div>
+    <div class="gbtns">
+      <button type="button" class="gbtn" data-m="opus">Opus 4.8</button>
+      <button type="button" class="gbtn" data-m="sonnet">Sonnet 5</button>
+    </div>
+    <div class="greveal" id="agxReveal" hidden></div>
+  </div>
+  <nav class="agx-nav">
+    <a class="home" href="calendar.html">← Kalender</a>
+    <a href="day-16.html">‹ forrige</a>
+    <a data-day="18" href="day-18.html">næste ›</a>
+  </nav>
+</aside>
+<script>(function(){var n=document.querySelector('.agx-nav a[data-day]');if(!n)return;var d=+n.getAttribute('data-day');
+if(new Date()<new Date(2026,6,d)){n.setAttribute('aria-disabled','true');n.textContent='næste (åbner '+d+'. juli)';}})();</script>
+<script>(function(){
+  var DAY=17, MODEL='opus', NAME="Draco";
+  var KEY='agx_guess_'+DAY;
+  var wrap=document.getElementById('agxGuess');
+  if(!wrap) return;
+  var btns=Array.prototype.slice.call(wrap.querySelectorAll('.gbtn'));
+  var reveal=document.getElementById('agxReveal');
+  var TXT={
+    opus:'🧠 Rigtigt svar: <b>Claude Opus 4.8</b> byggede '+NAME+'.',
+    sonnet:'⚡ Rigtigt svar: <b>Claude Sonnet 5</b> byggede '+NAME+'.'
+  };
+  function render(saved){
+    btns.forEach(function(b){
+      b.disabled=true;
+      var m=b.getAttribute('data-m');
+      if(m===MODEL) b.classList.add('correct');
+      else if(m===saved) b.classList.add('wrong'); else b.classList.add('dim');
+    });
+    var extra = saved===MODEL ? ' Du gættede rigtigt! 🎉' : ' Forkert gæt denne gang — bedre held i morgen.';
+    reveal.innerHTML=TXT[MODEL]+extra;
+    reveal.hidden=false;
+  }
+  var prior=localStorage.getItem(KEY);
+  if(prior){ render(prior); return; }
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      var g=b.getAttribute('data-m');
+      try{ localStorage.setItem(KEY, g); }catch(e){}
+      render(g);
+    });
+  });
+})();</script>

@@ -1,0 +1,802 @@
+<title>agentics.dk — Autonomous AI Agents</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="agentics.dk — a Danish studio designing and shipping autonomous, agentic AI systems." />
+<style>
+  :root {
+    --bg-0: #05070c;
+    --bg-1: #0a0f1a;
+    --bg-2: #0e1626;
+    --ink: #eef4ff;
+    --ink-dim: #9fb0c9;
+    --ink-faint: #63748f;
+    --line: rgba(150, 180, 220, 0.10);
+    --mint: #46f2c8;
+    --mint-soft: #8ff7dd;
+    --blue: #4aa8ff;
+    --accent: var(--mint);
+    --shadow: 0 30px 90px -30px rgba(0, 0, 0, 0.8);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-io: cubic-bezier(0.65, 0, 0.35, 1);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg-0);
+    color: var(--ink);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    cursor: default;
+  }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  /* ---------- Background layers ---------- */
+  .stage {
+    position: fixed; inset: 0; overflow: hidden; z-index: 0;
+  }
+  .bg-grad {
+    position: absolute; inset: -10%;
+    background:
+      radial-gradient(70% 60% at 50% 8%, rgba(70, 242, 200, 0.10), transparent 60%),
+      radial-gradient(90% 80% at 78% 30%, rgba(74, 168, 255, 0.10), transparent 55%),
+      radial-gradient(120% 120% at 50% 120%, #060a12 20%, transparent 70%),
+      linear-gradient(180deg, var(--bg-1), var(--bg-0));
+    will-change: transform;
+  }
+  .bg-glow {
+    position: absolute; left: 50%; top: 46%;
+    width: 60vw; height: 60vw; max-width: 900px; max-height: 900px;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(70, 242, 200, 0.16), rgba(74, 168, 255, 0.06) 40%, transparent 66%);
+    filter: blur(30px);
+    will-change: transform;
+  }
+  #particles, #grain {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+  }
+  #grain { opacity: 0.05; mix-blend-mode: soft-light; pointer-events: none; }
+  .vignette {
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(120% 90% at 50% 45%, transparent 55%, rgba(0,0,0,0.55) 100%);
+  }
+
+  /* ---------- Layout ---------- */
+  .shell {
+    position: relative; z-index: 2;
+    min-height: 100%;
+    display: flex; flex-direction: column;
+    padding: 28px clamp(20px, 5vw, 64px) 40px;
+  }
+
+  /* ---------- Nav ---------- */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    opacity: 0; transform: translateY(-12px);
+    animation: fadeDown 0.9s var(--ease-out) 0.15s forwards;
+  }
+  .wordmark {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-weight: 600; font-size: 17px; letter-spacing: -0.02em;
+    color: var(--ink); text-decoration: none;
+  }
+  .wordmark .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--mint);
+    box-shadow: 0 0 12px var(--mint), 0 0 3px #fff inset;
+    animation: pulseDot 3.4s var(--ease-io) infinite;
+  }
+  .wordmark b { font-weight: 600; }
+  .wordmark .tld { color: var(--ink-faint); font-weight: 500; }
+
+  .nav-links {
+    display: flex; align-items: center; gap: clamp(18px, 3vw, 40px);
+  }
+  .nav-links a {
+    color: var(--ink-dim); text-decoration: none;
+    font-size: 14px; font-weight: 450; letter-spacing: 0.01em;
+    position: relative; transition: color 0.3s var(--ease-out);
+  }
+  .nav-links a::after {
+    content: ""; position: absolute; left: 0; bottom: -5px;
+    width: 100%; height: 1px; background: var(--mint);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 0.4s var(--ease-out);
+  }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-links a:hover::after,
+  .nav-links a:focus-visible::after { transform: scaleX(1); }
+  .nav-links .status {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12.5px; color: var(--ink-dim);
+    padding: 7px 13px; border: 1px solid var(--line); border-radius: 100px;
+    background: rgba(255,255,255,0.015);
+  }
+  .status .live {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--mint);
+    box-shadow: 0 0 10px var(--mint);
+    animation: pulseDot 2.2s var(--ease-io) infinite;
+  }
+  @media (max-width: 720px) { .nav-links a.hide-sm, .nav-links .status { display: none; } }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    align-items: center;
+    gap: clamp(20px, 4vw, 60px);
+    max-width: 1320px; width: 100%; margin: 0 auto;
+    padding-top: clamp(20px, 4vh, 60px);
+  }
+  @media (max-width: 940px) {
+    .hero { grid-template-columns: 1fr; text-align: center; padding-top: 10px; }
+    .avatar-wrap { order: -1; }
+  }
+
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-size: 12.5px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--mint-soft); font-weight: 600;
+    padding: 8px 14px; border-radius: 100px;
+    border: 1px solid rgba(70, 242, 200, 0.22);
+    background: rgba(70, 242, 200, 0.05);
+    opacity: 0; transform: translateY(14px);
+  }
+  .eyebrow .spark {
+    width: 6px; height: 6px; background: var(--mint); border-radius: 50%;
+    box-shadow: 0 0 10px var(--mint);
+  }
+
+  h1 {
+    margin-top: 26px;
+    font-size: clamp(2.6rem, 6.4vw, 5.4rem);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    font-weight: 600;
+  }
+  h1 .line { display: block; overflow: hidden; }
+  h1 .line > span {
+    display: block;
+    transform: translateY(110%);
+    will-change: transform;
+  }
+  h1 .grad {
+    background: linear-gradient(96deg, var(--mint) 0%, var(--mint-soft) 35%, var(--blue) 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+  }
+
+  .sub {
+    margin-top: 26px;
+    max-width: 30em;
+    font-size: clamp(1rem, 1.35vw, 1.18rem);
+    line-height: 1.6;
+    color: var(--ink-dim); font-weight: 400;
+    opacity: 0; transform: translateY(16px);
+  }
+  @media (max-width: 940px) { .sub { margin-left: auto; margin-right: auto; } }
+
+  .actions {
+    margin-top: 40px;
+    display: flex; align-items: center; gap: 26px; flex-wrap: wrap;
+    opacity: 0; transform: translateY(16px);
+  }
+  @media (max-width: 940px) { .actions { justify-content: center; } }
+
+  .cta {
+    position: relative;
+    display: inline-flex; align-items: center; gap: 11px;
+    padding: 16px 28px; border-radius: 100px;
+    font-size: 15px; font-weight: 600; letter-spacing: -0.01em;
+    color: #04120e; text-decoration: none; border: none; cursor: pointer;
+    background: linear-gradient(180deg, var(--mint-soft), var(--mint));
+    box-shadow: 0 10px 40px -10px rgba(70, 242, 200, 0.55), 0 1px 0 rgba(255,255,255,0.4) inset;
+    transition: transform 0.35s var(--ease-out), box-shadow 0.35s var(--ease-out);
+    will-change: transform;
+  }
+  .cta:hover { box-shadow: 0 16px 55px -8px rgba(70, 242, 200, 0.7), 0 1px 0 rgba(255,255,255,0.5) inset; }
+  .cta .arrow { transition: transform 0.4s var(--ease-out); }
+  .cta:hover .arrow { transform: translateX(4px); }
+  .cta::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit;
+    background: radial-gradient(60% 120% at 50% 0%, rgba(255,255,255,0.6), transparent 60%);
+    opacity: 0.5; transition: opacity 0.35s;
+  }
+
+  .secondary {
+    display: inline-flex; align-items: center; gap: 10px;
+    color: var(--ink); text-decoration: none;
+    font-size: 14.5px; font-weight: 500;
+    transition: color 0.3s;
+  }
+  .secondary .play {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid var(--line);
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: border-color 0.35s var(--ease-out), transform 0.35s var(--ease-out), background 0.35s;
+  }
+  .secondary:hover .play { border-color: rgba(70,242,200,0.6); transform: scale(1.08); background: rgba(70,242,200,0.06); }
+  .secondary:hover { color: var(--mint-soft); }
+
+  .metarow {
+    margin-top: 48px;
+    display: flex; gap: clamp(20px, 4vw, 46px); flex-wrap: wrap;
+    opacity: 0; transform: translateY(16px);
+  }
+  @media (max-width: 940px) { .metarow { justify-content: center; } }
+  .metric { }
+  .metric .n {
+    font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .metric .n span { color: var(--mint); }
+  .metric .l {
+    margin-top: 3px; font-size: 12px; color: var(--ink-faint);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+
+  /* ---------- Avatar ---------- */
+  .avatar-wrap {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 420px;
+    opacity: 0;
+    animation: avatarIn 1.4s var(--ease-out) 0.5s forwards;
+  }
+  .avatar-stage {
+    position: relative;
+    width: min(460px, 82vw); aspect-ratio: 1 / 1;
+    will-change: transform;
+  }
+  .avatar-stage svg { display: block; width: 100%; height: 100%; overflow: visible; }
+
+  :focus-visible {
+    outline: 2px solid var(--mint);
+    outline-offset: 3px; border-radius: 6px;
+  }
+
+  /* ---------- Keyframes ---------- */
+  @keyframes fadeDown { to { opacity: 1; transform: translateY(0); } }
+  @keyframes avatarIn { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  @keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  .reveal { animation: revealUp 1.05s var(--ease-out) forwards; }
+  @keyframes revealUp { to { transform: translateY(0); } }
+  .fade-up { animation: fadeUp 1s var(--ease-out) forwards; }
+  @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+  .hint {
+    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+    z-index: 3; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-faint); display: inline-flex; align-items: center; gap: 10px;
+    opacity: 0; animation: fadeUp 1.2s var(--ease-out) 1.8s forwards;
+  }
+  .hint .m {
+    width: 20px; height: 30px; border: 1.5px solid var(--ink-faint); border-radius: 12px;
+    position: relative;
+  }
+  .hint .m::after {
+    content: ""; position: absolute; left: 50%; top: 6px; transform: translateX(-50%);
+    width: 3px; height: 6px; border-radius: 3px; background: var(--mint);
+    animation: scrollMove 1.8s var(--ease-io) infinite;
+  }
+  @keyframes scrollMove { 0% { opacity: 0; transform: translate(-50%, 0); } 40% { opacity: 1; } 80%,100% { opacity: 0; transform: translate(-50%, 8px); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+    nav, .eyebrow, .sub, .actions, .metarow, .avatar-wrap { opacity: 1 !important; transform: none !important; }
+    h1 .line > span { transform: none !important; }
+    .hint { display: none; }
+  }
+</style>
+
+<h1 class="sr-only" hidden>agentics.dk — a Danish studio that designs and ships autonomous AI agents, featuring an animated robot companion that reacts to your cursor.</h1>
+
+<div class="stage" aria-hidden="true">
+  <div class="bg-grad" data-depth="0.10"></div>
+  <div class="bg-glow" data-depth="0.20"></div>
+  <canvas id="particles"></canvas>
+  <div class="vignette"></div>
+  <canvas id="grain"></canvas>
+</div>
+
+<div class="shell">
+  <nav>
+    <a class="wordmark" href="#" aria-label="agentics.dk home">
+      <span class="dot"></span><b>agentics</b><span class="tld">.dk</span>
+    </a>
+    <div class="nav-links">
+      <a class="hide-sm" href="#work">Arbejde</a>
+      <a class="hide-sm" href="#agents">Agenter</a>
+      <a class="hide-sm" href="#studio">Studiet</a>
+      <span class="status"><span class="live"></span>Agent-01 online</span>
+    </div>
+  </nav>
+
+  <main class="hero">
+    <div class="copy">
+      <span class="eyebrow" id="eyebrow"><span class="spark"></span>Autonomous AI Studio · København</span>
+      <h1 aria-label="We build AI agents that ship the work">
+        <span class="line"><span data-d="0">We build AI agents</span></span>
+        <span class="line"><span data-d="1">that <span class="grad">ship the work</span></span></span>
+      </h1>
+      <p class="sub" id="sub">
+        agentics.dk designer og leverer autonome AI-systemer der planlægger,
+        beslutter og handler på egen hånd — production-grade agents that reason,
+        act, and get things done, so your team can focus on what matters.
+      </p>
+      <div class="actions" id="actions">
+        <button class="cta" id="cta" type="button">
+          Byg din agent
+          <span class="arrow" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h11M9 4l4 4-4 4" stroke="#04120e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </button>
+        <a class="secondary" href="#showreel">
+          <span class="play" aria-hidden="true">
+            <svg width="11" height="12" viewBox="0 0 11 12" fill="none"><path d="M1 1.3v9.4a.6.6 0 0 0 .92.5l7.6-4.7a.6.6 0 0 0 0-1L1.92.8A.6.6 0 0 0 1 1.3Z" fill="#eef4ff"/></svg>
+          </span>
+          Se showreel
+        </a>
+      </div>
+      <div class="metarow" id="metarow">
+        <div class="metric"><div class="n">40<span>+</span></div><div class="l">Agents shipped</div></div>
+        <div class="metric"><div class="n">99.9<span>%</span></div><div class="l">Uptime SLA</div></div>
+        <div class="metric"><div class="n">24<span>/7</span></div><div class="l">Autonomous ops</div></div>
+      </div>
+    </div>
+
+    <div class="avatar-wrap">
+      <div class="avatar-stage" id="avatarStage" role="img" aria-label="Agent-01, a friendly rounded robot companion with a glowing visor face that follows your cursor.">
+        <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="bodyG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#f3f8ff"/>
+              <stop offset="0.5" stop-color="#d5e2f2"/>
+              <stop offset="1" stop-color="#a9bdd6"/>
+            </linearGradient>
+            <linearGradient id="bodyShade" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#ffffff" stop-opacity="0.9"/>
+              <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+            </linearGradient>
+            <radialGradient id="visorG" cx="0.5" cy="0.4" r="0.75">
+              <stop offset="0" stop-color="#0c1524"/>
+              <stop offset="0.7" stop-color="#060b14"/>
+              <stop offset="1" stop-color="#020509"/>
+            </radialGradient>
+            <linearGradient id="visorSheen" x1="0" y1="0" x2="0.3" y2="1">
+              <stop offset="0" stop-color="#46f2c8" stop-opacity="0.22"/>
+              <stop offset="0.5" stop-color="#4aa8ff" stop-opacity="0.05"/>
+              <stop offset="1" stop-color="#000" stop-opacity="0"/>
+            </linearGradient>
+            <radialGradient id="eyeG" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0" stop-color="#d7fff5"/>
+              <stop offset="0.4" stop-color="#46f2c8"/>
+              <stop offset="1" stop-color="#12b898"/>
+            </radialGradient>
+            <radialGradient id="rimG" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0.7" stop-color="#46f2c8" stop-opacity="0"/>
+              <stop offset="0.92" stop-color="#46f2c8" stop-opacity="0.5"/>
+              <stop offset="1" stop-color="#46f2c8" stop-opacity="0"/>
+            </radialGradient>
+            <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="4"/>
+            </filter>
+            <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="6"/>
+            </filter>
+          </defs>
+
+          <!-- HUD rings (parallax back) -->
+          <g id="hud" opacity="0.5">
+            <circle cx="200" cy="210" r="168" fill="none" stroke="#46f2c8" stroke-opacity="0.18" stroke-width="1"/>
+            <circle id="hudRing" cx="200" cy="210" r="150" fill="none" stroke="#4aa8ff" stroke-opacity="0.20" stroke-width="1" stroke-dasharray="6 10"/>
+            <circle cx="200" cy="210" r="150" fill="url(#rimG)" opacity="0.6"/>
+            <g id="hudTicks" stroke="#46f2c8" stroke-opacity="0.35" stroke-width="1.4">
+              <line x1="200" y1="42" x2="200" y2="52"/>
+              <line x1="200" y1="368" x2="200" y2="378"/>
+              <line x1="32" y1="210" x2="42" y2="210"/>
+              <line x1="358" y1="210" x2="368" y2="210"/>
+            </g>
+          </g>
+
+          <!-- floating shadow -->
+          <ellipse id="shadow" cx="200" cy="352" rx="86" ry="16" fill="#000" opacity="0.35" filter="url(#soft)"/>
+
+          <!-- BODY GROUP (bobs) -->
+          <g id="bot">
+            <!-- back arm/nub left -->
+            <ellipse cx="96" cy="252" rx="26" ry="30" fill="url(#bodyG)" opacity="0.95"/>
+            <ellipse cx="304" cy="252" rx="26" ry="30" fill="url(#bodyG)" opacity="0.95"/>
+
+            <!-- antenna -->
+            <g id="antenna">
+              <line x1="200" y1="120" x2="200" y2="78" stroke="#b7c8dd" stroke-width="5" stroke-linecap="round"/>
+              <circle id="antennaTip" cx="200" cy="72" r="10" fill="url(#eyeG)"/>
+              <circle cx="200" cy="72" r="16" fill="#46f2c8" opacity="0.28" filter="url(#glow)"/>
+            </g>
+
+            <!-- head/body shell -->
+            <g id="head">
+              <rect x="74" y="118" width="252" height="216" rx="86" fill="url(#bodyG)"/>
+              <!-- top rim light -->
+              <rect x="82" y="122" width="236" height="120" rx="78" fill="url(#bodyShade)" opacity="0.55"/>
+              <!-- side rim mint -->
+              <rect x="74" y="118" width="252" height="216" rx="86" fill="none" stroke="#46f2c8" stroke-opacity="0.25" stroke-width="2"/>
+
+              <!-- ear pods -->
+              <circle cx="78" cy="222" r="15" fill="#c3d2e6"/>
+              <circle cx="78" cy="222" r="7" fill="#46f2c8" opacity="0.75"/>
+              <circle cx="322" cy="222" r="15" fill="#c3d2e6"/>
+              <circle cx="322" cy="222" r="7" fill="#4aa8ff" opacity="0.75"/>
+
+              <!-- VISOR -->
+              <g id="visor">
+                <rect x="108" y="152" width="184" height="150" rx="60" fill="url(#visorG)"/>
+                <rect x="108" y="152" width="184" height="150" rx="60" fill="url(#visorSheen)"/>
+                <rect x="108" y="152" width="184" height="150" rx="60" fill="none" stroke="#0c1a2c" stroke-width="2"/>
+                <!-- inner glow ambient -->
+                <ellipse cx="200" cy="232" rx="80" ry="62" fill="#46f2c8" opacity="0.06" filter="url(#glow)"/>
+
+                <!-- FACE (moves as a unit with gaze) -->
+                <g id="face">
+                  <!-- eyes -->
+                  <g id="eyeL">
+                    <ellipse cx="168" cy="222" rx="19" ry="24" fill="url(#eyeG)"/>
+                    <ellipse cx="168" cy="222" rx="30" ry="34" fill="#46f2c8" opacity="0.20" filter="url(#glow)"/>
+                    <circle cx="161" cy="213" r="6" fill="#eafff9"/>
+                  </g>
+                  <g id="eyeR">
+                    <ellipse cx="232" cy="222" rx="19" ry="24" fill="url(#eyeG)"/>
+                    <ellipse cx="232" cy="222" rx="30" ry="34" fill="#46f2c8" opacity="0.20" filter="url(#glow)"/>
+                    <circle cx="225" cy="213" r="6" fill="#eafff9"/>
+                  </g>
+                  <!-- mouth / smile -->
+                  <path id="mouth" d="M176 268 Q200 284 224 268" fill="none" stroke="#46f2c8" stroke-width="5" stroke-linecap="round" opacity="0.85"/>
+                  <!-- cheek blushes -->
+                  <ellipse cx="140" cy="256" rx="11" ry="6" fill="#4aa8ff" opacity="0.16"/>
+                  <ellipse cx="260" cy="256" rx="11" ry="6" fill="#4aa8ff" opacity="0.16"/>
+                </g>
+              </g>
+
+              <!-- chest core light -->
+              <g id="core">
+                <circle cx="200" cy="324" r="4" fill="#46f2c8" opacity="0"/>
+              </g>
+            </g>
+          </g>
+
+          <!-- orbiting particle -->
+          <g id="orbit">
+            <circle id="orbDot" cx="350" cy="150" r="4" fill="#46f2c8"/>
+            <circle id="orbDot2" cx="60" cy="280" r="3" fill="#4aa8ff"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="hint" aria-hidden="true"><span class="m"></span>Move to interact</div>
+
+<script>
+(function () {
+  "use strict";
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------------- Hero entrance ---------------- */
+  function stagger() {
+    var seqs = [
+      { el: document.getElementById("eyebrow"), cls: "fade-up", d: 350 },
+      { el: null, sel: 'h1 [data-d="0"]', cls: "reveal", d: 500 },
+      { el: null, sel: 'h1 [data-d="1"]', cls: "reveal", d: 620 },
+      { el: document.getElementById("sub"), cls: "fade-up", d: 820 },
+      { el: document.getElementById("actions"), cls: "fade-up", d: 960 },
+      { el: document.getElementById("metarow"), cls: "fade-up", d: 1080 }
+    ];
+    seqs.forEach(function (s) {
+      var node = s.el || document.querySelector(s.sel);
+      if (!node) return;
+      if (reduce) { node.style.opacity = 1; node.style.transform = "none"; return; }
+      setTimeout(function () { node.classList.add(s.cls); }, s.d);
+    });
+  }
+  stagger();
+
+  /* ---------------- Pointer state ---------------- */
+  var pointer = { x: 0.5, y: 0.5, tx: 0.5, ty: 0.5, active: false };
+  var vw = window.innerWidth, vh = window.innerHeight;
+  window.addEventListener("resize", function () { vw = window.innerWidth; vh = window.innerHeight; });
+  window.addEventListener("pointermove", function (e) {
+    pointer.tx = e.clientX / vw;
+    pointer.ty = e.clientY / vh;
+    pointer.active = true;
+  }, { passive: true });
+  window.addEventListener("pointerleave", function () { pointer.active = false; });
+
+  /* ---------------- Grain ---------------- */
+  var grain = document.getElementById("grain");
+  var gctx = grain.getContext("2d");
+  var grainTiles = [], gi = 0;
+  function buildGrain() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var s = 140;
+    grain.width = grain.clientWidth * dpr;
+    grain.height = grain.clientHeight * dpr;
+    gctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    grainTiles = [];
+    for (var t = 0; t < 3; t++) {
+      var c = document.createElement("canvas");
+      c.width = s; c.height = s;
+      var cc = c.getContext("2d");
+      var img = cc.createImageData(s, s);
+      for (var i = 0; i < img.data.length; i += 4) {
+        var v = (Math.random() * 255) | 0;
+        img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+        img.data[i + 3] = 255;
+      }
+      cc.putImageData(img, 0, 0);
+      grainTiles.push(c);
+    }
+  }
+  function drawGrain() {
+    if (!grainTiles.length) return;
+    var w = grain.clientWidth, h = grain.clientHeight;
+    gctx.clearRect(0, 0, w, h);
+    var tile = grainTiles[gi % grainTiles.length];
+    var pat = gctx.createPattern(tile, "repeat");
+    gctx.fillStyle = pat;
+    gctx.fillRect(0, 0, w, h);
+  }
+
+  /* ---------------- Particles ---------------- */
+  var pcv = document.getElementById("particles");
+  var pctx = pcv.getContext("2d");
+  var parts = [], pdpr = 1;
+  function buildParticles() {
+    pdpr = Math.min(window.devicePixelRatio || 1, 2);
+    pcv.width = pcv.clientWidth * pdpr;
+    pcv.height = pcv.clientHeight * pdpr;
+    pctx.setTransform(pdpr, 0, 0, pdpr, 0, 0);
+    var count = Math.min(70, Math.round(pcv.clientWidth * pcv.clientHeight / 26000));
+    parts = [];
+    for (var i = 0; i < count; i++) {
+      parts.push({
+        x: Math.random() * pcv.clientWidth,
+        y: Math.random() * pcv.clientHeight,
+        z: 0.3 + Math.random() * 0.7,
+        r: 0.6 + Math.random() * 1.8,
+        vy: -(0.05 + Math.random() * 0.22),
+        vx: (Math.random() - 0.5) * 0.12,
+        tw: Math.random() * Math.PI * 2,
+        blue: Math.random() > 0.55
+      });
+    }
+  }
+  function drawParticles(t) {
+    var w = pcv.clientWidth, h = pcv.clientHeight;
+    pctx.clearRect(0, 0, w, h);
+    var px = (pointer.x - 0.5) * 40, py = (pointer.y - 0.5) * 40;
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i];
+      p.y += p.vy * p.z; p.x += p.vx * p.z;
+      if (p.y < -6) { p.y = h + 6; p.x = Math.random() * w; }
+      if (p.x < -6) p.x = w + 6; else if (p.x > w + 6) p.x = -6;
+      var tw = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(t * 0.0016 + p.tw));
+      var dx = p.x + px * p.z, dy = p.y + py * p.z;
+      pctx.beginPath();
+      pctx.arc(dx, dy, p.r * p.z, 0, 6.2832);
+      pctx.fillStyle = p.blue
+        ? "rgba(74,168,255," + (0.5 * tw * p.z).toFixed(3) + ")"
+        : "rgba(70,242,200," + (0.6 * tw * p.z).toFixed(3) + ")";
+      pctx.fill();
+    }
+  }
+
+  /* ---------------- Background parallax ---------------- */
+  var depthEls = Array.prototype.slice.call(document.querySelectorAll("[data-depth]"));
+  var avatarStage = document.getElementById("avatarStage");
+
+  /* SVG rig refs */
+  var bot = document.getElementById("bot");
+  var head = document.getElementById("head");
+  var face = document.getElementById("face");
+  var eyeL = document.getElementById("eyeL");
+  var eyeR = document.getElementById("eyeR");
+  var antenna = document.getElementById("antenna");
+  var antennaTip = document.getElementById("antennaTip");
+  var mouth = document.getElementById("mouth");
+  var hud = document.getElementById("hud");
+  var hudRing = document.getElementById("hudRing");
+  var orbit = document.getElementById("orbit");
+  var shadow = document.getElementById("shadow");
+
+  /* Blink & look-around timers */
+  var nextBlink = 1600 + Math.random() * 2600;
+  var blinkT = 0, blinking = false, blinkPhase = 0;
+  var nextGlance = 4000 + Math.random() * 3000;
+  var glanceT = 0, glance = { x: 0, y: 0, active: false, life: 0 };
+
+  /* smoothed values */
+  var s = { gx: 0, gy: 0, hx: 0, hy: 0, lean: 0, bob: 0 };
+
+  var startTime = performance.now();
+  var lastGrain = 0, gframe = 0;
+  var running = true;
+
+  function frame(now) {
+    if (!running) return;
+    var t = now - startTime;
+    var dt = 16;
+
+    /* ease pointer */
+    pointer.x += (pointer.tx - pointer.x) * 0.08;
+    pointer.y += (pointer.ty - pointer.y) * 0.08;
+
+    /* gaze target relative to center */
+    var gxTarget = (pointer.x - 0.5) * 2; // -1..1
+    var gyTarget = (pointer.y - 0.5) * 2;
+    if (!pointer.active) { gxTarget = Math.sin(t * 0.0004) * 0.25; gyTarget = Math.cos(t * 0.0005) * 0.14; }
+
+    /* idle glance override when idle-ish */
+    glanceT += dt;
+    if (glanceT > nextGlance && !pointer.active) {
+      glance.active = true; glance.life = 0;
+      glance.x = (Math.random() - 0.5) * 1.4;
+      glance.y = (Math.random() - 0.5) * 0.7;
+      nextGlance = 5000 + Math.random() * 4000;
+      glanceT = 0;
+    }
+    if (glance.active) {
+      glance.life += dt;
+      gxTarget = glance.x; gyTarget = glance.y;
+      if (glance.life > 1100) glance.active = false;
+    }
+
+    /* smoothing */
+    s.gx += (gxTarget - s.gx) * 0.09;
+    s.gy += (gyTarget - s.gy) * 0.09;
+    s.hx += (gxTarget - s.hx) * 0.05;
+    s.hy += (gyTarget - s.hy) * 0.05;
+    s.lean += (gxTarget - s.lean) * 0.045;
+
+    /* idle bob (breathing) */
+    var bob = Math.sin(t * 0.0016) * 7;
+    var breathe = 1 + Math.sin(t * 0.0016) * 0.012;
+
+    /* apply body: bob + lean */
+    var leanDeg = s.lean * 4;
+    bot.setAttribute("transform",
+      "translate(" + (s.hx * 8) + "," + (bob + s.hy * 5) + ") rotate(" + leanDeg + " 200 300) scale(" + breathe.toFixed(4) + ")");
+
+    /* head extra tilt/parallax */
+    head.setAttribute("transform",
+      "translate(" + (s.hx * 6) + "," + (s.hy * 5) + ") rotate(" + (s.hx * 2.2) + " 200 220)");
+
+    /* face gaze (eyes move within visor) */
+    var fx = s.gx * 14, fy = s.gy * 11;
+    face.setAttribute("transform", "translate(" + fx + "," + fy + ")");
+    /* individual eye pupil micro offset for depth */
+    eyeL.setAttribute("transform", "translate(" + (s.gx * 4) + "," + (s.gy * 3) + ")");
+    eyeR.setAttribute("transform", "translate(" + (s.gx * 4) + "," + (s.gy * 3) + ")");
+
+    /* antenna wobble */
+    var aw = Math.sin(t * 0.0022) * 4 + s.hx * 6;
+    antenna.setAttribute("transform", "rotate(" + aw + " 200 120)");
+    var tipPulse = 0.6 + 0.4 * (0.5 + 0.5 * Math.sin(t * 0.004));
+    antennaTip.setAttribute("r", (9 + tipPulse * 2.2).toFixed(2));
+
+    /* blink */
+    blinkT += dt;
+    if (!blinking && blinkT > nextBlink) { blinking = true; blinkPhase = 0; }
+    if (blinking) {
+      blinkPhase += dt;
+      var half = 70;
+      var sy;
+      if (blinkPhase < half) sy = 1 - (blinkPhase / half);
+      else sy = (blinkPhase - half) / half;
+      sy = Math.max(0.08, Math.min(1, sy));
+      eyeL.style.transformBox = "fill-box"; eyeR.style.transformBox = "fill-box";
+      eyeL.setAttribute("transform", "translate(" + (s.gx*4) + "," + (s.gy*3) + ") scale(1 " + sy.toFixed(3) + ")");
+      eyeR.setAttribute("transform", "translate(" + (s.gx*4) + "," + (s.gy*3) + ") scale(1 " + sy.toFixed(3) + ")");
+      if (blinkPhase > half * 2) { blinking = false; blinkT = 0; nextBlink = 2200 + Math.random() * 3400; }
+    }
+
+    /* mouth micro-expression: smile widens when pointer near avatar center */
+    var stageRect = avatarStage.getBoundingClientRect();
+    var cx = (stageRect.left + stageRect.width / 2) / vw;
+    var cy = (stageRect.top + stageRect.height / 2) / vh;
+    var near = 1 - Math.min(1, Math.hypot(pointer.x - cx, pointer.y - cy) * 1.7);
+    var smile = 268 + near * 10;
+    mouth.setAttribute("d", "M176 268 Q200 " + smile.toFixed(1) + " 224 268");
+    mouth.setAttribute("stroke-width", (5 + near * 1.5).toFixed(2));
+
+    /* shadow reacts to bob */
+    var sc = 1 - bob * 0.006;
+    shadow.setAttribute("rx", (86 * sc).toFixed(1));
+    shadow.setAttribute("opacity", (0.34 + bob * 0.004).toFixed(3));
+
+    /* HUD slow rotation + parallax */
+    hud.setAttribute("transform", "translate(" + (s.hx * -10) + "," + (s.hy * -8) + ") rotate(" + (t * 0.004) + " 200 210)");
+    hudRing.setAttribute("transform", "rotate(" + (-t * 0.01) + " 200 210)");
+    orbit.setAttribute("transform", "rotate(" + (t * 0.018) + " 200 210)");
+
+    /* avatar stage container parallax (counter to pointer for depth) */
+    avatarStage.style.transform = "translate3d(" + (s.hx * 10) + "px," + (s.hy * 8) + "px,0)";
+
+    /* background depth parallax */
+    for (var i = 0; i < depthEls.length; i++) {
+      var d = parseFloat(depthEls[i].getAttribute("data-depth"));
+      var tx = (pointer.x - 0.5) * -60 * d;
+      var ty = (pointer.y - 0.5) * -60 * d;
+      depthEls[i].style.transform = depthEls[i].classList.contains("bg-glow")
+        ? "translate(-50%,-50%) translate(" + tx + "px," + ty + "px)"
+        : "translate(" + tx + "px," + ty + "px)";
+    }
+
+    drawParticles(t);
+
+    /* grain ~24fps */
+    if (now - lastGrain > 42) { gi = (gi + 1) % 3; drawGrain(); lastGrain = now; }
+
+    raf = requestAnimationFrame(frame);
+  }
+
+  /* ---------------- Reduced motion static ---------------- */
+  var raf;
+  function start() {
+    buildParticles(); buildGrain(); drawGrain();
+    if (reduce) {
+      // compose a calm static frame
+      drawParticles(0);
+      face.setAttribute("transform", "translate(0,0)");
+      return;
+    }
+    raf = requestAnimationFrame(frame);
+  }
+
+  window.addEventListener("resize", function () { buildParticles(); buildGrain(); drawGrain(); });
+
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) { running = false; if (raf) cancelAnimationFrame(raf); }
+    else if (!reduce) { running = true; startTime = performance.now() - 0; raf = requestAnimationFrame(frame); }
+  });
+
+  /* ---------------- Magnetic CTA ---------------- */
+  var cta = document.getElementById("cta");
+  var cmx = 0, cmy = 0, ctx2 = 0, cty2 = 0, ctaRaf = null;
+  function ctaLoop() {
+    ctx2 += (cmx - ctx2) * 0.18;
+    cty2 += (cmy - cty2) * 0.18;
+    cta.style.transform = "translate(" + ctx2.toFixed(2) + "px," + cty2.toFixed(2) + "px)";
+    if (Math.abs(cmx - ctx2) > 0.1 || Math.abs(cmy - cty2) > 0.1) ctaRaf = requestAnimationFrame(ctaLoop);
+    else ctaRaf = null;
+  }
+  if (!reduce) {
+    cta.addEventListener("pointermove", function (e) {
+      var r = cta.getBoundingClientRect();
+      cmx = (e.clientX - (r.left + r.width / 2)) * 0.35;
+      cmy = (e.clientY - (r.top + r.height / 2)) * 0.5;
+      if (!ctaRaf) ctaRaf = requestAnimationFrame(ctaLoop);
+    });
+    cta.addEventListener("pointerleave", function () {
+      cmx = 0; cmy = 0; if (!ctaRaf) ctaRaf = requestAnimationFrame(ctaLoop);
+    });
+  }
+  cta.addEventListener("click", function () {
+    document.getElementById("agents") || window.scrollTo({ top: 0 });
+  });
+
+  start();
+})();
+</script>

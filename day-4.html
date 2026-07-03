@@ -1,0 +1,806 @@
+<title>agentics.dk — Nova</title>
+<style>
+  :root{
+    --bg-0:#0d0b16;
+    --bg-1:#141024;
+    --ink:#f4f1ff;
+    --ink-dim:#a8a2c4;
+    --ink-faint:#6f6a8f;
+    --accent:#ff5cc8;        /* candy magenta */
+    --accent-2:#4be3ff;      /* aqua */
+    --accent-3:#ffe14b;      /* lemon */
+    --line:rgba(255,255,255,.10);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, system-ui, sans-serif;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    background:var(--bg-0);
+    color:var(--ink);
+    font-family:var(--font);
+    overflow:hidden;
+    position:relative;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+
+  /* ---------- Layered cinematic background ---------- */
+  .bg{ position:fixed; inset:0; z-index:0; overflow:hidden; }
+  .bg-grad{
+    position:absolute; inset:-15%;
+    background:
+      radial-gradient(60% 55% at 68% 42%, rgba(255,92,200,.18), transparent 60%),
+      radial-gradient(50% 50% at 22% 72%, rgba(75,227,255,.14), transparent 62%),
+      radial-gradient(80% 80% at 50% 0%, rgba(40,32,72,.9), transparent 70%),
+      linear-gradient(160deg, var(--bg-1), var(--bg-0));
+    will-change:transform;
+  }
+  .bg-glow{
+    position:absolute; width:60vmax; height:60vmax; left:50%; top:46%;
+    transform:translate(-50%,-50%);
+    background:radial-gradient(circle, rgba(255,92,200,.10), transparent 60%);
+    filter:blur(30px);
+    will-change:transform;
+  }
+  /* particles */
+  #particles{ position:absolute; inset:0; will-change:transform; }
+  /* grain */
+  .grain{
+    position:absolute; inset:0; opacity:.05; mix-blend-mode:overlay; pointer-events:none;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+  .vignette{
+    position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(115% 115% at 50% 40%, transparent 55%, rgba(0,0,0,.55));
+  }
+
+  /* ---------- Frame / nav ---------- */
+  .frame{ position:relative; z-index:5; height:100%; display:flex; flex-direction:column; }
+  nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:26px clamp(20px,5vw,64px);
+  }
+  .wordmark{
+    font-weight:700; font-size:19px; letter-spacing:-.02em;
+    display:flex; align-items:center; gap:10px; color:var(--ink);
+  }
+  .wordmark .dot{
+    width:11px; height:11px; border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 14px var(--accent);
+    animation:pulse 2.6s ease-in-out infinite;
+  }
+  .wordmark b{ font-weight:700; }
+  .wordmark span{ color:var(--ink-dim); font-weight:500; }
+  @keyframes pulse{ 0%,100%{ transform:scale(1); opacity:1 } 50%{ transform:scale(1.35); opacity:.7 } }
+
+  .nav-links{ display:flex; align-items:center; gap:clamp(14px,3vw,38px); }
+  .nav-links a{
+    color:var(--ink-dim); text-decoration:none; font-size:14px; font-weight:500;
+    letter-spacing:.01em; position:relative; padding:4px 2px; transition:color .25s;
+  }
+  .nav-links a::after{
+    content:""; position:absolute; left:0; bottom:-2px; height:2px; width:0;
+    background:var(--accent); border-radius:2px; transition:width .3s ease;
+  }
+  .nav-links a:hover{ color:var(--ink); }
+  .nav-links a:hover::after{ width:100%; }
+  .nav-badge{
+    font-size:12px; color:var(--accent-2);
+    border:1px solid rgba(75,227,255,.3); border-radius:999px;
+    padding:6px 13px; letter-spacing:.02em;
+  }
+  a:focus-visible, button:focus-visible{
+    outline:2px solid var(--accent-2); outline-offset:3px; border-radius:6px;
+  }
+
+  /* ---------- Hero layout ---------- */
+  .hero{
+    flex:1; display:grid;
+    grid-template-columns:1.05fr .95fr;
+    align-items:center;
+    padding:0 clamp(20px,5vw,64px) clamp(20px,4vw,50px);
+    gap:clamp(20px,3vw,50px);
+    min-height:0;
+  }
+  .copy{ max-width:620px; }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:9px;
+    font-size:13px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--ink-dim); font-weight:600; margin-bottom:24px;
+  }
+  .eyebrow i{
+    width:26px; height:1px; background:linear-gradient(90deg,var(--accent),transparent);
+    display:inline-block;
+  }
+  h1{
+    font-size:clamp(38px,6.4vw,88px);
+    line-height:.98; letter-spacing:-.035em; font-weight:700;
+    margin-bottom:26px;
+  }
+  h1 .line{ display:block; overflow:hidden; }
+  h1 .grad{
+    background:linear-gradient(100deg,var(--accent) 0%, var(--accent-3) 55%, var(--accent-2) 100%);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .sub{
+    font-size:clamp(15px,1.5vw,19px); line-height:1.55; color:var(--ink-dim);
+    max-width:490px; margin-bottom:38px; font-weight:400;
+  }
+  .cta-row{ display:flex; align-items:center; gap:26px; flex-wrap:wrap; }
+  .cta{
+    position:relative; border:none; cursor:pointer;
+    font-family:var(--font); font-size:15px; font-weight:650; letter-spacing:.01em;
+    color:#1a0d18; background:var(--accent);
+    padding:16px 30px; border-radius:999px;
+    display:inline-flex; align-items:center; gap:10px;
+    will-change:transform;
+    box-shadow:0 8px 30px rgba(255,92,200,.32), inset 0 0 0 1px rgba(255,255,255,.25);
+    transition:box-shadow .3s ease, background .3s ease;
+  }
+  .cta:hover{ box-shadow:0 12px 44px rgba(255,92,200,.55), inset 0 0 0 1px rgba(255,255,255,.4); }
+  .cta .arrow{ transition:transform .3s ease; }
+  .cta:hover .arrow{ transform:translateX(4px); }
+  .cta-glow{
+    position:absolute; inset:-2px; border-radius:999px; z-index:-1;
+    background:conic-gradient(from 0deg, var(--accent), var(--accent-3), var(--accent-2), var(--accent));
+    filter:blur(12px); opacity:0; transition:opacity .35s ease;
+  }
+  .cta:hover .cta-glow{ opacity:.8; }
+  .secondary{
+    color:var(--ink); text-decoration:none; font-size:15px; font-weight:550;
+    display:inline-flex; align-items:center; gap:9px; position:relative;
+  }
+  .secondary .play{
+    width:30px; height:30px; border-radius:50%; border:1px solid var(--line);
+    display:grid; place-items:center; transition:border-color .3s, background .3s;
+  }
+  .secondary:hover .play{ border-color:var(--accent-2); background:rgba(75,227,255,.08); }
+
+  /* ---------- Stage / avatar ---------- */
+  .stage{
+    position:relative; height:100%;
+    display:grid; place-items:center;
+    min-height:0;
+  }
+  #nova{ width:100%; height:100%; display:block; will-change:transform; }
+  .stage-caption{
+    position:absolute; bottom:2%; left:50%; transform:translateX(-50%);
+    font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--ink-faint); font-weight:600; white-space:nowrap;
+  }
+  .stage-caption b{ color:var(--accent); font-weight:600; }
+
+  /* ---------- Entrance animation ---------- */
+  .reveal{ transform:translateY(115%); }
+  .fade{ opacity:0; transform:translateY(18px); }
+  .in .reveal{ transform:translateY(0); transition:transform .9s cubic-bezier(.19,1,.22,1); }
+  .in .fade{ opacity:1; transform:translateY(0); transition:opacity .8s ease, transform .8s cubic-bezier(.19,1,.22,1); }
+  [data-d="1"]{ transition-delay:.10s !important; }
+  [data-d="2"]{ transition-delay:.20s !important; }
+  [data-d="3"]{ transition-delay:.30s !important; }
+  [data-d="4"]{ transition-delay:.42s !important; }
+  [data-d="5"]{ transition-delay:.54s !important; }
+  [data-d="6"]{ transition-delay:.66s !important; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width:880px){
+    body{ overflow:auto; }
+    .hero{ grid-template-columns:1fr; text-align:left; }
+    .stage{ order:-1; height:44vh; min-height:300px; }
+    h1{ font-size:clamp(40px,11vw,64px); }
+    .nav-links a:not(.nav-badge){ display:none; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    .wordmark .dot{ animation:none; }
+    .reveal{ transform:none; }
+    .fade{ opacity:1; transform:none; }
+    .cta, .cta .arrow{ transition:none; }
+  }
+</style>
+
+<div class="bg" aria-hidden="true">
+  <div class="bg-grad" id="bgGrad"></div>
+  <div class="bg-glow" id="bgGlow"></div>
+  <canvas id="particles"></canvas>
+  <div class="grain"></div>
+  <div class="vignette"></div>
+</div>
+
+<div class="frame" id="frame">
+  <nav>
+    <div class="wordmark fade" data-d="1">
+      <span class="dot"></span><b>agentics</b><span>.dk</span>
+    </div>
+    <div class="nav-links fade" data-d="2">
+      <a href="#work">Work</a>
+      <a href="#studio">Studio</a>
+      <a href="#play">Play</a>
+      <a href="#contact" class="nav-badge">Say hi</a>
+    </div>
+  </nav>
+
+  <main class="hero">
+    <div class="copy">
+      <span class="eyebrow fade" data-d="2"><i></i>Creative engineering studio</span>
+      <h1>
+        <span class="line"><span class="reveal" data-d="2">We make the web</span></span>
+        <span class="line"><span class="reveal grad" data-d="3">feel alive.</span></span>
+      </h1>
+      <p class="sub fade" data-d="4">
+        Meet Nova — the little blob that proves interfaces don't have to sit still.
+        We build cinematic, character-driven experiences that people actually want to poke at.
+      </p>
+      <div class="cta-row">
+        <button class="cta fade" data-d="5" id="cta">
+          <span class="cta-glow"></span>
+          Start a project
+          <span class="arrow" aria-hidden="true">→</span>
+        </button>
+        <a href="#reel" class="secondary fade" data-d="6">
+          <span class="play" aria-hidden="true">
+            <svg width="10" height="12" viewBox="0 0 10 12"><path d="M0 0 L10 6 L0 12 Z" fill="currentColor"/></svg>
+          </span>
+          Watch the reel
+        </a>
+      </div>
+    </div>
+
+    <div class="stage fade" data-d="3">
+      <canvas id="nova" role="img" aria-label="Nova, an animated candy-colored slime mascot that follows your cursor"></canvas>
+      <div class="stage-caption">Say hi to <b>Nova</b> — move your cursor</div>
+    </div>
+  </main>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- Entrance ---------- */
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    document.getElementById("frame").classList.add("in");
+  }));
+
+  /* ---------- Global pointer (normalized -1..1) ---------- */
+  const pointer = { x:0, y:0, tx:0, ty:0, active:false };
+  window.addEventListener("pointermove", e=>{
+    pointer.tx = (e.clientX / window.innerWidth  - .5) * 2;
+    pointer.ty = (e.clientY / window.innerHeight - .5) * 2;
+    pointer.active = true;
+  }, {passive:true});
+  window.addEventListener("pointerleave", ()=>{ pointer.tx=0; pointer.ty=0; });
+
+  /* ---------- Background parallax (Web Animations-free, driven in loop) ---------- */
+  const bgGrad = document.getElementById("bgGrad");
+  const bgGlow = document.getElementById("bgGlow");
+
+  /* ---------- Magnetic CTA ---------- */
+  const cta = document.getElementById("cta");
+  const mag = { x:0, y:0, tx:0, ty:0 };
+  if(!REDUCED){
+    cta.addEventListener("pointermove", e=>{
+      const r = cta.getBoundingClientRect();
+      mag.tx = (e.clientX - (r.left + r.width/2)) * .3;
+      mag.ty = (e.clientY - (r.top + r.height/2)) * .45;
+    });
+    cta.addEventListener("pointerleave", ()=>{ mag.tx=0; mag.ty=0; });
+  }
+
+  /* ================= PARTICLES ================= */
+  const pCanvas = document.getElementById("particles");
+  const pctx = pCanvas.getContext("2d");
+  let DPR = Math.min(window.devicePixelRatio||1, 2);
+  let particles = [];
+  function sizeParticles(){
+    DPR = Math.min(window.devicePixelRatio||1, 2);
+    pCanvas.width  = Math.floor(innerWidth  * DPR);
+    pCanvas.height = Math.floor(innerHeight * DPR);
+    pCanvas.style.width = innerWidth+"px";
+    pCanvas.style.height = innerHeight+"px";
+    const count = Math.min(70, Math.floor(innerWidth*innerHeight/26000));
+    particles = [];
+    const cols = ["#ff5cc8","#4be3ff","#ffe14b","#ffffff"];
+    for(let i=0;i<count;i++){
+      particles.push({
+        x:Math.random()*innerWidth, y:Math.random()*innerHeight,
+        r:Math.random()*1.8+.4,
+        vy:-(Math.random()*.25+.06),
+        vx:(Math.random()-.5)*.14,
+        a:Math.random()*.5+.15,
+        tw:Math.random()*Math.PI*2,
+        col:cols[(Math.random()*cols.length)|0]
+      });
+    }
+  }
+
+  /* ================= NOVA (metaball slime) ================= */
+  const canvas = document.getElementById("nova");
+  const ctx = canvas.getContext("2d");
+  let W=0, H=0, CX=0, CY=0, S=1;   // S = scale unit (based on stage size)
+
+  function sizeNova(){
+    const r = canvas.getBoundingClientRect();
+    W = r.width; H = r.height;
+    canvas.width  = Math.floor(W*DPR);
+    canvas.height = Math.floor(H*DPR);
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    CX = W/2; CY = H/2;
+    S = Math.min(W, H) * 0.0032;   // scale so body ~ fits
+  }
+
+  // Spring physics state for the whole body
+  const body = {
+    // offset from center (lean toward pointer)
+    ox:0, oy:0, vx:0, vy:0,
+    // squash/stretch
+    sx:1, sy:1, ssx:0, ssy:0,
+    // idle bob phase
+    t:0,
+    // gaze
+    gx:0, gy:0
+  };
+
+  // spring helper
+  function spring(cur, vel, target, k, d){
+    const f = (target-cur)*k;
+    vel = (vel+f)*d;
+    return [cur+vel, vel];
+  }
+
+  // metaball threshold field render.
+  // We render 3 blobs merged using a radial-alpha additive trick + threshold.
+  // For performance we draw filled blobs onto an offscreen and threshold via
+  // a soft body silhouette using layered radial gradients + a gooey outline.
+  // Approach: draw big soft circles with additive white on an offscreen buffer,
+  // then read back is expensive — instead we fake metaballs with overlapping
+  // filled paths + shared color and a connecting "neck" using quadratic curves.
+
+  // Offscreen for gooey silhouette
+  const off = document.createElement("canvas");
+  const octx = off.getContext("2d");
+  function sizeOff(){
+    off.width = canvas.width; off.height = canvas.height;
+  }
+
+  // Blob definition: main + two satellites that orbit slightly
+  function drawNova(dt){
+    ctx.clearRect(0,0,W,H);
+
+    // ---- update springs ----
+    // target lean: toward pointer, clamped
+    const reach = REDUCED ? 0 : 1;
+    const tx = pointer.x * 46 * reach;
+    const ty = pointer.y * 34 * reach;
+    let r;
+    r = spring(body.ox, body.vx, tx, 0.010, 0.86); body.ox=r[0]; body.vx=r[1];
+    r = spring(body.oy, body.vy, ty, 0.010, 0.86); body.oy=r[0]; body.vy=r[1];
+
+    // squash/stretch from velocity (speed of movement)
+    const speed = Math.hypot(body.vx, body.vy);
+    const dir = Math.atan2(body.vy, body.vx);
+    const stretch = Math.min(speed*0.020, 0.22);
+    // target scale along movement direction
+    const targX = 1 + Math.cos(dir)*stretch - Math.abs(Math.sin(dir))*stretch*0.5;
+    const targY = 1 + Math.sin(dir)*stretch - Math.abs(Math.cos(dir))*stretch*0.5;
+    r = spring(body.sx, body.ssx, targX, 0.10, 0.72); body.sx=r[0]; body.ssx=r[1];
+    r = spring(body.sy, body.ssy, targY, 0.10, 0.72); body.sy=r[0]; body.ssy=r[1];
+
+    // idle
+    body.t += dt* (REDUCED?0:1);
+    const bob = REDUCED?0:Math.sin(body.t*1.6)*6;
+    const breathe = REDUCED?1:1+Math.sin(body.t*1.6)*0.03;
+    const sway = REDUCED?0:Math.sin(body.t*0.9)*8;
+
+    // gaze toward pointer
+    const gtx = pointer.x, gty = pointer.y;
+    body.gx += (gtx-body.gx)*0.12;
+    body.gy += (gty-body.gy)*0.12;
+
+    const cx = CX + body.ox + sway;
+    const cy = CY + body.oy + bob;
+
+    const base = 118 * S;               // main radius
+    const rx = base * body.sx * breathe;
+    const ry = base * body.sy * breathe;
+
+    // satellite blobs positions (wobble)
+    const w1 = REDUCED?0:Math.sin(body.t*2.1+1)*0.06;
+    const w2 = REDUCED?0:Math.sin(body.t*1.7+3)*0.06;
+    const blobs = [
+      { x:cx,                 y:cy,                 rx:rx,          ry:ry },
+      { x:cx - rx*0.62,       y:cy + ry*(0.34+w1), rx:rx*0.52,     ry:ry*0.52 },
+      { x:cx + rx*(0.60+w2),  y:cy + ry*0.30,      rx:rx*0.46,     ry:ry*0.46 },
+      // a little reaching nub toward pointer
+      { x:cx + pointer.x*rx*0.5, y:cy + pointer.y*ry*0.5, rx:rx*0.30, ry:ry*0.30 }
+    ];
+
+    // ---- shadow / ground glow ----
+    ctx.save();
+    const gg = ctx.createRadialGradient(cx, cy+ry*0.95, 0, cx, cy+ry*0.95, rx*1.3);
+    gg.addColorStop(0,"rgba(255,92,200,0.28)");
+    gg.addColorStop(1,"rgba(255,92,200,0)");
+    ctx.fillStyle = gg;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy+ry*1.02, rx*1.15, ry*0.28, 0,0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    // ---- gooey silhouette via offscreen threshold ----
+    octx.setTransform(DPR,0,0,DPR,0,0);
+    octx.clearRect(0,0,W,H);
+    octx.filter = "blur("+(16*S)+"px)";
+    octx.fillStyle = "#000";
+    for(const b of blobs){
+      octx.beginPath();
+      octx.ellipse(b.x, b.y, b.rx, b.ry, 0, 0, Math.PI*2);
+      octx.fill();
+    }
+    octx.filter = "none";
+    // threshold: draw where alpha high -> we approximate by drawing blurred
+    // silhouette then compositing gradient body only inside it.
+    // Use the blurred shape as a clip via 'source-in'.
+
+    // Body gradient buffer: paint gradient, keep only inside silhouette
+    ctx.save();
+    // clip using the blobs directly (crisp) then overlay a merged soft edge
+    ctx.beginPath();
+    for(const b of blobs){
+      ctx.moveTo(b.x+b.rx, b.y);
+      ctx.ellipse(b.x, b.y, b.rx, b.ry, 0, 0, Math.PI*2);
+    }
+    ctx.closePath();
+    ctx.clip();
+
+    // main body gradient
+    const bg = ctx.createLinearGradient(cx-rx, cy-ry, cx+rx, cy+ry);
+    bg.addColorStop(0,   "#ff8ad9");
+    bg.addColorStop(0.5, "#ff5cc8");
+    bg.addColorStop(1,   "#b84bff");
+    ctx.fillStyle = bg;
+    ctx.fillRect(cx-rx*2.2, cy-ry*2.2, rx*4.4, ry*4.4);
+
+    // inner sheen (top-left light)
+    const sheen = ctx.createRadialGradient(cx-rx*0.4, cy-ry*0.55, rx*0.05, cx-rx*0.3, cy-ry*0.4, rx*1.2);
+    sheen.addColorStop(0,"rgba(255,255,255,0.55)");
+    sheen.addColorStop(0.25,"rgba(255,255,255,0.12)");
+    sheen.addColorStop(1,"rgba(255,255,255,0)");
+    ctx.fillStyle = sheen;
+    ctx.fillRect(cx-rx*2.2, cy-ry*2.2, rx*4.4, ry*4.4);
+
+    // aqua rim light bottom-right
+    const rim = ctx.createRadialGradient(cx+rx*0.5, cy+ry*0.5, rx*0.2, cx+rx*0.5, cy+ry*0.5, rx*1.1);
+    rim.addColorStop(0,"rgba(75,227,255,0)");
+    rim.addColorStop(0.8,"rgba(75,227,255,0.0)");
+    rim.addColorStop(1,"rgba(75,227,255,0.35)");
+    ctx.fillStyle = rim;
+    ctx.fillRect(cx-rx*2.2, cy-ry*2.2, rx*4.4, ry*4.4);
+    ctx.restore();
+
+    // ---- soft merged connective goo (draw blurred silhouette outline glow) ----
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.globalAlpha = 0.10;
+    ctx.filter = "blur("+(6*S)+"px)";
+    ctx.fillStyle = "#ff5cc8";
+    for(const b of blobs){
+      ctx.beginPath();
+      ctx.ellipse(b.x, b.y, b.rx*0.9, b.ry*0.9, 0,0,Math.PI*2);
+      ctx.fill();
+    }
+    ctx.filter="none";
+    ctx.restore();
+
+    // ---- highlight specks (candy sparkle) ----
+    ctx.save();
+    ctx.fillStyle="rgba(255,255,255,0.9)";
+    ctx.beginPath();
+    ctx.ellipse(cx-rx*0.42, cy-ry*0.5, rx*0.10, ry*0.14, -0.5, 0,Math.PI*2);
+    ctx.fill();
+    ctx.globalAlpha=0.6;
+    ctx.beginPath();
+    ctx.ellipse(cx-rx*0.22, cy-ry*0.58, rx*0.045, ry*0.06, -0.4, 0,Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+
+    // ---- FACE ---- (eyes track pointer, mouth reacts) ----
+    const faceY = cy - ry*0.06;
+    const eyeSpread = rx*0.30;
+    const eyeY = faceY - ry*0.05;
+    const eyeR = rx*0.135;
+    const gazeX = body.gx * rx*0.045;
+    const gazeY = body.gy * ry*0.045;
+
+    // blink
+    const blink = getBlink(body.t);
+
+    for(const side of [-1,1]){
+      const ex = cx + side*eyeSpread;
+      // eye white
+      ctx.save();
+      ctx.fillStyle="#fff";
+      ctx.shadowColor="rgba(120,20,90,0.25)";
+      ctx.shadowBlur = 8*S;
+      ctx.beginPath();
+      ctx.ellipse(ex, eyeY, eyeR, eyeR*blink, 0,0,Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+
+      if(blink>0.25){
+        // pupil
+        ctx.save();
+        ctx.beginPath();
+        ctx.ellipse(ex, eyeY, eyeR, eyeR*blink, 0,0,Math.PI*2);
+        ctx.clip();
+        ctx.fillStyle="#231033";
+        const px = ex + gazeX;
+        const py = eyeY + gazeY;
+        ctx.beginPath();
+        ctx.arc(px, py, eyeR*0.62, 0, Math.PI*2);
+        ctx.fill();
+        // catchlight
+        ctx.fillStyle="rgba(255,255,255,0.95)";
+        ctx.beginPath();
+        ctx.arc(px - eyeR*0.22, py - eyeR*0.24, eyeR*0.20, 0,Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+
+    // cheeks (candy blush)
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.fillStyle = "#ff3fa0";
+    ctx.filter = "blur("+(4*S)+"px)";
+    for(const side of [-1,1]){
+      ctx.beginPath();
+      ctx.ellipse(cx+side*eyeSpread*1.4, eyeY+eyeR*1.5, eyeR*0.7, eyeR*0.45, 0,0,Math.PI*2);
+      ctx.fill();
+    }
+    ctx.filter="none";
+    ctx.restore();
+
+    // mouth — a happy curve that opens with pointer excitement (speed)
+    const open = Math.min(0.4 + speed*0.02, 1.0);
+    const mw = rx*0.26;
+    const my = eyeY + eyeR*2.6;
+    ctx.save();
+    ctx.strokeStyle="#231033";
+    ctx.lineWidth = Math.max(2, 4*S);
+    ctx.lineCap="round";
+    if(open>0.55){
+      // open smiling mouth (filled)
+      ctx.fillStyle="#3a1030";
+      ctx.beginPath();
+      ctx.moveTo(cx-mw, my);
+      ctx.quadraticCurveTo(cx, my + mw*(0.7+open*0.5), cx+mw, my);
+      ctx.quadraticCurveTo(cx, my + mw*0.25, cx-mw, my);
+      ctx.fill();
+      // tongue
+      ctx.fillStyle="#ff6fae";
+      ctx.beginPath();
+      ctx.ellipse(cx, my+mw*(0.55+open*0.35), mw*0.6, mw*0.4, 0, 0, Math.PI);
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      ctx.moveTo(cx-mw, my);
+      ctx.quadraticCurveTo(cx, my + mw*0.8, cx+mw, my);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // little antenna nub on top with a glowing dot (startup energy)
+    const antX = cx + Math.sin(body.t*1.6)*rx*0.05;
+    const antTopY = cy - ry - ry*0.22;
+    ctx.save();
+    ctx.strokeStyle="#ff8ad9";
+    ctx.lineWidth = Math.max(2,3.4*S);
+    ctx.lineCap="round";
+    ctx.beginPath();
+    ctx.moveTo(cx, cy-ry*0.98);
+    ctx.quadraticCurveTo(cx+Math.sin(body.t*1.6)*8, cy-ry-ry*0.1, antX, antTopY);
+    ctx.stroke();
+    // glowing tip
+    ctx.shadowColor="#ffe14b"; ctx.shadowBlur=16*S;
+    ctx.fillStyle="#ffe14b";
+    ctx.beginPath();
+    ctx.arc(antX, antTopY, rx*0.055, 0, Math.PI*2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Blink scheduler: returns vertical scale 0..1 (1 = open)
+  let nextBlink = 1.5, blinkT = -1;
+  function getBlink(t){
+    if(REDUCED) return 1;
+    if(blinkT<0 && t>nextBlink){ blinkT = t; }
+    if(blinkT>=0){
+      const p = (t-blinkT)/0.14; // blink duration
+      if(p>=1){ blinkT=-1; nextBlink = t + 1.8 + Math.random()*2.8; return 1; }
+      // 0->closed->open
+      return Math.abs(Math.cos(p*Math.PI));
+    }
+    return 1;
+  }
+
+  /* ================= MAIN LOOP ================= */
+  let last = performance.now();
+  let running = true;
+
+  function frame(now){
+    if(!running) return;
+    let dt = (now-last)/1000;
+    if(dt>0.05) dt=0.05;         // clamp after tab switch
+    last = now;
+
+    // ease global pointer
+    pointer.x += (pointer.tx-pointer.x)*0.08;
+    pointer.y += (pointer.ty-pointer.y)*0.08;
+
+    // ---- background parallax ----
+    if(!REDUCED){
+      const gx = pointer.x*-18, gy = pointer.y*-18;
+      bgGrad.style.transform = "translate("+gx+"px,"+gy+"px)";
+      bgGlow.style.transform = "translate(-50%,-50%) translate("+(pointer.x*30)+"px,"+(pointer.y*30)+"px)";
+    }
+
+    // ---- magnetic CTA ----
+    if(!REDUCED){
+      mag.x += (mag.tx-mag.x)*0.15;
+      mag.y += (mag.ty-mag.y)*0.15;
+      cta.style.transform = "translate("+mag.x+"px,"+mag.y+"px)";
+    }
+
+    // ---- particles ----
+    pctx.clearRect(0,0,pCanvas.width,pCanvas.height);
+    pctx.save();
+    pctx.scale(DPR,DPR);
+    // parallax drift for particles
+    const px = pointer.x*14, py = pointer.y*14;
+    for(const p of particles){
+      p.x += p.vx; p.y += p.vy;
+      p.tw += 0.03;
+      if(p.y < -5){ p.y = innerHeight+5; p.x = Math.random()*innerWidth; }
+      if(p.x < -5) p.x = innerWidth+5;
+      if(p.x > innerWidth+5) p.x = -5;
+      const tw = 0.5 + Math.sin(p.tw)*0.5;
+      pctx.globalAlpha = p.a * (0.4+tw*0.6);
+      pctx.fillStyle = p.col;
+      pctx.beginPath();
+      pctx.arc(p.x+px*(p.r*0.4), p.y+py*(p.r*0.4), p.r, 0, Math.PI*2);
+      pctx.fill();
+    }
+    pctx.restore();
+
+    // ---- nova ----
+    drawNova(dt);
+
+    requestAnimationFrame(frame);
+  }
+
+  /* ---------- Resize ---------- */
+  let rt;
+  function onResize(){
+    clearTimeout(rt);
+    rt = setTimeout(()=>{
+      sizeParticles();
+      sizeNova();
+      sizeOff();
+    }, 120);
+  }
+  window.addEventListener("resize", onResize);
+
+  /* ---------- Visibility ---------- */
+  document.addEventListener("visibilitychange", ()=>{
+    if(document.hidden){
+      running = false;
+    } else if(!running){
+      running = true;
+      last = performance.now();
+      requestAnimationFrame(frame);
+    }
+  });
+
+  /* ---------- Init ---------- */
+  sizeParticles();
+  sizeNova();
+  sizeOff();
+  requestAnimationFrame(frame);
+})();
+</script>
+
+<style id="agx-chrome-css">
+.agx{position:fixed;z-index:2147483000;font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;box-sizing:border-box}
+.agx a{cursor:pointer}
+.agx-badge{right:16px;bottom:16px;display:flex;gap:7px;align-items:center;padding:8px 13px;border-radius:999px;
+  background:rgba(9,11,17,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
+.agx-badge b{color:var(--agx);font-size:13px}
+.agx-story{left:16px;bottom:16px;max-width:min(360px,calc(100vw - 32px));padding:16px 16px 13px;border-radius:16px;
+  background:rgba(9,11,17,.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;box-shadow:0 24px 70px -26px rgba(0,0,0,.85)}
+.agx-story .h{display:flex;align-items:center;gap:11px;margin-bottom:9px}
+.agx-story .em{font-size:26px;line-height:1;filter:drop-shadow(0 3px 11px var(--agx))}
+.agx-story .nm{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.agx-story .tl{color:var(--agx);font-size:12px;font-weight:600;margin-top:3px}
+.agx-story p{margin:0 0 11px;color:#c6ccd9;font-size:13px;line-height:1.56}
+.agx-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.agx-tags span{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#aeb6c6;
+  border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px 9px}
+.agx-guess{margin:0 0 12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.09)}
+.agx-guess .gq{font-size:11.5px;color:#aeb6c6;margin-bottom:8px;letter-spacing:.01em}
+.agx-guess .gbtns{display:flex;gap:8px}
+.agx-guess .gbtn{flex:1;padding:8px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.03);color:#eef1f7;font-size:12px;font-weight:600;cursor:pointer;
+  transition:transform .15s,border-color .15s,background .15s,opacity .15s;font-family:inherit}
+.agx-guess .gbtn:hover:not(:disabled){border-color:var(--agx);background:rgba(255,255,255,.07);transform:translateY(-1px)}
+.agx-guess .gbtn:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
+.agx-guess .gbtn:disabled{cursor:default}
+.agx-guess .gbtn.correct{border-color:#5eea8f;background:rgba(94,234,143,.16);color:#a4f5be;opacity:1}
+.agx-guess .gbtn.wrong{border-color:#ff6a6a;background:rgba(255,106,106,.14);color:#ffb9b9;opacity:1}
+.agx-guess .gbtn.dim{opacity:.45}
+.agx-guess .greveal{margin-top:9px;font-size:11.5px;line-height:1.55;color:#c6ccd9}
+.agx-guess .greveal b{color:#eef1f7}
+.agx-nav{display:flex;align-items:center;gap:13px;font-size:12.5px;border-top:1px solid rgba(255,255,255,.09);padding-top:11px}
+.agx-nav a{color:#eef1f7;text-decoration:none;opacity:.82}
+.agx-nav a:hover{opacity:1;color:var(--agx)}
+.agx-nav .home{margin-right:auto;font-weight:600}
+.agx-nav a[aria-disabled=true]{opacity:.32;pointer-events:none}
+@media (max-width:560px){.agx-story{left:12px;right:12px;bottom:12px;max-width:none}.agx-badge{display:none}}
+@media (prefers-reduced-motion:reduce){.agx-story .em{filter:none}}
+</style>
+<div class="agx agx-badge" style="--agx:#ff5cc8">AGENTICS · JULI <b>04</b></div>
+<aside class="agx agx-story" style="--agx:#ff5cc8" aria-label="Avatarens historie">
+  <div class="h"><div class="em">🫧</div><div><div class="nm">Nova</div><div class="tl">Skalerer med et hop, ikke et suk.</div></div></div>
+  <p>Nova blev født i et startup-miskøkken af for meget kaffe og for lidt søvn, og hun har aldrig lært at gå roligt til noget. Hun er den agent, der ikke bryder sig om at vente på infrastruktur — hun bare bobler videre, spreder sig, tilpasser sig og vokser i takt med din vækst. Optimisme er hendes API.</p>
+  <div class="agx-tags"><span>Energisk</span><span>Fleksibel</span><span>Optimistisk</span></div>
+  <div class="agx-guess" id="agxGuess">
+    <div class="gq">🤖 Hvilken Claude-model byggede Nova?</div>
+    <div class="gbtns">
+      <button type="button" class="gbtn" data-m="opus">Opus 4.8</button>
+      <button type="button" class="gbtn" data-m="sonnet">Sonnet 5</button>
+    </div>
+    <div class="greveal" id="agxReveal" hidden></div>
+  </div>
+  <nav class="agx-nav">
+    <a class="home" href="calendar.html">← Kalender</a>
+    <a href="day-3.html">‹ forrige</a>
+    <a data-day="5" href="day-5.html">næste ›</a>
+  </nav>
+</aside>
+<script>(function(){var n=document.querySelector('.agx-nav a[data-day]');if(!n)return;var d=+n.getAttribute('data-day');
+if(new Date()<new Date(2026,6,d)){n.setAttribute('aria-disabled','true');n.textContent='næste (åbner '+d+'. juli)';}})();</script>
+<script>(function(){
+  var DAY=4, MODEL='opus', NAME="Nova";
+  var KEY='agx_guess_'+DAY;
+  var wrap=document.getElementById('agxGuess');
+  if(!wrap) return;
+  var btns=Array.prototype.slice.call(wrap.querySelectorAll('.gbtn'));
+  var reveal=document.getElementById('agxReveal');
+  var TXT={
+    opus:'🧠 Rigtigt svar: <b>Claude Opus 4.8</b> byggede '+NAME+'.',
+    sonnet:'⚡ Rigtigt svar: <b>Claude Sonnet 5</b> byggede '+NAME+'.'
+  };
+  function render(saved){
+    btns.forEach(function(b){
+      b.disabled=true;
+      var m=b.getAttribute('data-m');
+      if(m===MODEL) b.classList.add('correct');
+      else if(m===saved) b.classList.add('wrong'); else b.classList.add('dim');
+    });
+    var extra = saved===MODEL ? ' Du gættede rigtigt! 🎉' : ' Forkert gæt denne gang — bedre held i morgen.';
+    reveal.innerHTML=TXT[MODEL]+extra;
+    reveal.hidden=false;
+  }
+  var prior=localStorage.getItem(KEY);
+  if(prior){ render(prior); return; }
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      var g=b.getAttribute('data-m');
+      try{ localStorage.setItem(KEY, g); }catch(e){}
+      render(g);
+    });
+  });
+})();</script>

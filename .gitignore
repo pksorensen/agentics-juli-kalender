@@ -1,0 +1,6 @@
+# secrets — the Higgsfield token lives here; never commit
+.env
+# local tooling noise
+*.err
+node_modules/
+.DS_Store

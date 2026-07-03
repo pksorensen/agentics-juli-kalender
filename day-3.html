@@ -1,0 +1,1114 @@
+<title>agentics.dk — Autonomous AI Agents</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="agentics.dk — a Danish studio designing and shipping autonomous, agentic AI systems, fronted by Agent-01, an animated companion that reacts to your cursor." />
+<style>
+  :root {
+    --bg-0: #05070c;
+    --bg-1: #0a0f1a;
+    --bg-2: #0e1626;
+
+    --ink: #eef4ff;
+    --ink-dim: #9fb0c9;
+    --ink-faint: #63748f;
+    --line: rgba(150, 180, 220, 0.10);
+
+    --mint: #46f2c8;         /* primary accent */
+    --mint-soft: #8ff7dd;
+    --violet: #8a7bff;       /* second accent, used with restraint */
+    --violet-soft: #b7aaff;
+
+    --accent: var(--mint);   /* swap this to re-theme the site */
+    --accent-2: var(--violet);
+
+    --shadow: 0 30px 90px -30px rgba(0, 0, 0, 0.8);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-io: cubic-bezier(0.65, 0, 0.35, 1);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "Helvetica Neue", Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg-0);
+    color: var(--ink);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    cursor: default;
+    line-height: 1.5;
+  }
+
+  ::selection { background: var(--mint); color: #04120e; }
+
+  .sr-only {
+    position: absolute; width: 1px; height: 1px;
+    padding: 0; margin: -1px; overflow: hidden;
+    clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  /* ============ Background layers ============ */
+  .stage { position: fixed; inset: 0; overflow: hidden; z-index: 0; }
+
+  .bg-grad {
+    position: absolute; inset: -12%;
+    background:
+      radial-gradient(70% 60% at 50% 6%, rgba(70, 242, 200, 0.11), transparent 60%),
+      radial-gradient(90% 80% at 80% 26%, rgba(138, 123, 255, 0.10), transparent 55%),
+      radial-gradient(120% 120% at 50% 122%, #060a12 20%, transparent 70%),
+      linear-gradient(180deg, var(--bg-1), var(--bg-0));
+    will-change: transform;
+  }
+
+  /* Aurora — screen-blended volumetric light (from concept B) */
+  .aurora {
+    position: absolute; left: -18%; right: -18%; top: -14%; height: 82%;
+    filter: blur(52px) saturate(1.1);
+    opacity: 0.5; mix-blend-mode: screen; will-change: transform;
+    pointer-events: none;
+  }
+  .aurora span {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(58% 120% at 24% 30%, rgba(46, 200, 180, 0.42), transparent 60%),
+      radial-gradient(52% 130% at 56% 20%, rgba(70, 242, 200, 0.34), transparent 62%),
+      radial-gradient(48% 120% at 80% 34%, rgba(138, 123, 255, 0.30), transparent 60%);
+    transform-origin: center top;
+    animation: auroraDrift 30s var(--ease-io) infinite;
+  }
+  .aurora span.b {
+    opacity: 0.72;
+    background:
+      radial-gradient(50% 120% at 66% 26%, rgba(70, 242, 200, 0.30), transparent 60%),
+      radial-gradient(46% 130% at 32% 20%, rgba(90, 150, 255, 0.24), transparent 62%),
+      radial-gradient(44% 120% at 84% 40%, rgba(138, 123, 255, 0.26), transparent 60%);
+    animation: auroraDrift2 40s var(--ease-io) infinite;
+  }
+  @keyframes auroraDrift {
+    0%, 100% { transform: translateX(-3%) skewX(-4deg) scaleY(1); }
+    50% { transform: translateX(4%) skewX(5deg) scaleY(1.07); }
+  }
+  @keyframes auroraDrift2 {
+    0%, 100% { transform: translateX(3%) skewX(6deg) scaleY(1.05); }
+    50% { transform: translateX(-4%) skewX(-5deg) scaleY(0.96); }
+  }
+
+  /* Parallax ridge silhouettes — cinematic horizon depth (from concept B) */
+  .ridge { position: absolute; left: -8%; right: -8%; width: 116%; will-change: transform; pointer-events: none; }
+  .ridge svg { display: block; width: 100%; height: auto; }
+  .ridge.far  { bottom: 9vh;  opacity: 0.34; }
+  .ridge.mid  { bottom: 2vh;  opacity: 0.5; }
+  .ridge.near { bottom: -3vh; opacity: 0.72; }
+
+  .bg-glow {
+    position: absolute; left: 72%; top: 48%;
+    width: 62vw; height: 62vw; max-width: 920px; max-height: 920px;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(70, 242, 200, 0.16), rgba(138, 123, 255, 0.06) 42%, transparent 66%);
+    filter: blur(34px); will-change: transform;
+  }
+  @media (max-width: 940px) { .bg-glow { left: 50%; top: 36%; } }
+
+  #particles, #grain { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #grain { opacity: 0.05; mix-blend-mode: soft-light; pointer-events: none; }
+  .vignette {
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(120% 90% at 50% 45%, transparent 54%, rgba(0,0,0,0.58) 100%);
+  }
+
+  /* ============ Layout ============ */
+  .shell {
+    position: relative; z-index: 2; min-height: 100%;
+    display: flex; flex-direction: column;
+    padding: 28px clamp(20px, 5vw, 64px) 40px;
+  }
+
+  /* ============ Nav ============ */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    opacity: 0; transform: translateY(-12px);
+    animation: fadeDown 0.9s var(--ease-out) 0.15s forwards;
+  }
+  .wordmark {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-weight: 650; font-size: 17px; letter-spacing: -0.02em;
+    color: var(--ink); text-decoration: none;
+  }
+  .wordmark .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    background: var(--mint);
+    box-shadow: 0 0 12px var(--mint), 0 0 3px #fff inset;
+    animation: pulseDot 3.4s var(--ease-io) infinite;
+  }
+  .wordmark b { font-weight: 650; }
+  .wordmark .tld { color: var(--ink-faint); font-weight: 500; }
+
+  .nav-links { display: flex; align-items: center; gap: clamp(18px, 3vw, 38px); }
+  .nav-links a {
+    color: var(--ink-dim); text-decoration: none;
+    font-size: 14px; font-weight: 450; letter-spacing: 0.01em;
+    position: relative; transition: color 0.3s var(--ease-out);
+  }
+  .nav-links a::after {
+    content: ""; position: absolute; left: 0; bottom: -5px;
+    width: 100%; height: 1px; background: var(--mint);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 0.4s var(--ease-out);
+  }
+  .nav-links a:hover { color: var(--ink); }
+  .nav-links a:hover::after, .nav-links a:focus-visible::after { transform: scaleX(1); }
+
+  /* C's live-status pill grafted into A's nav */
+  .status {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12.5px; color: var(--ink-dim);
+    padding: 7px 13px; border: 1px solid var(--line); border-radius: 100px;
+    background: rgba(255,255,255,0.015);
+  }
+  .status .live {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--mint);
+    box-shadow: 0 0 10px var(--mint);
+    animation: pulseDot 2.2s var(--ease-io) infinite;
+  }
+  @media (max-width: 720px) { .nav-links a.hide-sm, .status { display: none; } }
+
+  /* ============ Hero ============ */
+  .hero {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1.05fr 0.95fr;
+    align-items: center;
+    gap: clamp(20px, 4vw, 60px);
+    max-width: 1320px; width: 100%; margin: 0 auto;
+    padding-top: clamp(20px, 4vh, 60px);
+  }
+  @media (max-width: 940px) {
+    .hero { grid-template-columns: 1fr; text-align: center; padding-top: 10px; }
+    .avatar-wrap { order: -1; }
+    .sub, .copy { margin-left: auto; margin-right: auto; }
+  }
+
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-size: 12.5px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--mint-soft); font-weight: 600;
+    padding: 8px 14px; border-radius: 100px;
+    border: 1px solid rgba(70, 242, 200, 0.22);
+    background: rgba(70, 242, 200, 0.05);
+    opacity: 0; transform: translateY(14px);
+  }
+  .eyebrow .spark {
+    width: 6px; height: 6px; background: var(--mint); border-radius: 50%;
+    box-shadow: 0 0 10px var(--mint);
+  }
+
+  h1 {
+    margin-top: 26px;
+    font-size: clamp(2.6rem, 6.4vw, 5.4rem);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    font-weight: 680; /* A's tighter, more authoritative weight */
+  }
+  h1 .line { display: block; overflow: hidden; }
+  h1 .line > span {
+    display: block;
+    transform: translateY(110%);
+    will-change: transform;
+  }
+  h1 .grad {
+    background: linear-gradient(96deg, var(--mint) 0%, var(--mint-soft) 34%, var(--violet-soft) 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent; color: transparent;
+  }
+
+  .sub {
+    margin-top: 26px; max-width: 30em;
+    font-size: clamp(1rem, 1.35vw, 1.18rem); line-height: 1.6;
+    color: var(--ink-dim); font-weight: 400;
+    opacity: 0; transform: translateY(16px);
+  }
+  .sub b { color: var(--ink); font-weight: 600; }
+
+  .actions {
+    margin-top: 40px;
+    display: flex; align-items: center; gap: 26px; flex-wrap: wrap;
+    opacity: 0; transform: translateY(16px);
+  }
+  @media (max-width: 940px) { .actions { justify-content: center; } }
+
+  .cta {
+    position: relative;
+    display: inline-flex; align-items: center; gap: 11px;
+    padding: 16px 28px; border-radius: 100px;
+    font-size: 15px; font-weight: 640; letter-spacing: -0.01em;
+    color: #04120e; text-decoration: none; border: none; cursor: pointer;
+    background: linear-gradient(180deg, var(--mint-soft), var(--mint));
+    box-shadow: 0 10px 40px -10px rgba(70, 242, 200, 0.55), 0 1px 0 rgba(255,255,255,0.4) inset;
+    transition: box-shadow 0.35s var(--ease-out);
+    overflow: hidden; will-change: transform;
+  }
+  .cta:hover { box-shadow: 0 16px 55px -8px rgba(70, 242, 200, 0.72), 0 1px 0 rgba(255,255,255,0.5) inset; }
+  .cta .arrow { transition: transform 0.4s var(--ease-out); display: inline-flex; }
+  .cta:hover .arrow { transform: translateX(4px); }
+  .cta::before {
+    content: ""; position: absolute; inset: 0; border-radius: inherit;
+    background: radial-gradient(60% 120% at 50% 0%, rgba(255,255,255,0.6), transparent 60%);
+    opacity: 0.5; transition: opacity 0.35s; pointer-events: none;
+  }
+  /* B's sheen sweep */
+  .cta .shine {
+    position: absolute; top: 0; left: -130%; width: 60%; height: 100%;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,0.5), transparent);
+    transform: skewX(-18deg); transition: left 0.75s var(--ease-out); pointer-events: none;
+  }
+  .cta:hover .shine { left: 140%; }
+
+  .secondary {
+    display: inline-flex; align-items: center; gap: 10px;
+    color: var(--ink); text-decoration: none;
+    font-size: 14.5px; font-weight: 500; transition: color 0.3s;
+  }
+  .secondary .play {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 1px solid var(--line);
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: border-color 0.35s var(--ease-out), transform 0.35s var(--ease-out), background 0.35s;
+  }
+  .secondary:hover .play { border-color: rgba(70,242,200,0.6); transform: scale(1.08); background: rgba(70,242,200,0.06); }
+  .secondary:hover { color: var(--mint-soft); }
+
+  .metarow {
+    margin-top: 48px;
+    display: flex; gap: clamp(20px, 4vw, 46px); flex-wrap: wrap;
+    opacity: 0; transform: translateY(16px);
+  }
+  @media (max-width: 940px) { .metarow { justify-content: center; } }
+  .metric .n { font-size: 1.5rem; font-weight: 640; letter-spacing: -0.02em; color: var(--ink); }
+  .metric .n span { color: var(--mint); }
+  .metric .l {
+    margin-top: 3px; font-size: 12px; color: var(--ink-faint);
+    letter-spacing: 0.04em; text-transform: uppercase;
+  }
+
+  /* ============ Avatar ============ */
+  .avatar-wrap {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 420px;
+    opacity: 0;
+    animation: avatarIn 1.4s var(--ease-out) 0.5s forwards;
+  }
+  .avatar-stage {
+    position: relative;
+    width: min(460px, 82vw); aspect-ratio: 1 / 1;
+    will-change: transform;
+  }
+  .avatar-stage svg { display: block; width: 100%; height: 100%; overflow: visible; }
+  .caption {
+    position: absolute; bottom: -2px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--ink-faint); white-space: nowrap; pointer-events: none;
+  }
+
+  :focus-visible { outline: 2px solid var(--mint); outline-offset: 3px; border-radius: 6px; }
+
+  /* ============ Keyframes ============ */
+  @keyframes fadeDown { to { opacity: 1; transform: translateY(0); } }
+  @keyframes avatarIn { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+  @keyframes pulseDot { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  .reveal { animation: revealUp 1.05s var(--ease-out) forwards; }
+  @keyframes revealUp { to { transform: translateY(0); } }
+  .fade-up { animation: fadeUp 1s var(--ease-out) forwards; }
+  @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+  .hint {
+    position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+    z-index: 3; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--ink-faint); display: inline-flex; align-items: center; gap: 10px;
+    opacity: 0; animation: fadeUp 1.2s var(--ease-out) 1.8s forwards;
+  }
+  .hint .m {
+    width: 20px; height: 30px; border: 1.5px solid var(--ink-faint); border-radius: 12px; position: relative;
+  }
+  .hint .m::after {
+    content: ""; position: absolute; left: 50%; top: 6px; transform: translateX(-50%);
+    width: 3px; height: 6px; border-radius: 3px; background: var(--mint);
+    animation: scrollMove 1.8s var(--ease-io) infinite;
+  }
+  @keyframes scrollMove { 0% { opacity: 0; transform: translate(-50%, 0); } 40% { opacity: 1; } 80%,100% { opacity: 0; transform: translate(-50%, 8px); } }
+  @media (max-width: 940px) { .hint { display: none; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important; animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+    nav, .eyebrow, .sub, .actions, .metarow, .avatar-wrap { opacity: 1 !important; transform: none !important; }
+    h1 .line > span { transform: none !important; }
+    .hint { display: none; }
+    .aurora span { animation: none !important; }
+  }
+</style>
+
+<h1 class="sr-only" hidden>agentics.dk — a Danish studio that designs and ships autonomous AI agents, featuring Agent-01, an animated robot companion that reacts to your cursor.</h1>
+
+<div class="stage" aria-hidden="true">
+  <div class="bg-grad" data-depth="0.10"></div>
+  <div class="aurora" data-depth="0.18"><span></span><span class="b"></span></div>
+
+  <div class="ridge far" data-depth="0.42">
+    <svg viewBox="0 0 1440 220" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0 180 L120 120 L260 168 L410 96 L560 152 L720 88 L880 150 L1040 104 L1200 160 L1330 118 L1440 158 L1440 220 L0 220 Z" fill="#0b1826"/>
+    </svg>
+  </div>
+  <div class="ridge mid" data-depth="0.72">
+    <svg viewBox="0 0 1440 240" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0 200 L150 120 L320 190 L480 100 L640 176 L820 96 L980 178 L1160 110 L1320 186 L1440 132 L1440 240 L0 240 Z" fill="#08121e"/>
+    </svg>
+  </div>
+  <div class="ridge near" data-depth="1.1">
+    <svg viewBox="0 0 1440 260" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0 210 L180 150 L360 214 L540 130 L720 206 L900 128 L1080 210 L1260 146 L1440 208 L1440 260 L0 260 Z" fill="#050b14"/>
+    </svg>
+  </div>
+
+  <div class="bg-glow" data-depth="0.22"></div>
+  <canvas id="particles"></canvas>
+  <div class="vignette"></div>
+  <canvas id="grain"></canvas>
+</div>
+
+<div class="shell">
+  <nav>
+    <a class="wordmark" href="#" aria-label="agentics.dk home">
+      <span class="dot"></span><b>agentics</b><span class="tld">.dk</span>
+    </a>
+    <div class="nav-links">
+      <a class="hide-sm" href="#platform">Platform</a>
+      <a class="hide-sm" href="#agenter">Agenter</a>
+      <a class="hide-sm" href="#studiet">Studiet</a>
+      <span class="status"><span class="live"></span>Agent-01 online</span>
+    </div>
+  </nav>
+
+  <main class="hero">
+    <div class="copy">
+      <span class="eyebrow" id="eyebrow"><span class="spark"></span>Autonomous AI Studio · København</span>
+      <h1 aria-label="We build AI agents that ship the work">
+        <span class="line"><span data-d="0">We build AI agents</span></span>
+        <span class="line"><span data-d="1">that <span class="grad">ship the work</span></span></span>
+      </h1>
+      <p class="sub" id="sub">
+        agentics.dk designer og leverer autonome AI-systemer der planlægger,
+        beslutter og handler på egen hånd — <b>production-grade agents</b> that reason,
+        act, and get things done, so your team can focus on what matters.
+      </p>
+      <div class="actions" id="actions">
+        <button class="cta" id="cta" type="button">
+          <span class="shine" aria-hidden="true"></span>
+          Byg din agent
+          <span class="arrow" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 8h11M9 4l4 4-4 4" stroke="#04120e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </button>
+        <a class="secondary" href="#showreel">
+          <span class="play" aria-hidden="true">
+            <svg width="11" height="12" viewBox="0 0 11 12" fill="none"><path d="M1 1.3v9.4a.6.6 0 0 0 .92.5l7.6-4.7a.6.6 0 0 0 0-1L1.92.8A.6.6 0 0 0 1 1.3Z" fill="#eef4ff"/></svg>
+          </span>
+          Se showreel
+        </a>
+      </div>
+      <div class="metarow" id="metarow">
+        <div class="metric"><div class="n">40<span>+</span></div><div class="l">Agents shipped</div></div>
+        <div class="metric"><div class="n">99.9<span>%</span></div><div class="l">Uptime SLA</div></div>
+        <div class="metric"><div class="n">24<span>/7</span></div><div class="l">Autonomous ops</div></div>
+      </div>
+    </div>
+
+    <div class="avatar-wrap">
+      <div class="avatar-stage" id="avatarStage" role="img" aria-label="Agent-01, a friendly rounded robot companion with a glowing visor face that follows your cursor, orbited by data motes.">
+        <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="bodyG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#f3f8ff"/>
+              <stop offset="0.5" stop-color="#d5e2f2"/>
+              <stop offset="1" stop-color="#a9bdd6"/>
+            </linearGradient>
+            <linearGradient id="bodyShade" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#ffffff" stop-opacity="0.9"/>
+              <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+            </linearGradient>
+            <radialGradient id="visorG" cx="0.5" cy="0.4" r="0.75">
+              <stop offset="0" stop-color="#0c1524"/>
+              <stop offset="0.7" stop-color="#060b14"/>
+              <stop offset="1" stop-color="#020509"/>
+            </radialGradient>
+            <linearGradient id="visorSheen" x1="0" y1="0" x2="0.3" y2="1">
+              <stop offset="0" stop-color="#46f2c8" stop-opacity="0.22"/>
+              <stop offset="0.5" stop-color="#8a7bff" stop-opacity="0.06"/>
+              <stop offset="1" stop-color="#000" stop-opacity="0"/>
+            </linearGradient>
+            <radialGradient id="eyeG" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0" stop-color="#d7fff5"/>
+              <stop offset="0.4" stop-color="#46f2c8"/>
+              <stop offset="1" stop-color="#12b898"/>
+            </radialGradient>
+            <radialGradient id="rimG" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0.7" stop-color="#46f2c8" stop-opacity="0"/>
+              <stop offset="0.92" stop-color="#46f2c8" stop-opacity="0.5"/>
+              <stop offset="1" stop-color="#46f2c8" stop-opacity="0"/>
+            </radialGradient>
+            <linearGradient id="moteRing" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#8ff7dd"/>
+              <stop offset="0.5" stop-color="#46f2c8"/>
+              <stop offset="1" stop-color="#8a7bff"/>
+            </linearGradient>
+            <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="4"/>
+            </filter>
+            <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+              <feGaussianBlur stdDeviation="6"/>
+            </filter>
+          </defs>
+
+          <!-- HUD rings (parallax back) -->
+          <g id="hud" opacity="0.5">
+            <circle cx="200" cy="210" r="168" fill="none" stroke="#46f2c8" stroke-opacity="0.16" stroke-width="1"/>
+            <circle id="hudRing" cx="200" cy="210" r="150" fill="none" stroke="#8a7bff" stroke-opacity="0.22" stroke-width="1" stroke-dasharray="6 10"/>
+            <circle cx="200" cy="210" r="150" fill="url(#rimG)" opacity="0.6"/>
+            <g id="hudTicks" stroke="#46f2c8" stroke-opacity="0.35" stroke-width="1.4">
+              <line x1="200" y1="42" x2="200" y2="52"/>
+              <line x1="200" y1="368" x2="200" y2="378"/>
+              <line x1="32" y1="210" x2="42" y2="210"/>
+              <line x1="358" y1="210" x2="368" y2="210"/>
+            </g>
+          </g>
+
+          <!-- dual counter-rotating scan arcs (grafted from concept A) -->
+          <g id="scanArcs">
+            <circle id="scan" cx="200" cy="210" r="176" fill="none" stroke="var(--mint)" stroke-width="2.4"
+                    stroke-linecap="round" stroke-dasharray="80 620" opacity="0.72"/>
+            <circle id="scan2" cx="200" cy="210" r="192" fill="none" stroke="var(--accent-2)" stroke-width="1.6"
+                    stroke-linecap="round" stroke-dasharray="40 700" opacity="0.6"/>
+          </g>
+
+          <!-- floating shadow -->
+          <ellipse id="shadow" cx="200" cy="352" rx="86" ry="16" fill="#000" opacity="0.35" filter="url(#soft)"/>
+
+          <!-- BODY GROUP (bobs) -->
+          <g id="bot">
+            <ellipse cx="96" cy="252" rx="26" ry="30" fill="url(#bodyG)" opacity="0.95"/>
+            <ellipse cx="304" cy="252" rx="26" ry="30" fill="url(#bodyG)" opacity="0.95"/>
+
+            <!-- antenna -->
+            <g id="antenna">
+              <line x1="200" y1="120" x2="200" y2="78" stroke="#b7c8dd" stroke-width="5" stroke-linecap="round"/>
+              <circle id="antennaGlow" cx="200" cy="72" r="16" fill="#46f2c8" opacity="0.28" filter="url(#glow)"/>
+              <circle id="antennaTip" cx="200" cy="72" r="10" fill="url(#eyeG)"/>
+            </g>
+
+            <!-- head/body shell -->
+            <g id="head">
+              <rect x="74" y="118" width="252" height="216" rx="86" fill="url(#bodyG)"/>
+              <rect x="82" y="122" width="236" height="120" rx="78" fill="url(#bodyShade)" opacity="0.55"/>
+              <rect x="74" y="118" width="252" height="216" rx="86" fill="none" stroke="#46f2c8" stroke-opacity="0.25" stroke-width="2"/>
+
+              <!-- ear pods (perk toward pointer) -->
+              <g id="earL">
+                <circle cx="78" cy="222" r="15" fill="#c3d2e6"/>
+                <circle cx="78" cy="222" r="7" fill="#46f2c8" opacity="0.75"/>
+              </g>
+              <g id="earR">
+                <circle cx="322" cy="222" r="15" fill="#c3d2e6"/>
+                <circle cx="322" cy="222" r="7" fill="#8a7bff" opacity="0.75"/>
+              </g>
+
+              <!-- VISOR -->
+              <g id="visor">
+                <rect x="108" y="152" width="184" height="150" rx="60" fill="url(#visorG)"/>
+                <rect x="108" y="152" width="184" height="150" rx="60" fill="url(#visorSheen)"/>
+                <rect x="108" y="152" width="184" height="150" rx="60" fill="none" stroke="#0c1a2c" stroke-width="2"/>
+                <ellipse cx="200" cy="232" rx="80" ry="62" fill="#46f2c8" opacity="0.06" filter="url(#glow)"/>
+
+                <!-- FACE (moves as a unit with gaze) -->
+                <g id="face">
+                  <!-- eyes: body group + independent pupil for depth (A's rig) -->
+                  <g id="eyeL">
+                    <g class="eyeBody">
+                      <ellipse cx="168" cy="222" rx="19" ry="24" fill="url(#eyeG)"/>
+                      <ellipse cx="168" cy="222" rx="30" ry="34" fill="#46f2c8" opacity="0.20" filter="url(#glow)"/>
+                    </g>
+                    <circle class="pupil" cx="168" cy="222" r="7" fill="#02120d"/>
+                    <circle class="spec" cx="161" cy="213" r="6" fill="#eafff9"/>
+                  </g>
+                  <g id="eyeR">
+                    <g class="eyeBody">
+                      <ellipse cx="232" cy="222" rx="19" ry="24" fill="url(#eyeG)"/>
+                      <ellipse cx="232" cy="222" rx="30" ry="34" fill="#46f2c8" opacity="0.20" filter="url(#glow)"/>
+                    </g>
+                    <circle class="pupil" cx="232" cy="222" r="7" fill="#02120d"/>
+                    <circle class="spec" cx="225" cy="213" r="6" fill="#eafff9"/>
+                  </g>
+                  <!-- mouth / smile -->
+                  <path id="mouth" d="M176 268 Q200 284 224 268" fill="none" stroke="#46f2c8" stroke-width="5" stroke-linecap="round" opacity="0.85"/>
+                  <ellipse cx="140" cy="256" rx="11" ry="6" fill="#8a7bff" opacity="0.16"/>
+                  <ellipse cx="260" cy="256" rx="11" ry="6" fill="#8a7bff" opacity="0.16"/>
+                </g>
+              </g>
+
+              <!-- chest core light — the heartbeat -->
+              <g id="core">
+                <circle id="coreGlow" cx="200" cy="322" r="12" fill="#46f2c8" opacity="0.35" filter="url(#glow)"/>
+                <circle id="coreDot" cx="200" cy="322" r="5" fill="#d7fff5" opacity="0.9"/>
+              </g>
+            </g>
+          </g>
+
+          <!-- orbiting data motes with trails (grafted from concept A) -->
+          <g id="motes"></g>
+        </svg>
+      </div>
+      <div class="caption" aria-hidden="true">Agent-01 · Autonomous core</div>
+    </div>
+  </main>
+</div>
+
+<div class="hint" aria-hidden="true"><span class="m"></span>Move to interact</div>
+
+<script>
+(function () {
+  "use strict";
+  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var SVGNS = "http://www.w3.org/2000/svg";
+
+  /* ============ Hero entrance (staggered) ============ */
+  function stagger() {
+    var seqs = [
+      { el: document.getElementById("eyebrow"), cls: "fade-up", d: 350 },
+      { sel: 'h1 [data-d="0"]', cls: "reveal", d: 500 },
+      { sel: 'h1 [data-d="1"]', cls: "reveal", d: 620 },
+      { el: document.getElementById("sub"), cls: "fade-up", d: 820 },
+      { el: document.getElementById("actions"), cls: "fade-up", d: 960 },
+      { el: document.getElementById("metarow"), cls: "fade-up", d: 1080 }
+    ];
+    seqs.forEach(function (s) {
+      var node = s.el || document.querySelector(s.sel);
+      if (!node) return;
+      if (reduce) { node.style.opacity = 1; node.style.transform = "none"; return; }
+      setTimeout(function () { node.classList.add(s.cls); }, s.d);
+    });
+  }
+  stagger();
+
+  /* ============ Build orbiting motes (from concept A) ============ */
+  var moteData = [];
+  (function () {
+    var g = document.getElementById("motes");
+    var defs = [
+      { r: 186, s: 5.5, sp:  0.00040, ph: 0.0, ry: 0.42, col: "var(--mint)" },
+      { r: 178, s: 4.0, sp: -0.00056, ph: 2.1, ry: 0.40, col: "var(--violet-soft)" },
+      { r: 198, s: 3.0, sp:  0.00068, ph: 4.0, ry: 0.44, col: "var(--accent-2)" },
+      { r: 168, s: 4.5, sp:  0.00048, ph: 1.0, ry: 0.38, col: "var(--mint)" },
+      { r: 204, s: 2.5, sp: -0.00036, ph: 3.3, ry: 0.46, col: "var(--mint-soft)" }
+    ];
+    defs.forEach(function (d) {
+      var trail = document.createElementNS(SVGNS, "circle");
+      trail.setAttribute("r", (d.s * 0.5).toFixed(2));
+      trail.setAttribute("fill", d.col);
+      trail.setAttribute("opacity", "0.3");
+      g.appendChild(trail);
+      var c = document.createElementNS(SVGNS, "circle");
+      c.setAttribute("r", d.s);
+      c.setAttribute("fill", d.col);
+      c.setAttribute("filter", "url(#soft)");
+      g.appendChild(c);
+      moteData.push({ r: d.r, sp: d.sp, ph: d.ph, ry: d.ry, el: c, trail: trail });
+    });
+  })();
+
+  /* ============ Pointer state ============ */
+  var pointer = { x: 0.5, y: 0.5, tx: 0.5, ty: 0.5, active: false };
+  var vw = window.innerWidth, vh = window.innerHeight;
+
+  var avatarStage = document.getElementById("avatarStage");
+  /* avatar-center gaze math (A's approach), cached out of the move handler */
+  var ac = { cx: vw * 0.5, cy: vh * 0.5, hw: 200, hh: 200, gx: 0, gy: 0 };
+  function cacheAvatarRect() {
+    var r = avatarStage.getBoundingClientRect();
+    ac.cx = r.left + r.width / 2;
+    ac.cy = r.top + r.height / 2;
+    ac.hw = r.width * 0.62;
+    ac.hh = r.height * 0.62;
+  }
+
+  function onResize() {
+    vw = window.innerWidth; vh = window.innerHeight;
+    cacheAvatarRect();
+  }
+  window.addEventListener("resize", onResize);
+  window.addEventListener("scroll", cacheAvatarRect, { passive: true });
+
+  window.addEventListener("pointermove", function (e) {
+    pointer.tx = e.clientX / vw;
+    pointer.ty = e.clientY / vh;
+    pointer.active = true;
+    /* precise gaze target relative to avatar center, clamped -1..1 */
+    ac.gx = Math.max(-1, Math.min(1, (e.clientX - ac.cx) / ac.hw));
+    ac.gy = Math.max(-1, Math.min(1, (e.clientY - ac.cy) / ac.hh));
+  }, { passive: true });
+  window.addEventListener("pointerleave", function () {
+    pointer.active = false; ac.gx = 0; ac.gy = 0;
+  });
+
+  /* ============ Grain ============ */
+  var grain = document.getElementById("grain");
+  var gctx = grain.getContext("2d");
+  var grainTiles = [], gi = 0;
+  function buildGrain() {
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var s = 140;
+    grain.width = grain.clientWidth * dpr;
+    grain.height = grain.clientHeight * dpr;
+    gctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    grainTiles = [];
+    for (var t = 0; t < 3; t++) {
+      var c = document.createElement("canvas");
+      c.width = s; c.height = s;
+      var cc = c.getContext("2d");
+      var img = cc.createImageData(s, s);
+      for (var i = 0; i < img.data.length; i += 4) {
+        var v = (Math.random() * 255) | 0;
+        img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+        img.data[i + 3] = 255;
+      }
+      cc.putImageData(img, 0, 0);
+      grainTiles.push(c);
+    }
+  }
+  function drawGrain() {
+    if (!grainTiles.length) return;
+    var w = grain.clientWidth, h = grain.clientHeight;
+    gctx.clearRect(0, 0, w, h);
+    var pat = gctx.createPattern(grainTiles[gi % grainTiles.length], "repeat");
+    gctx.fillStyle = pat;
+    gctx.fillRect(0, 0, w, h);
+  }
+
+  /* ============ Particles ============ */
+  var pcv = document.getElementById("particles");
+  var pctx = pcv.getContext("2d");
+  var parts = [];
+  function buildParticles() {
+    var pdpr = Math.min(window.devicePixelRatio || 1, 2);
+    pcv.width = pcv.clientWidth * pdpr;
+    pcv.height = pcv.clientHeight * pdpr;
+    pctx.setTransform(pdpr, 0, 0, pdpr, 0, 0);
+    var count = Math.min(70, Math.round(pcv.clientWidth * pcv.clientHeight / 26000));
+    parts = [];
+    for (var i = 0; i < count; i++) {
+      parts.push({
+        x: Math.random() * pcv.clientWidth,
+        y: Math.random() * pcv.clientHeight,
+        z: 0.3 + Math.random() * 0.7,
+        r: 0.6 + Math.random() * 1.8,
+        vy: -(0.05 + Math.random() * 0.22),
+        vx: (Math.random() - 0.5) * 0.12,
+        tw: Math.random() * Math.PI * 2,
+        violet: Math.random() > 0.62 /* push more violet into the motes */
+      });
+    }
+  }
+  function drawParticles(t, step) {
+    var w = pcv.clientWidth, h = pcv.clientHeight;
+    pctx.clearRect(0, 0, w, h);
+    var px = (pointer.x - 0.5) * 40, py = (pointer.y - 0.5) * 40;
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i];
+      p.y += p.vy * p.z * step; p.x += p.vx * p.z * step;
+      if (p.y < -6) { p.y = h + 6; p.x = Math.random() * w; }
+      if (p.x < -6) p.x = w + 6; else if (p.x > w + 6) p.x = -6;
+      var tw = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(t * 0.0016 + p.tw));
+      var dx = p.x + px * p.z, dy = p.y + py * p.z;
+      pctx.beginPath();
+      pctx.arc(dx, dy, p.r * p.z, 0, 6.2832);
+      pctx.fillStyle = p.violet
+        ? "rgba(138,123,255," + (0.5 * tw * p.z).toFixed(3) + ")"
+        : "rgba(70,242,200," + (0.6 * tw * p.z).toFixed(3) + ")";
+      pctx.fill();
+    }
+  }
+
+  /* ============ Background parallax ============ */
+  var depthEls = Array.prototype.slice.call(document.querySelectorAll("[data-depth]"));
+
+  /* ============ SVG rig refs ============ */
+  var bot = document.getElementById("bot");
+  var head = document.getElementById("head");
+  var face = document.getElementById("face");
+  var eyeL = document.getElementById("eyeL");
+  var eyeR = document.getElementById("eyeR");
+  var pupils = document.querySelectorAll(".pupil");
+  var specs = document.querySelectorAll(".spec");
+  var earL = document.getElementById("earL");
+  var earR = document.getElementById("earR");
+  var antenna = document.getElementById("antenna");
+  var antennaTip = document.getElementById("antennaTip");
+  var antennaGlow = document.getElementById("antennaGlow");
+  var mouth = document.getElementById("mouth");
+  var hud = document.getElementById("hud");
+  var hudRing = document.getElementById("hudRing");
+  var scan = document.getElementById("scan");
+  var scan2 = document.getElementById("scan2");
+  var shadow = document.getElementById("shadow");
+  var coreGlow = document.getElementById("coreGlow");
+  var coreDot = document.getElementById("coreDot");
+
+  /* eye body groups get the wider gaze translate; pupils/specs add depth on top */
+  var eyeBodies = document.querySelectorAll(".eyeBody");
+
+  /* ============ Timers ============ */
+  var nextBlink = 1600 + Math.random() * 2600;
+  var blinkT = 0, blinking = false, blinkPhase = 0;
+  var nextGlance = 4000 + Math.random() * 3000;
+  var glanceT = 0, glance = { x: 0, y: 0, active: false, life: 0 };
+
+  /* smoothed values */
+  var sm = { gx: 0, gy: 0, hx: 0, hy: 0, lean: 0, near: 0 };
+
+  var startTime = performance.now();
+  var last = performance.now();
+  var lastGrain = 0;
+  var running = true;
+  var raf = null;
+
+  function frame(now) {
+    if (!running) return;
+    var t = now - startTime;
+    var dt = Math.min(48, now - last); last = now;
+    var step = dt / 16.67; /* frame-rate normalization (from concept B) */
+
+    /* ease viewport pointer (for parallax/particles) */
+    pointer.x += (pointer.tx - pointer.x) * (1 - Math.pow(0.92, step));
+    pointer.y += (pointer.ty - pointer.y) * (1 - Math.pow(0.92, step));
+
+    /* gaze target: precise avatar-relative when active, gentle idle drift otherwise */
+    var gxTarget = ac.gx, gyTarget = ac.gy;
+    if (!pointer.active) {
+      gxTarget = Math.sin(t * 0.0004) * 0.25;
+      gyTarget = Math.cos(t * 0.0005) * 0.14;
+    }
+
+    /* idle look-around saccades (C's personality beat) */
+    glanceT += dt;
+    if (glanceT > nextGlance && !pointer.active) {
+      glance.active = true; glance.life = 0;
+      glance.x = (Math.random() - 0.5) * 1.4;
+      glance.y = (Math.random() - 0.5) * 0.7;
+      nextGlance = 5000 + Math.random() * 4000;
+      glanceT = 0;
+    }
+    if (glance.active) {
+      glance.life += dt;
+      gxTarget = glance.x; gyTarget = glance.y;
+      if (glance.life > 1100) glance.active = false;
+    }
+
+    /* smoothing (step-normalized) */
+    var k1 = 1 - Math.pow(0.91, step);
+    var k2 = 1 - Math.pow(0.95, step);
+    sm.gx += (gxTarget - sm.gx) * k1;
+    sm.gy += (gyTarget - sm.gy) * k1;
+    sm.hx += (gxTarget - sm.hx) * k2;
+    sm.hy += (gyTarget - sm.hy) * k2;
+    sm.lean += (gxTarget - sm.lean) * (1 - Math.pow(0.955, step));
+
+    /* proximity: 1 when pointer is on the avatar center */
+    var nearTarget = pointer.active
+      ? 1 - Math.min(1, Math.hypot(ac.gx, ac.gy) * 0.85)
+      : 0;
+    sm.near += (nearTarget - sm.near) * (1 - Math.pow(0.9, step));
+
+    /* idle bob (breathing) */
+    var bob = Math.sin(t * 0.0016) * 7;
+    var breathe = 1 + Math.sin(t * 0.0016) * 0.012;
+    var breath01 = 0.5 + 0.5 * Math.sin(t * 0.0016);
+
+    /* body: bob + lean toward pointer */
+    var leanDeg = sm.lean * 4;
+    bot.setAttribute("transform",
+      "translate(" + (sm.hx * 8).toFixed(2) + "," + (bob + sm.hy * 5).toFixed(2) +
+      ") rotate(" + leanDeg.toFixed(3) + " 200 300) scale(" + breathe.toFixed(4) + ")");
+
+    head.setAttribute("transform",
+      "translate(" + (sm.hx * 6).toFixed(2) + "," + (sm.hy * 5).toFixed(2) +
+      ") rotate(" + (sm.hx * 2.2).toFixed(3) + " 200 220)");
+
+    /* face gaze (eyes move within visor) */
+    face.setAttribute("transform", "translate(" + (sm.gx * 14).toFixed(2) + "," + (sm.gy * 11).toFixed(2) + ")");
+
+    /* eyes: body translates, pupil adds parallax, spec counter-moves (A's layered rig) */
+    var bx = sm.gx * 4, by = sm.gy * 3;
+    var pxo = sm.gx * 7, pyo = sm.gy * 6;
+    var sxo = -sm.gx * 3, syo = -sm.gy * 2.5;
+    for (var e = 0; e < eyeBodies.length; e++)
+      eyeBodies[e].setAttribute("transform", "translate(" + bx.toFixed(2) + "," + by.toFixed(2) + ")");
+    for (var pI = 0; pI < pupils.length; pI++)
+      pupils[pI].setAttribute("transform", "translate(" + pxo.toFixed(2) + "," + pyo.toFixed(2) + ")");
+    for (var sI = 0; sI < specs.length; sI++)
+      specs[sI].setAttribute("transform", "translate(" + sxo.toFixed(2) + "," + syo.toFixed(2) + ")");
+
+    /* ear pods perk toward pointer (transform via attribute for correct box) */
+    earL.setAttribute("transform", "translate(" + (sm.gx * 5).toFixed(2) + "," + (-sm.near * 4 + sm.gy * 3).toFixed(2) + ")");
+    earR.setAttribute("transform", "translate(" + (sm.gx * 5).toFixed(2) + "," + (-sm.near * 4 + sm.gy * 3).toFixed(2) + ")");
+
+    /* antenna wobble + proximity tip brighten (C's second micro-tell) */
+    var aw = Math.sin(t * 0.0022) * 4 + sm.hx * 6;
+    antenna.setAttribute("transform", "rotate(" + aw.toFixed(3) + " 200 120)");
+    var tipPulse = 0.6 + 0.4 * (0.5 + 0.5 * Math.sin(t * 0.004));
+    antennaTip.setAttribute("r", (9 + tipPulse * 2.2 + sm.near * 2).toFixed(2));
+    antennaGlow.setAttribute("opacity", (0.28 + sm.near * 0.4 + tipPulse * 0.1).toFixed(3));
+    antennaGlow.setAttribute("r", (16 + sm.near * 5).toFixed(2));
+
+    /* chest core heartbeat (A's breathing core glow, ported onto C) */
+    coreGlow.setAttribute("r", (12 + breath01 * 4).toFixed(2));
+    coreGlow.setAttribute("opacity", (0.28 + breath01 * 0.22).toFixed(3));
+    coreDot.setAttribute("r", (5 + breath01 * 1.2).toFixed(2));
+
+    /* blink */
+    blinkT += dt;
+    if (!blinking && blinkT > nextBlink) { blinking = true; blinkPhase = 0; }
+    if (blinking) {
+      blinkPhase += dt;
+      var half = 70, sy;
+      if (blinkPhase < half) sy = 1 - (blinkPhase / half);
+      else sy = (blinkPhase - half) / half;
+      sy = Math.max(0.08, Math.min(1, sy));
+      eyeL.style.transformBox = "fill-box"; eyeL.style.transformOrigin = "center";
+      eyeR.style.transformBox = "fill-box"; eyeR.style.transformOrigin = "center";
+      eyeL.style.transform = "scaleY(" + sy.toFixed(3) + ")";
+      eyeR.style.transform = "scaleY(" + sy.toFixed(3) + ")";
+      if (blinkPhase > half * 2) {
+        blinking = false; blinkT = 0; nextBlink = 2200 + Math.random() * 3400;
+        eyeL.style.transform = ""; eyeR.style.transform = "";
+      }
+    }
+
+    /* mouth micro-expression: smile widens on proximity (C's core beat) */
+    var smile = 268 + sm.near * 12;
+    mouth.setAttribute("d", "M176 268 Q200 " + smile.toFixed(1) + " 224 268");
+    mouth.setAttribute("stroke-width", (5 + sm.near * 1.6).toFixed(2));
+
+    /* shadow reacts to bob */
+    var sc = 1 - bob * 0.006;
+    shadow.setAttribute("rx", (86 * sc).toFixed(1));
+    shadow.setAttribute("opacity", (0.34 + bob * 0.004).toFixed(3));
+
+    /* HUD + scan arcs (counter-rotating, from A) */
+    hud.setAttribute("transform", "translate(" + (sm.hx * -10).toFixed(2) + "," + (sm.hy * -8).toFixed(2) + ") rotate(" + (t * 0.004).toFixed(3) + " 200 210)");
+    hudRing.setAttribute("transform", "rotate(" + (-t * 0.01).toFixed(3) + " 200 210)");
+    scan.setAttribute("transform", "rotate(" + (t * 0.03).toFixed(2) + " 200 210)");
+    scan2.setAttribute("transform", "rotate(" + (-t * 0.019).toFixed(2) + " 200 210)");
+
+    /* motes orbit with trails + gaze skew (from A) */
+    for (var mI = 0; mI < moteData.length; mI++) {
+      var m = moteData[mI];
+      var ang = t * m.sp + m.ph;
+      var ox = Math.cos(ang) * m.r;
+      var oy = Math.sin(ang) * m.r * m.ry;
+      var mx = 200 + ox + sm.gx * 10;
+      var my = 210 + oy - ox * 0.14 + sm.gy * 10;
+      m.el.setAttribute("cx", mx.toFixed(2));
+      m.el.setAttribute("cy", my.toFixed(2));
+      var depth = (Math.sin(ang) + 1) / 2;
+      m.el.style.opacity = (0.35 + depth * 0.65).toFixed(2);
+      m.trail.setAttribute("cx", (200 + Math.cos(ang - 0.28) * m.r + sm.gx * 10).toFixed(2));
+      m.trail.setAttribute("cy", (210 + Math.sin(ang - 0.28) * m.r * m.ry - Math.cos(ang - 0.28) * m.r * 0.14 + sm.gy * 10).toFixed(2));
+      m.trail.style.opacity = (0.12 + depth * 0.28).toFixed(2);
+    }
+
+    /* avatar stage container parallax */
+    avatarStage.style.transform = "translate3d(" + (sm.hx * 10).toFixed(2) + "px," + (sm.hy * 8).toFixed(2) + "px,0)";
+
+    /* background depth parallax */
+    for (var i = 0; i < depthEls.length; i++) {
+      var d = parseFloat(depthEls[i].getAttribute("data-depth"));
+      var tx = (pointer.x - 0.5) * -60 * d;
+      var ty = (pointer.y - 0.5) * -60 * d;
+      depthEls[i].style.transform = depthEls[i].classList.contains("bg-glow")
+        ? "translate(-50%,-50%) translate(" + tx.toFixed(2) + "px," + ty.toFixed(2) + "px)"
+        : "translate(" + tx.toFixed(2) + "px," + ty.toFixed(2) + "px)";
+    }
+
+    drawParticles(t, step);
+
+    if (now - lastGrain > 42) { gi = (gi + 1) % 3; drawGrain(); lastGrain = now; }
+
+    raf = requestAnimationFrame(frame);
+  }
+
+  /* ============ Static compose for reduced motion ============ */
+  function composeStatic() {
+    face.setAttribute("transform", "translate(0,0)");
+    coreGlow.setAttribute("opacity", "0.4");
+    for (var mI = 0; mI < moteData.length; mI++) {
+      var m = moteData[mI], ang = m.ph;
+      m.el.setAttribute("cx", (200 + Math.cos(ang) * m.r).toFixed(2));
+      m.el.setAttribute("cy", (210 + Math.sin(ang) * m.r * m.ry).toFixed(2));
+      m.trail.style.opacity = "0";
+    }
+    drawParticles(0, 1);
+  }
+
+  /* ============ Start ============ */
+  function start() {
+    cacheAvatarRect();
+    buildParticles(); buildGrain(); drawGrain();
+    if (reduce) { composeStatic(); return; }
+    last = performance.now();
+    raf = requestAnimationFrame(frame);
+  }
+
+  window.addEventListener("resize", function () {
+    buildParticles(); buildGrain(); drawGrain();
+  });
+
+  /* pause rAF when tab hidden; resume WITHOUT resetting startTime (A's fix) */
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) {
+      running = false;
+      if (raf) { cancelAnimationFrame(raf); raf = null; }
+    } else if (!reduce && !running) {
+      running = true;
+      last = performance.now(); /* keep startTime so time-based rotations don't snap */
+      raf = requestAnimationFrame(frame);
+    }
+  });
+
+  /* ============ Magnetic CTA (settle-then-stop rAF, C's approach) ============ */
+  var cta = document.getElementById("cta");
+  var cmx = 0, cmy = 0, ctx2 = 0, cty2 = 0, ctaRaf = null, ctaLast = 0;
+  function ctaLoop(now) {
+    var cdt = ctaLast ? Math.min(48, now - ctaLast) : 16; ctaLast = now;
+    var cstep = cdt / 16.67;
+    var ck = 1 - Math.pow(0.82, cstep);
+    ctx2 += (cmx - ctx2) * ck;
+    cty2 += (cmy - cty2) * ck;
+    cta.style.transform = "translate(" + ctx2.toFixed(2) + "px," + cty2.toFixed(2) + "px)";
+    if (Math.abs(cmx - ctx2) > 0.1 || Math.abs(cmy - cty2) > 0.1) {
+      ctaRaf = requestAnimationFrame(ctaLoop);
+    } else {
+      cta.style.transform = "translate(" + cmx.toFixed(2) + "px," + cmy.toFixed(2) + "px)";
+      ctaRaf = null; ctaLast = 0;
+    }
+  }
+  if (!reduce) {
+    cta.addEventListener("pointermove", function (e) {
+      var r = cta.getBoundingClientRect();
+      cmx = (e.clientX - (r.left + r.width / 2)) * 0.35;
+      cmy = (e.clientY - (r.top + r.height / 2)) * 0.5;
+      if (!ctaRaf) { ctaLast = 0; ctaRaf = requestAnimationFrame(ctaLoop); }
+    });
+    cta.addEventListener("pointerleave", function () {
+      cmx = 0; cmy = 0; if (!ctaRaf) { ctaLast = 0; ctaRaf = requestAnimationFrame(ctaLoop); }
+    });
+  }
+
+  start();
+})();
+</script>
+
+<style id="agx-chrome-css">
+.agx{position:fixed;z-index:2147483000;font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;box-sizing:border-box}
+.agx a{cursor:pointer}
+.agx-badge{right:16px;bottom:16px;display:flex;gap:7px;align-items:center;padding:8px 13px;border-radius:999px;
+  background:rgba(9,11,17,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
+.agx-badge b{color:var(--agx);font-size:13px}
+.agx-story{left:16px;bottom:16px;max-width:min(360px,calc(100vw - 32px));padding:16px 16px 13px;border-radius:16px;
+  background:rgba(9,11,17,.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;box-shadow:0 24px 70px -26px rgba(0,0,0,.85)}
+.agx-story .h{display:flex;align-items:center;gap:11px;margin-bottom:9px}
+.agx-story .em{font-size:26px;line-height:1;filter:drop-shadow(0 3px 11px var(--agx))}
+.agx-story .nm{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.agx-story .tl{color:var(--agx);font-size:12px;font-weight:600;margin-top:3px}
+.agx-story p{margin:0 0 11px;color:#c6ccd9;font-size:13px;line-height:1.56}
+.agx-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.agx-tags span{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#aeb6c6;
+  border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px 9px}
+.agx-guess{margin:0 0 12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.09)}
+.agx-guess .gq{font-size:11.5px;color:#aeb6c6;margin-bottom:8px;letter-spacing:.01em}
+.agx-guess .gbtns{display:flex;gap:8px}
+.agx-guess .gbtn{flex:1;padding:8px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.03);color:#eef1f7;font-size:12px;font-weight:600;cursor:pointer;
+  transition:transform .15s,border-color .15s,background .15s,opacity .15s;font-family:inherit}
+.agx-guess .gbtn:hover:not(:disabled){border-color:var(--agx);background:rgba(255,255,255,.07);transform:translateY(-1px)}
+.agx-guess .gbtn:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
+.agx-guess .gbtn:disabled{cursor:default}
+.agx-guess .gbtn.correct{border-color:#5eea8f;background:rgba(94,234,143,.16);color:#a4f5be;opacity:1}
+.agx-guess .gbtn.wrong{border-color:#ff6a6a;background:rgba(255,106,106,.14);color:#ffb9b9;opacity:1}
+.agx-guess .gbtn.dim{opacity:.45}
+.agx-guess .greveal{margin-top:9px;font-size:11.5px;line-height:1.55;color:#c6ccd9}
+.agx-guess .greveal b{color:#eef1f7}
+.agx-nav{display:flex;align-items:center;gap:13px;font-size:12.5px;border-top:1px solid rgba(255,255,255,.09);padding-top:11px}
+.agx-nav a{color:#eef1f7;text-decoration:none;opacity:.82}
+.agx-nav a:hover{opacity:1;color:var(--agx)}
+.agx-nav .home{margin-right:auto;font-weight:600}
+.agx-nav a[aria-disabled=true]{opacity:.32;pointer-events:none}
+@media (max-width:560px){.agx-story{left:12px;right:12px;bottom:12px;max-width:none}.agx-badge{display:none}}
+@media (prefers-reduced-motion:reduce){.agx-story .em{filter:none}}
+</style>
+<div class="agx agx-badge" style="--agx:#5eead4">AGENTICS · JULI <b>03</b></div>
+<aside class="agx agx-story" style="--agx:#5eead4" aria-label="Avatarens historie">
+  <div class="h"><div class="em">🤖</div><div><div class="nm">Agent-01</div><div class="tl">Din første kollega, der aldrig sover.</div></div></div>
+  <p>Agent-01 var den første i holdet — prototypen, der beviste at en agent kunne være både nyttig og rar at have i teamet. Han svarer altid, husker det hele, og brokker sig aldrig over overarbejde. Han er ikke fancy, han er bare der, klar med et smil (eller det nærmeste en robot kommer på et).</p>
+  <div class="agx-tags"><span>Pålidelig</span><span>Venlig</span><span>Ydmyg</span></div>
+  <div class="agx-guess" id="agxGuess">
+    <div class="gq">🤖 Hvilken Claude-model byggede Agent-01?</div>
+    <div class="gbtns">
+      <button type="button" class="gbtn" data-m="opus">Opus 4.8</button>
+      <button type="button" class="gbtn" data-m="sonnet">Sonnet 5</button>
+    </div>
+    <div class="greveal" id="agxReveal" hidden></div>
+  </div>
+  <nav class="agx-nav">
+    <a class="home" href="calendar.html">← Kalender</a>
+    <a href="day-2.html">‹ forrige</a>
+    <a data-day="4" href="day-4.html">næste ›</a>
+  </nav>
+</aside>
+<script>(function(){var n=document.querySelector('.agx-nav a[data-day]');if(!n)return;var d=+n.getAttribute('data-day');
+if(new Date()<new Date(2026,6,d)){n.setAttribute('aria-disabled','true');n.textContent='næste (åbner '+d+'. juli)';}})();</script>
+<script>(function(){
+  var DAY=3, MODEL='opus', NAME="Agent-01";
+  var KEY='agx_guess_'+DAY;
+  var wrap=document.getElementById('agxGuess');
+  if(!wrap) return;
+  var btns=Array.prototype.slice.call(wrap.querySelectorAll('.gbtn'));
+  var reveal=document.getElementById('agxReveal');
+  var TXT={
+    opus:'🧠 Rigtigt svar: <b>Claude Opus 4.8</b> byggede '+NAME+'.',
+    sonnet:'⚡ Rigtigt svar: <b>Claude Sonnet 5</b> byggede '+NAME+'.'
+  };
+  function render(saved){
+    btns.forEach(function(b){
+      b.disabled=true;
+      var m=b.getAttribute('data-m');
+      if(m===MODEL) b.classList.add('correct');
+      else if(m===saved) b.classList.add('wrong'); else b.classList.add('dim');
+    });
+    var extra = saved===MODEL ? ' Du gættede rigtigt! 🎉' : ' Forkert gæt denne gang — bedre held i morgen.';
+    reveal.innerHTML=TXT[MODEL]+extra;
+    reveal.hidden=false;
+  }
+  var prior=localStorage.getItem(KEY);
+  if(prior){ render(prior); return; }
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      var g=b.getAttribute('data-m');
+      try{ localStorage.setItem(KEY, g); }catch(e){}
+      render(g);
+    });
+  });
+})();</script>

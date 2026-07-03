@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>agentics.dk — Sprout</title>
+<style>
+  :root{
+    --accent: #6ee07a;
+    --accent-soft: #a8f0af;
+    --accent-deep: #2f9e4a;
+    --dawn-1: #fff6e9;
+    --dawn-2: #ffe3c9;
+    --dawn-3: #ffd0d8;
+    --sky-1: #fdf3e7;
+    --ink: #1c2a1e;
+    --ink-soft: #4a5c4c;
+    --paper: #fffaf2;
+    --line: rgba(28,42,30,0.12);
+    --focus: #1c2a1e;
+  }
+  *,*::before,*::after{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0; width:100%; height:100%;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  ::selection{ background:var(--accent); color:var(--ink); }
+
+  a{ color:inherit; }
+  button{ font-family:inherit; }
+
+  :focus-visible{
+    outline: 2.5px solid var(--focus);
+    outline-offset: 4px;
+    border-radius: 6px;
+  }
+
+  .stage{
+    position:relative;
+    width:100vw; height:100vh;
+    height:100dvh;
+    overflow:hidden;
+  }
+
+  /* ---------- layered background ---------- */
+  .bg{
+    position:absolute; inset:0;
+    background:
+      radial-gradient(120% 90% at 78% 12%, var(--dawn-1) 0%, transparent 55%),
+      radial-gradient(90% 70% at 15% 85%, var(--dawn-3) 0%, transparent 60%),
+      linear-gradient(160deg, var(--sky-1) 0%, var(--dawn-2) 45%, var(--dawn-1) 100%);
+  }
+  canvas#grain{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    opacity:0.05;
+    mix-blend-mode:multiply;
+    pointer-events:none;
+  }
+  canvas#atmos{
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    pointer-events:none;
+  }
+  .horizon{
+    position:absolute; left:0; right:0; bottom:0; height:38%;
+    background:linear-gradient(180deg, transparent 0%, rgba(111,196,120,0.10) 60%, rgba(90,170,105,0.18) 100%);
+    pointer-events:none;
+  }
+  .ground-line{
+    position:absolute; left:-5%; right:-5%; bottom:14%;
+    height:1px;
+    background:linear-gradient(90deg, transparent, rgba(28,42,30,0.14) 20%, rgba(28,42,30,0.14) 80%, transparent);
+    transform:scaleY(1);
+    pointer-events:none;
+  }
+
+  /* ---------- nav ---------- */
+  .nav{
+    position:absolute; top:0; left:0; right:0;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:28px clamp(20px,4vw,56px);
+    z-index:20;
+    opacity:0;
+    transform:translateY(-14px);
+    animation:dropIn .8s cubic-bezier(.16,.9,.2,1) forwards;
+    animation-delay:.15s;
+  }
+  .wordmark{
+    font-size:16px; font-weight:700; letter-spacing:0.02em;
+    display:flex; align-items:center; gap:9px;
+    text-decoration:none;
+    color:var(--ink);
+  }
+  .wordmark .dot{
+    width:9px; height:9px; border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 0 0 4px rgba(110,224,122,0.22);
+  }
+  .nav-links{
+    display:flex; align-items:center; gap:clamp(16px,2.6vw,36px);
+    list-style:none; margin:0; padding:0;
+  }
+  .nav-links a{
+    font-size:13px; font-weight:600; letter-spacing:0.03em;
+    text-decoration:none; color:var(--ink-soft);
+    position:relative; padding-bottom:3px;
+    transition:color .25s ease;
+  }
+  .nav-links a::after{
+    content:""; position:absolute; left:0; bottom:0; height:1.5px; width:0;
+    background:var(--accent-deep);
+    transition:width .3s cubic-bezier(.16,.9,.2,1);
+  }
+  .nav-links a:hover{ color:var(--ink); }
+  .nav-links a:hover::after{ width:100%; }
+  .nav-links li:last-child{ display:none; }
+  @media (min-width:720px){ .nav-links li:last-child{ display:block; } }
+
+  /* ---------- hero content ---------- */
+  .hero{
+    position:relative;
+    z-index:10;
+    height:100%;
+    display:grid;
+    grid-template-columns: minmax(0,1.08fr) minmax(0,0.92fr);
+    align-items:center;
+    padding:0 clamp(20px,4vw,56px);
+    gap:clamp(8px,2vw,24px);
+  }
+  @media (max-width:880px){
+    .hero{ grid-template-columns:1fr; }
+  }
+
+  .copy{
+    position:relative;
+    padding-top:4vh;
+    max-width:640px;
+  }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:12.5px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase;
+    color:var(--accent-deep);
+    background:rgba(110,224,122,0.14);
+    border:1px solid rgba(47,158,74,0.25);
+    padding:6px 13px 6px 10px;
+    border-radius:999px;
+    margin-bottom:22px;
+    opacity:0; transform:translateY(16px);
+    animation:riseIn .9s cubic-bezier(.16,.9,.2,1) forwards;
+    animation-delay:.32s;
+  }
+  .eyebrow svg{ width:13px; height:13px; display:block; }
+
+  h1{
+    margin:0 0 20px 0;
+    font-weight:680;
+    font-size:clamp(2.6rem, 5.6vw, 4.6rem);
+    line-height:1.02;
+    letter-spacing:-0.028em;
+    color:var(--ink);
+  }
+  h1 .line{
+    display:block;
+    overflow:hidden;
+  }
+  h1 .line span{
+    display:inline-block;
+    opacity:0; transform:translateY(115%) rotate(2deg);
+    animation:lineUp 1s cubic-bezier(.16,.9,.2,1) forwards;
+  }
+  h1 .line:nth-child(1) span{ animation-delay:.42s; }
+  h1 .line:nth-child(2) span{ animation-delay:.54s; }
+  h1 .accent-word{
+    color:var(--accent-deep);
+    font-style:italic;
+    position:relative;
+    white-space:nowrap;
+  }
+  .accent-word svg.underline{
+    position:absolute; left:-2%; bottom:-0.06em; width:104%; height:0.3em;
+    overflow:visible;
+  }
+  .accent-word svg.underline path{
+    fill:none; stroke:var(--accent); stroke-width:6; stroke-linecap:round;
+    stroke-dasharray:340; stroke-dashoffset:340;
+    animation:draw 1s cubic-bezier(.4,0,.2,1) forwards;
+    animation-delay:1.25s;
+  }
+
+  .sub{
+    font-size:clamp(1rem, 1.35vw, 1.2rem);
+    line-height:1.55;
+    color:var(--ink-soft);
+    max-width:480px;
+    margin:0 0 34px 0;
+    opacity:0; transform:translateY(14px);
+    animation:riseIn .9s cubic-bezier(.16,.9,.2,1) forwards;
+    animation-delay:.72s;
+  }
+
+  .cta-row{
+    display:flex; align-items:center; gap:26px; flex-wrap:wrap;
+    opacity:0; transform:translateY(14px);
+    animation:riseIn .9s cubic-bezier(.16,.9,.2,1) forwards;
+    animation-delay:.88s;
+  }
+
+  .btn-primary{
+    position:relative;
+    display:inline-flex; align-items:center; gap:10px;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    padding:16px 28px;
+    border-radius:100px;
+    font-size:15px; font-weight:650; letter-spacing:0.01em;
+    cursor:pointer;
+    isolation:isolate;
+    transition:transform .45s cubic-bezier(.16,.9,.2,1), box-shadow .45s ease, color .3s ease;
+    box-shadow:0 1px 2px rgba(28,42,30,0.15), 0 12px 24px -14px rgba(28,42,30,0.35);
+  }
+  .btn-primary::before{
+    content:""; position:absolute; inset:0; border-radius:100px;
+    background:radial-gradient(120px 80px at var(--mx,50%) var(--my,50%), var(--accent), transparent 70%);
+    opacity:0; transition:opacity .4s ease; z-index:-1;
+  }
+  .btn-primary:hover{
+    transform:translateY(-2px) scale(1.02);
+    box-shadow:0 4px 10px rgba(28,42,30,0.18), 0 22px 40px -16px rgba(47,158,74,0.55);
+    color:var(--ink);
+  }
+  .btn-primary:hover::before{ opacity:1; }
+  .btn-primary .arrow{
+    width:16px; height:16px; display:block;
+    transition:transform .45s cubic-bezier(.16,.9,.2,1);
+  }
+  .btn-primary:hover .arrow{ transform:translate(4px,-3px) rotate(8deg); }
+
+  .btn-secondary{
+    font-size:14.5px; font-weight:650; color:var(--ink);
+    text-decoration:none;
+    display:inline-flex; align-items:center; gap:8px;
+    padding-bottom:2px;
+    border-bottom:1.5px solid rgba(28,42,30,0.3);
+    transition:border-color .3s ease, gap .3s ease, color .3s ease;
+  }
+  .btn-secondary:hover{
+    border-color:var(--ink);
+    gap:11px;
+    color:var(--accent-deep);
+  }
+  .btn-secondary svg{ width:13px; height:13px; }
+
+  .meta-row{
+    margin-top:56px;
+    display:flex; align-items:center; gap:14px;
+    opacity:0; transform:translateY(10px);
+    animation:riseIn .9s cubic-bezier(.16,.9,.2,1) forwards;
+    animation-delay:1.05s;
+    font-size:12.5px; color:var(--ink-soft); font-weight:600;
+    letter-spacing:0.02em;
+  }
+  .meta-row .sprig{ width:20px; height:20px; flex:none; opacity:0.9; }
+
+  /* ---------- avatar stage ---------- */
+  .avatar-wrap{
+    position:relative;
+    height:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity:0;
+    animation:avatarIn 1.2s cubic-bezier(.16,.9,.2,1) forwards;
+    animation-delay:.5s;
+  }
+  .avatar-stage{
+    width:min(46vw, 560px);
+    max-width:88vw;
+    filter:drop-shadow(0 30px 46px rgba(70,110,60,0.22));
+  }
+  .avatar-stage svg{ width:100%; height:auto; display:block; overflow:visible; }
+
+  .pot-shadow{
+    position:absolute;
+    left:50%; bottom:16%;
+    width:min(30vw,340px); height:28px;
+    background:radial-gradient(50% 50% at 50% 50%, rgba(60,90,55,0.28), transparent 72%);
+    transform:translateX(-50%);
+    filter:blur(2px);
+  }
+
+  /* ---------- overlay chrome placeholders kept clear ---------- */
+  .corner-safe{
+    position:absolute; bottom:0; width:340px; height:180px;
+    pointer-events:none;
+  }
+
+  .scroll-cue{
+    position:absolute; left:50%; bottom:34px; transform:translateX(-50%);
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    opacity:0;
+    animation:fadeIn 1s ease forwards;
+    animation-delay:1.5s;
+    z-index:15;
+  }
+  @media (max-width: 640px){ .scroll-cue{ display:none; } }
+  .scroll-cue span{
+    font-size:10.5px; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;
+    color:var(--ink-soft);
+  }
+  .scroll-cue .stem{
+    width:1px; height:30px;
+    background:linear-gradient(180deg, var(--ink-soft), transparent);
+    position:relative; overflow:hidden;
+  }
+  .scroll-cue .stem::after{
+    content:""; position:absolute; left:0; top:-30px; width:100%; height:30px;
+    background:linear-gradient(180deg, transparent, var(--accent-deep));
+    animation:driplet 2.2s ease-in-out infinite;
+  }
+
+  /* ---------- keyframes ---------- */
+  @keyframes dropIn{ to{ opacity:1; transform:translateY(0); } }
+  @keyframes riseIn{ to{ opacity:1; transform:translateY(0); } }
+  @keyframes lineUp{ to{ opacity:1; transform:translateY(0) rotate(0deg); } }
+  @keyframes avatarIn{
+    0%{ opacity:0; transform:scale(.9) translateY(24px); }
+    100%{ opacity:1; transform:scale(1) translateY(0); }
+  }
+  @keyframes draw{ to{ stroke-dashoffset:0; } }
+  @keyframes fadeIn{ to{ opacity:1; } }
+  @keyframes driplet{
+    0%{ top:-30px; }
+    100%{ top:30px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{
+      animation-duration:0.01ms !important;
+      animation-iteration-count:1 !important;
+      transition-duration:0.01ms !important;
+      scroll-behavior:auto !important;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+
+  <div class="bg"></div>
+  <canvas id="atmos" aria-hidden="true"></canvas>
+  <canvas id="grain" aria-hidden="true"></canvas>
+  <div class="horizon" aria-hidden="true"></div>
+  <div class="ground-line" aria-hidden="true"></div>
+
+  <nav class="nav">
+    <a href="#" class="wordmark" aria-label="agentics.dk home">
+      <span class="dot" aria-hidden="true"></span>
+      agentics.dk
+    </a>
+    <ul class="nav-links">
+      <li><a href="#">Akademi</a></li>
+      <li><a href="#">Kurser</a></li>
+      <li><a href="#">Om os</a></li>
+      <li><a href="#">Log ind</a></li>
+    </ul>
+  </nav>
+
+  <main class="hero">
+    <div class="copy">
+      <span class="eyebrow">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3c0 6-4 6-4 10a4 4 0 0 0 8 0c0-4-4-4-4-10Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+        Dag 16 · Sprout er vågnet
+      </span>
+      <h1>
+        <span class="line"><span>Alt godt gror</span></span>
+        <span class="line"><span>fra <em class="accent-word">et lille frø<svg class="underline" viewBox="0 0 300 20" preserveAspectRatio="none" aria-hidden="true"><path d="M4 14 Q 150 2 296 12"/></svg></em>.</span></span>
+      </h1>
+      <p class="sub">
+        Mød Sprout — den nysgerrige lille spire, der følger dit lys og vokser
+        et blad hver gang du lærer noget nyt. Sådan starter din akademi-rejse:
+        roligt, organisk, ét skridt ad gangen.
+      </p>
+      <div class="cta-row">
+        <button class="btn-primary" id="ctaBtn">
+          Begynd at gro
+          <svg class="arrow" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 18 18 6M18 6H9M18 6v9" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <a href="#" class="btn-secondary">
+          Se hvordan det gror
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </div>
+      <div class="meta-row">
+        <svg class="sprig" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21V9M12 9C12 9 6 9 6 4C11 4 12 9 12 9ZM12 9C12 9 18 9 18 4C13 4 12 9 12 9Z" stroke="var(--accent-deep)" stroke-width="1.6" stroke-linejoin="round"/></svg>
+        Ny video hver uge — voks i dit eget tempo
+      </div>
+    </div>
+
+    <div class="avatar-wrap">
+      <div class="pot-shadow" aria-hidden="true"></div>
+      <div class="avatar-stage" id="avatarStage" role="img" aria-label="Sprout, en venlig lille tegnet spire med to bladarme, der svajer blidt og læner sig mod lys">
+        <svg viewBox="0 0 400 460" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="potG" cx="35%" cy="20%" r="90%">
+              <stop offset="0%" stop-color="#d99a68"/>
+              <stop offset="55%" stop-color="#c17d4b"/>
+              <stop offset="100%" stop-color="#a3602f"/>
+            </radialGradient>
+            <linearGradient id="potRim" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#e8b489"/>
+              <stop offset="100%" stop-color="#b06d3c"/>
+            </linearGradient>
+            <linearGradient id="soilG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#5b3f2c"/>
+              <stop offset="100%" stop-color="#3c2818"/>
+            </linearGradient>
+            <linearGradient id="stemG" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#8fd97a"/>
+              <stop offset="100%" stop-color="#4fa955"/>
+            </linearGradient>
+            <linearGradient id="leafG" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#a9ef8f"/>
+              <stop offset="100%" stop-color="#57b854"/>
+            </linearGradient>
+            <linearGradient id="leafG2" x1="1" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#c3f5a6"/>
+              <stop offset="100%" stop-color="#63c25b"/>
+            </linearGradient>
+            <radialGradient id="cheekG" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#ff9d8a" stop-opacity="0.8"/>
+              <stop offset="100%" stop-color="#ff9d8a" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="eyeGlow" cx="50%" cy="35%" r="65%">
+              <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9"/>
+              <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+            </radialGradient>
+            <filter id="softBlur" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="6"/>
+            </filter>
+            <radialGradient id="sunHalo" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#ffe9b8" stop-opacity="0.9"/>
+              <stop offset="100%" stop-color="#ffe9b8" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+
+          <!-- ambient sun halo that drifts toward cursor slightly -->
+          <circle id="sunHaloEl" cx="300" cy="70" r="130" fill="url(#sunHalo)"/>
+
+          <!-- pot -->
+          <g id="pot">
+            <path d="M140 400 L 260 400 L 246 452 Q 200 462 154 452 Z" fill="url(#potG)"/>
+            <path d="M140 400 L260 400 L254 414 L146 414 Z" fill="url(#potRim)"/>
+            <ellipse cx="200" cy="400" rx="60" ry="10" fill="url(#soilG)"/>
+            <path d="M148 398 Q 200 388 252 398" stroke="#2c1c10" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>
+          </g>
+
+          <!-- whole plant group: sway + lean toward pointer applied here -->
+          <g id="plant">
+            <!-- stem -->
+            <path id="stem" d="M200 398 C 198 350 202 300 200 255" stroke="url(#stemG)" stroke-width="14" fill="none" stroke-linecap="round"/>
+
+            <!-- back small unfurl leaf (occasional new-leaf animation) -->
+            <g id="newLeaf" transform="translate(200,300)">
+              <path d="M0 0 C 14 -6 26 -18 22 -34 C 6 -28 -4 -14 0 0 Z" fill="url(#leafG2)" opacity="0" />
+            </g>
+
+            <!-- left leaf-arm -->
+            <g id="leafL" transform="translate(200,330)">
+              <path d="M0 0 C -46 -6 -78 10 -96 40 C -66 34 -40 30 -18 14 C -8 8 -2 4 0 0 Z" fill="url(#leafG)" stroke="#3f9142" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M0 0 C -30 4 -56 16 -76 34" stroke="#3f9142" stroke-width="1.5" fill="none" opacity="0.55" stroke-linecap="round"/>
+            </g>
+
+            <!-- right leaf-arm -->
+            <g id="leafR" transform="translate(200,330)">
+              <path d="M0 0 C 46 -6 78 10 96 40 C 66 34 40 30 18 14 C 8 8 2 4 0 0 Z" fill="url(#leafG2)" stroke="#3f9142" stroke-width="1.5" stroke-linejoin="round"/>
+              <path d="M0 0 C 30 4 56 16 76 34" stroke="#3f9142" stroke-width="1.5" fill="none" opacity="0.55" stroke-linecap="round"/>
+            </g>
+
+            <!-- head / bud -->
+            <g id="head" transform="translate(200,232)">
+              <ellipse cx="0" cy="30" rx="46" ry="14" fill="#3f9142" opacity="0.16" filter="url(#softBlur)"/>
+              <circle id="headShape" cx="0" cy="0" r="46" fill="url(#leafG)"/>
+              <path d="M-46 -6 A46 46 0 0 1 46 -6" fill="#ffffff" opacity="0.16"/>
+
+              <!-- top sprout leaflets -->
+              <path d="M-6 -44 C -14 -60 -8 -72 4 -80 C 6 -64 2 -52 -6 -44 Z" fill="url(#leafG2)"/>
+              <path d="M8 -44 C 18 -58 16 -70 6 -80 C 2 -64 2 -52 8 -44 Z" fill="url(#leafG)"/>
+
+              <!-- cheeks -->
+              <ellipse cx="-24" cy="14" rx="10" ry="6.5" fill="url(#cheekG)"/>
+              <ellipse cx="24" cy="14" rx="10" ry="6.5" fill="url(#cheekG)"/>
+
+              <!-- face group: gaze parallax target -->
+              <g id="face">
+                <g id="eyeL" transform="translate(-16,-2)">
+                  <ellipse class="eyeBody" cx="0" cy="0" rx="9.5" ry="11" fill="#1c2a1e"/>
+                  <circle class="pupil" cx="0" cy="1" r="3.6" fill="#0d150e"/>
+                  <circle class="spec" cx="-3" cy="-4" r="3" fill="url(#eyeGlow)"/>
+                </g>
+                <g id="eyeR" transform="translate(16,-2)">
+                  <ellipse class="eyeBody" cx="0" cy="0" rx="9.5" ry="11" fill="#1c2a1e"/>
+                  <circle class="pupil" cx="0" cy="1" r="3.6" fill="#0d150e"/>
+                  <circle class="spec" cx="-3" cy="-4" r="3" fill="url(#eyeGlow)"/>
+                </g>
+                <path id="mouth" d="M-9 16 Q 0 24 9 16" stroke="#1c2a1e" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+              </g>
+            </g>
+          </g>
+
+          <!-- floating pollen / spores -->
+          <g id="pollen" opacity="0.85"></g>
+        </svg>
+      </div>
+    </div>
+  </main>
+
+  <div class="scroll-cue" aria-hidden="true">
+    <span>Se Sprout</span>
+    <div class="stem"></div>
+  </div>
+
+  <!-- corner safe-zones intentionally left clear for later overlay chrome -->
+  <div class="corner-safe" style="left:0;" aria-hidden="true"></div>
+  <div class="corner-safe" style="right:0;" aria-hidden="true"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var stage = document.getElementById('stage');
+  var reduceMQ = window.matchMedia('(prefers-reduced-motion: reduce)');
+  var reduced = reduceMQ.matches;
+
+  /* ---------------- pointer state ---------------- */
+  var pointer = { x: window.innerWidth/2, y: window.innerHeight/2, active:false };
+  var targetPointer = { x: pointer.x, y: pointer.y };
+
+  window.addEventListener('pointermove', function(e){
+    targetPointer.x = e.clientX;
+    targetPointer.y = e.clientY;
+    pointer.active = true;
+  }, { passive:true });
+
+  window.addEventListener('pointerleave', function(){
+    pointer.active = false;
+  });
+
+  /* ---------------- avatar rect cache (avatar-relative gaze) ---------------- */
+  var avatarStage = document.getElementById('avatarStage');
+  var avatarRect = { x:0, y:0, w:1, h:1 };
+  function cacheAvatarRect(){
+    var r = avatarStage.getBoundingClientRect();
+    avatarRect.x = r.left + r.width/2;
+    avatarRect.y = r.top + r.height*0.42; // roughly head center
+    avatarRect.w = r.width;
+    avatarRect.h = r.height;
+  }
+  cacheAvatarRect();
+  window.addEventListener('resize', cacheAvatarRect);
+  window.addEventListener('scroll', cacheAvatarRect, { passive:true });
+
+  /* ---------------- CTA magnetic glow ---------------- */
+  var cta = document.getElementById('ctaBtn');
+  cta.addEventListener('pointermove', function(e){
+    var r = cta.getBoundingClientRect();
+    var mx = ((e.clientX - r.left) / r.width) * 100;
+    var my = ((e.clientY - r.top) / r.height) * 100;
+    cta.style.setProperty('--mx', mx + '%');
+    cta.style.setProperty('--my', my + '%');
+  });
+  cta.addEventListener('pointerenter', function(){
+    pulseHappy();
+  });
+  cta.addEventListener('click', function(e){
+    e.preventDefault();
+    burstUnfurl();
+  });
+
+  /* ---------------- SVG element handles ---------------- */
+  var plant = document.getElementById('plant');
+  var stem = document.getElementById('stem');
+  var head = document.getElementById('head');
+  var face = document.getElementById('face');
+  var eyeL = document.getElementById('eyeL');
+  var eyeR = document.getElementById('eyeR');
+  var mouth = document.getElementById('mouth');
+  var leafL = document.getElementById('leafL');
+  var leafR = document.getElementById('leafR');
+  var newLeaf = document.getElementById('newLeaf');
+  var sunHalo = document.getElementById('sunHaloEl');
+  var pollenGroup = document.getElementById('pollen');
+
+  var pupils = document.querySelectorAll('.pupil');
+  var specs = document.querySelectorAll('.spec');
+
+  /* ---------------- pollen / spores particles ---------------- */
+  var NS = "http://www.w3.org/2000/svg";
+  var pollenCount = 14;
+  var pollens = [];
+  for (var i=0;i<pollenCount;i++){
+    var c = document.createElementNS(NS,'circle');
+    var r = 1.4 + Math.random()*2.4;
+    c.setAttribute('r', r.toFixed(2));
+    c.setAttribute('fill', Math.random() > 0.5 ? '#ffe9b8' : '#c8f2b0');
+    c.setAttribute('opacity', (0.25 + Math.random()*0.5).toFixed(2));
+    pollenGroup.appendChild(c);
+    pollens.push({
+      el: c,
+      x: 20 + Math.random()*360,
+      y: 40 + Math.random()*380,
+      baseX: 0,
+      speed: 0.15 + Math.random()*0.35,
+      amp: 10 + Math.random()*26,
+      phase: Math.random()*Math.PI*2,
+      driftY: 0.08 + Math.random()*0.18
+    });
+    pollens[i].baseX = pollens[i].x;
+  }
+
+  /* ---------------- background canvases ---------------- */
+  var grainCanvas = document.getElementById('grain');
+  var atmosCanvas = document.getElementById('atmos');
+  var gctx = grainCanvas.getContext('2d', { alpha:true });
+  var actx = atmosCanvas.getContext('2d', { alpha:true });
+  var DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+  function resizeCanvases(){
+    var w = window.innerWidth, h = window.innerHeight;
+    [grainCanvas, atmosCanvas].forEach(function(cv){
+      cv.width = Math.floor(w * DPR);
+      cv.height = Math.floor(h * DPR);
+      cv.style.width = w + 'px';
+      cv.style.height = h + 'px';
+    });
+    drawGrain();
+  }
+
+  function drawGrain(){
+    var w = grainCanvas.width, h = grainCanvas.height;
+    var imgData = gctx.createImageData(w, h);
+    var buf = imgData.data;
+    for (var p=0; p<buf.length; p+=4){
+      var v = 200 + Math.random()*55;
+      buf[p]=v; buf[p+1]=v; buf[p+2]=v; buf[p+3]= Math.random()*26;
+    }
+    gctx.putImageData(imgData, 0, 0);
+  }
+
+  /* soft floating light motes in the sky (separate from SVG pollen, cheap canvas layer) */
+  var motes = [];
+  var moteCount = 26;
+  function initMotes(){
+    motes = [];
+    var w = window.innerWidth, h = window.innerHeight;
+    for (var i=0;i<moteCount;i++){
+      motes.push({
+        x: Math.random()*w,
+        y: Math.random()*h,
+        r: 0.6 + Math.random()*1.8,
+        s: 0.06 + Math.random()*0.18,
+        o: 0.08 + Math.random()*0.22,
+        ph: Math.random()*Math.PI*2
+      });
+    }
+  }
+  initMotes();
+  window.addEventListener('resize', function(){
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    resizeCanvases();
+    initMotes();
+    cacheAvatarRect();
+  });
+  resizeCanvases();
+
+  /* ---------------- interaction feedback states ---------------- */
+  var happyPulse = 0;      // 0..1 decays, widens smile / bounces leaves
+  var unfurl = 0;          // 0..1 progress for new-leaf reveal animation
+  var unfurlActive = false;
+  var blink = 0;           // 0 open .. 1 closed
+  var nextBlinkAt = performance.now() + 2200 + Math.random()*2200;
+  var blinking = false;
+  var blinkStart = 0;
+
+  function pulseHappy(){ happyPulse = 1; }
+  function burstUnfurl(){
+    if (!unfurlActive){
+      unfurlActive = true;
+      unfurl = 0;
+    }
+    pulseHappy();
+  }
+
+  /* ---------------- main animation loop ---------------- */
+  var startTime = performance.now();
+  var lastTime = startTime;
+  var rafId = null;
+  var running = true;
+
+  // smoothed pointer values (lerp'd)
+  var sx = pointer.x, sy = pointer.y;
+
+  function lerp(a,b,t){ return a + (b-a)*t; }
+  function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+
+  function frame(now){
+    if (!running) return;
+    var dt = Math.min((now - lastTime) / 1000, 0.05); // clamp for tab-switch spikes
+    lastTime = now;
+    var t = (now - startTime) / 1000;
+
+    // smooth pointer toward target
+    var followSpeed = 1 - Math.pow(0.001, dt); // frame-rate independent lerp factor
+    sx = lerp(sx, targetPointer.x, followSpeed);
+    sy = lerp(sy, targetPointer.y, followSpeed);
+
+    // vector from avatar to smoothed pointer, normalized-ish
+    var dx = sx - avatarRect.x;
+    var dy = sy - avatarRect.y;
+    var dist = Math.sqrt(dx*dx + dy*dy) || 1;
+    var maxRange = Math.max(window.innerWidth, window.innerHeight);
+    var nx = clamp(dx / (maxRange*0.5), -1, 1);
+    var ny = clamp(dy / (maxRange*0.5), -1, 1);
+
+    // idle sway (gentle breeze) layered under pointer lean
+    var swayA = Math.sin(t * 0.55) * 3.2;
+    var swayB = Math.sin(t * 0.9 + 1.4) * 1.1;
+    var idleSway = swayA + swayB;
+
+    // phototropism: plant leans toward cursor like it's sunlight
+    var leanTarget = nx * 9 + idleSway * 0.5;
+    var currentLean = parseFloat(plant.dataset.lean || "0");
+    currentLean = lerp(currentLean, leanTarget, 1 - Math.pow(0.0007, dt));
+    plant.dataset.lean = currentLean;
+
+    var bob = Math.sin(t * 1.15) * 4;
+    plant.setAttribute('transform', 'translate(0,' + bob.toFixed(2) + ') rotate(' + currentLean.toFixed(2) + ' 200 398)');
+
+    // head extra tilt + slight counter for a lively rig (relative to plant group)
+    var headTilt = nx * 4 + Math.sin(t*0.7+2)*1.3;
+    head.setAttribute('transform', 'translate(200,232) rotate(' + headTilt.toFixed(2) + ')');
+
+    // leaves perk toward pointer: rotate leaf-arms based on horizontal + vertical pointer offset
+    var leafLeanL = clamp(-nx * 14 - ny * 4, -22, 10) - 4;
+    var leafLeanR = clamp(-nx * 14 + ny * 4, -10, 22) + 4;
+    var leafFlap = Math.sin(t * 1.4) * 3;
+    leafL.setAttribute('transform', 'translate(200,330) rotate(' + (leafLeanL + leafFlap).toFixed(2) + ')');
+    leafR.setAttribute('transform', 'translate(200,330) rotate(' + (leafLeanR - leafFlap).toFixed(2) + ')');
+
+    // gaze: face group + pupils track pointer within head bounds
+    var gazeX = nx * 6.5;
+    var gazeY = ny * 5;
+    face.setAttribute('transform', 'translate(' + gazeX.toFixed(2) + ',' + gazeY.toFixed(2) + ')');
+    var pupilX = nx * 2.6;
+    var pupilY = ny * 2.4;
+    for (var pi=0; pi<pupils.length; pi++){
+      pupils[pi].setAttribute('cx', pupilX.toFixed(2));
+      pupils[pi].setAttribute('cy', (1 + pupilY).toFixed(2));
+    }
+    for (var si=0; si<specs.length; si++){
+      specs[si].setAttribute('cx', (-3 - nx*1.2).toFixed(2));
+      specs[si].setAttribute('cy', (-4 - ny*1.2).toFixed(2));
+    }
+
+    // blink cycle
+    if (!blinking && now > nextBlinkAt){
+      blinking = true;
+      blinkStart = now;
+    }
+    if (blinking){
+      var bt = (now - blinkStart) / 140; // ms->close/open speed
+      if (bt < 1){
+        blink = Math.sin(bt * Math.PI); // 0 -> 1 -> 0
+      } else {
+        blink = 0;
+        blinking = false;
+        nextBlinkAt = now + 2600 + Math.random()*3200;
+      }
+    }
+    var eyeScaleY = 1 - blink * 0.92;
+    eyeL.setAttribute('transform', 'translate(-16,-2) scale(1,' + eyeScaleY.toFixed(3) + ')');
+    eyeR.setAttribute('transform', 'translate(16,-2) scale(1,' + eyeScaleY.toFixed(3) + ')');
+
+    // happy pulse decays; widens smile + gives a little leaf bounce
+    happyPulse = Math.max(0, happyPulse - dt * 1.4);
+    var smileWiden = 9 + happyPulse * 5;
+    var smileDip = 16 + happyPulse * 4;
+    mouth.setAttribute('d', 'M' + (-smileWiden).toFixed(1) + ' 16 Q 0 ' + smileDip.toFixed(1) + ' ' + smileWiden.toFixed(1) + ' 16');
+
+    // occasional new-leaf unfurl triggered by CTA hover/click, otherwise ambient every ~14s
+    if (!unfurlActive && Math.sin(t*0.05) > 0.997 && Math.random() < 0.02){
+      unfurlActive = true; unfurl = 0;
+    }
+    if (unfurlActive){
+      unfurl += dt * 0.7;
+      var ue = clamp(unfurl, 0, 1);
+      var eo = ue < 1 ? Math.sin(ue * Math.PI) : 0;
+      var scale = 0.4 + ue*0.6;
+      newLeaf.setAttribute('opacity', eo.toFixed(2));
+      newLeaf.setAttribute('transform', 'translate(200,300) rotate(' + (-10+ue*10).toFixed(1) + ') scale(' + scale.toFixed(2) + ')');
+      if (unfurl >= 1.6){ unfurlActive = false; newLeaf.setAttribute('opacity','0'); }
+    }
+
+    // sun halo drifts gently toward pointer (parallax light source)
+    var haloX = 300 + nx * 40;
+    var haloY = 70 + ny * 24;
+    sunHalo.setAttribute('cx', haloX.toFixed(1));
+    sunHalo.setAttribute('cy', haloY.toFixed(1));
+
+    // pollen drift
+    for (var qi=0; qi<pollens.length; qi++){
+      var m = pollens[qi];
+      var py = m.y - t * m.driftY * 20;
+      py = ((py % 460) + 460) % 460;
+      var px = m.baseX + Math.sin(t * m.speed + m.phase) * m.amp;
+      m.el.setAttribute('cx', px.toFixed(1));
+      m.el.setAttribute('cy', py.toFixed(1));
+    }
+
+    // canvas motes (sky layer) — subtle parallax against pointer
+    var w = window.innerWidth, h = window.innerHeight;
+    actx.clearRect(0,0,atmosCanvas.width, atmosCanvas.height);
+    actx.save();
+    actx.scale(DPR, DPR);
+    for (var mi=0; mi<motes.length; mi++){
+      var mo = motes[mi];
+      var mx = mo.x + Math.sin(t*mo.s + mo.ph) * 18 + nx*10;
+      var my = ((mo.y - t*mo.s*14) % h + h) % h;
+      var flick = 0.6 + 0.4*Math.sin(t*1.3 + mo.ph*2);
+      actx.beginPath();
+      actx.fillStyle = 'rgba(255,236,196,' + (mo.o*flick).toFixed(3) + ')';
+      actx.arc(mx, my, mo.r, 0, Math.PI*2);
+      actx.fill();
+    }
+    actx.restore();
+
+    rafId = requestAnimationFrame(frame);
+  }
+
+  function staticFrame(){
+    // reduced-motion: composed, still frame — no rAF loop
+    plant.setAttribute('transform', 'translate(0,0) rotate(0 200 398)');
+    head.setAttribute('transform', 'translate(200,232)');
+    leafL.setAttribute('transform', 'translate(200,330) rotate(-4)');
+    leafR.setAttribute('transform', 'translate(200,330) rotate(4)');
+    face.setAttribute('transform', 'translate(0,0)');
+    mouth.setAttribute('d', 'M-9 16 Q 0 22 9 16');
+    for (var i=0;i<pollens.length;i++){
+      pollens[i].el.setAttribute('cx', pollens[i].baseX.toFixed(1));
+      pollens[i].el.setAttribute('cy', pollens[i].y.toFixed(1));
+      pollens[i].el.setAttribute('opacity', '0.3');
+    }
+    actx.clearRect(0,0,atmosCanvas.width, atmosCanvas.height);
+  }
+
+  function startLoop(){
+    if (reduced){
+      staticFrame();
+      return;
+    }
+    if (rafId === null){
+      lastTime = performance.now();
+      rafId = requestAnimationFrame(frame);
+    }
+  }
+  function stopLoop(){
+    if (rafId !== null){
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+  }
+
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden){
+      running = false;
+      stopLoop();
+    } else {
+      running = true;
+      startLoop();
+    }
+  });
+
+  reduceMQ.addEventListener ? reduceMQ.addEventListener('change', function(e){
+    reduced = e.matches;
+    if (reduced){ stopLoop(); staticFrame(); }
+    else { startLoop(); }
+  }) : null;
+
+  startLoop();
+
+  /* keyboard-accessible CTA also triggers unfurl */
+  cta.addEventListener('keyup', function(e){
+    if (e.key === 'Enter' || e.key === ' '){ burstUnfurl(); }
+  });
+
+})();
+</script>
+
+<style id="agx-chrome-css">
+.agx{position:fixed;z-index:2147483000;font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;box-sizing:border-box}
+.agx a{cursor:pointer}
+.agx-badge{right:16px;bottom:16px;display:flex;gap:7px;align-items:center;padding:8px 13px;border-radius:999px;
+  background:rgba(9,11,17,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
+.agx-badge b{color:var(--agx);font-size:13px}
+.agx-story{left:16px;bottom:16px;max-width:min(360px,calc(100vw - 32px));padding:16px 16px 13px;border-radius:16px;
+  background:rgba(9,11,17,.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;box-shadow:0 24px 70px -26px rgba(0,0,0,.85)}
+.agx-story .h{display:flex;align-items:center;gap:11px;margin-bottom:9px}
+.agx-story .em{font-size:26px;line-height:1;filter:drop-shadow(0 3px 11px var(--agx))}
+.agx-story .nm{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.agx-story .tl{color:var(--agx);font-size:12px;font-weight:600;margin-top:3px}
+.agx-story p{margin:0 0 11px;color:#c6ccd9;font-size:13px;line-height:1.56}
+.agx-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.agx-tags span{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#aeb6c6;
+  border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px 9px}
+.agx-guess{margin:0 0 12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.09)}
+.agx-guess .gq{font-size:11.5px;color:#aeb6c6;margin-bottom:8px;letter-spacing:.01em}
+.agx-guess .gbtns{display:flex;gap:8px}
+.agx-guess .gbtn{flex:1;padding:8px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.03);color:#eef1f7;font-size:12px;font-weight:600;cursor:pointer;
+  transition:transform .15s,border-color .15s,background .15s,opacity .15s;font-family:inherit}
+.agx-guess .gbtn:hover:not(:disabled){border-color:var(--agx);background:rgba(255,255,255,.07);transform:translateY(-1px)}
+.agx-guess .gbtn:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
+.agx-guess .gbtn:disabled{cursor:default}
+.agx-guess .gbtn.correct{border-color:#5eea8f;background:rgba(94,234,143,.16);color:#a4f5be;opacity:1}
+.agx-guess .gbtn.wrong{border-color:#ff6a6a;background:rgba(255,106,106,.14);color:#ffb9b9;opacity:1}
+.agx-guess .gbtn.dim{opacity:.45}
+.agx-guess .greveal{margin-top:9px;font-size:11.5px;line-height:1.55;color:#c6ccd9}
+.agx-guess .greveal b{color:#eef1f7}
+.agx-nav{display:flex;align-items:center;gap:13px;font-size:12.5px;border-top:1px solid rgba(255,255,255,.09);padding-top:11px}
+.agx-nav a{color:#eef1f7;text-decoration:none;opacity:.82}
+.agx-nav a:hover{opacity:1;color:var(--agx)}
+.agx-nav .home{margin-right:auto;font-weight:600}
+.agx-nav a[aria-disabled=true]{opacity:.32;pointer-events:none}
+@media (max-width:560px){.agx-story{left:12px;right:12px;bottom:12px;max-width:none}.agx-badge{display:none}}
+@media (prefers-reduced-motion:reduce){.agx-story .em{filter:none}}
+</style>
+<div class="agx agx-badge" style="--agx:#6ee07a">AGENTICS · JULI <b>16</b></div>
+<aside class="agx agx-story" style="--agx:#6ee07a" aria-label="Avatarens historie">
+  <div class="h"><div class="em">🌱</div><div><div class="nm">Sprout</div><div class="tl">Vokser præcis så meget, du fodrer den.</div></div></div>
+  <p>Sprout startede som næsten ingenting — et enkelt datapunkt, en lille regel — og voksede sig klogere for hver smule data, den fik lov at røre. Hun er beviset på, at de bedste agenter ikke er færdigbyggede, de er levende systemer, der udvikler sig med din virksomhed. Tålmodighed er hendes superkraft.</p>
+  <div class="agx-tags"><span>Voksende</span><span>Tålmodig</span><span>Levende</span></div>
+  <div class="agx-guess" id="agxGuess">
+    <div class="gq">🤖 Hvilken Claude-model byggede Sprout?</div>
+    <div class="gbtns">
+      <button type="button" class="gbtn" data-m="opus">Opus 4.8</button>
+      <button type="button" class="gbtn" data-m="sonnet">Sonnet 5</button>
+    </div>
+    <div class="greveal" id="agxReveal" hidden></div>
+  </div>
+  <nav class="agx-nav">
+    <a class="home" href="calendar.html">← Kalender</a>
+    <a href="day-15.html">‹ forrige</a>
+    <a data-day="17" href="day-17.html">næste ›</a>
+  </nav>
+</aside>
+<script>(function(){var n=document.querySelector('.agx-nav a[data-day]');if(!n)return;var d=+n.getAttribute('data-day');
+if(new Date()<new Date(2026,6,d)){n.setAttribute('aria-disabled','true');n.textContent='næste (åbner '+d+'. juli)';}})();</script>
+<script>(function(){
+  var DAY=16, MODEL='sonnet', NAME="Sprout";
+  var KEY='agx_guess_'+DAY;
+  var wrap=document.getElementById('agxGuess');
+  if(!wrap) return;
+  var btns=Array.prototype.slice.call(wrap.querySelectorAll('.gbtn'));
+  var reveal=document.getElementById('agxReveal');
+  var TXT={
+    opus:'🧠 Rigtigt svar: <b>Claude Opus 4.8</b> byggede '+NAME+'.',
+    sonnet:'⚡ Rigtigt svar: <b>Claude Sonnet 5</b> byggede '+NAME+'.'
+  };
+  function render(saved){
+    btns.forEach(function(b){
+      b.disabled=true;
+      var m=b.getAttribute('data-m');
+      if(m===MODEL) b.classList.add('correct');
+      else if(m===saved) b.classList.add('wrong'); else b.classList.add('dim');
+    });
+    var extra = saved===MODEL ? ' Du gættede rigtigt! 🎉' : ' Forkert gæt denne gang — bedre held i morgen.';
+    reveal.innerHTML=TXT[MODEL]+extra;
+    reveal.hidden=false;
+  }
+  var prior=localStorage.getItem(KEY);
+  if(prior){ render(prior); return; }
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      var g=b.getAttribute('data-m');
+      try{ localStorage.setItem(KEY, g); }catch(e){}
+      render(g);
+    });
+  });
+})();</script>
+
+</body>
+</html>

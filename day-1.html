@@ -1,0 +1,769 @@
+<title>agentics.dk — Autonomous AI agents</title>
+<meta name="description" content="Agentics designs and ships autonomous, agentic AI systems.">
+<style>
+  :root{
+    --bg:#05060a;
+    --bg-2:#080a12;
+    --ink:#eef1f7;
+    --ink-dim:#9aa3b8;
+    --ink-faint:#5c6479;
+    --accent:#38e6ff;      /* electric cyan */
+    --accent-2:#7b5cff;    /* violet companion */
+    --accent-soft:rgba(56,230,255,.14);
+    --line:rgba(255,255,255,.09);
+    --ease:cubic-bezier(.22,.61,.36,1);
+    --ease-out:cubic-bezier(.16,1,.3,1);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    overflow-x:hidden;
+    line-height:1.5;
+  }
+
+  ::selection{background:var(--accent);color:#00121a}
+
+  /* ---------- Cinematic background stack ---------- */
+  .stage{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    overflow:hidden;
+    background:
+      radial-gradient(1200px 900px at 68% 42%, rgba(56,230,255,.10), transparent 62%),
+      radial-gradient(900px 800px at 22% 78%, rgba(123,92,255,.10), transparent 60%),
+      radial-gradient(1400px 1000px at 50% -10%, rgba(120,150,255,.06), transparent 55%),
+      linear-gradient(180deg,var(--bg-2),var(--bg) 60%);
+  }
+  /* parallax layers */
+  .layer{position:absolute;inset:-8%;will-change:transform}
+  .glow-a{
+    background:radial-gradient(520px 520px at 50% 50%, rgba(56,230,255,.22), transparent 70%);
+    width:60vmax;height:60vmax;left:38%;top:24%;filter:blur(30px);opacity:.7;
+  }
+  .glow-b{
+    background:radial-gradient(420px 420px at 50% 50%, rgba(123,92,255,.22), transparent 70%);
+    width:48vmax;height:48vmax;left:10%;top:44%;filter:blur(36px);opacity:.55;
+  }
+  .grid{
+    position:absolute;inset:-20%;
+    background-image:
+      linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+    background-size:60px 60px;
+    mask-image:radial-gradient(closest-side at 62% 46%, #000 0%, transparent 78%);
+    -webkit-mask-image:radial-gradient(closest-side at 62% 46%, #000 0%, transparent 78%);
+    transform:perspective(700px) rotateX(0deg);
+    opacity:.6;
+  }
+  /* film grain */
+  .grain{
+    position:absolute;inset:0;pointer-events:none;opacity:.05;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+  .vignette{
+    position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(120% 120% at 50% 40%, transparent 55%, rgba(0,0,0,.55) 100%);
+  }
+  #particles{position:absolute;inset:0;pointer-events:none}
+
+  /* ---------- Shell ---------- */
+  .shell{position:relative;z-index:2;min-height:100%;display:flex;flex-direction:column}
+
+  nav{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:26px clamp(22px,5vw,64px);
+  }
+  .brand{
+    display:flex;align-items:center;gap:11px;
+    font-weight:650;letter-spacing:-.02em;font-size:16.5px;
+    text-decoration:none;color:var(--ink);
+  }
+  .brand .dot{
+    width:20px;height:20px;border-radius:6px;position:relative;
+    background:conic-gradient(from 180deg,var(--accent),var(--accent-2),var(--accent));
+    box-shadow:0 0 18px rgba(56,230,255,.5);
+  }
+  .brand .dot::after{
+    content:"";position:absolute;inset:5px;border-radius:3px;background:var(--bg);
+  }
+  .brand b{font-weight:650}
+  .brand .tld{color:var(--accent)}
+
+  .nav-links{display:flex;align-items:center;gap:34px}
+  .nav-links a{
+    color:var(--ink-dim);text-decoration:none;font-size:14px;letter-spacing:.01em;
+    position:relative;transition:color .35s var(--ease);
+  }
+  .nav-links a::after{
+    content:"";position:absolute;left:0;bottom:-6px;height:1.5px;width:0;
+    background:var(--accent);transition:width .4s var(--ease-out);border-radius:2px;
+  }
+  .nav-links a:hover,.nav-links a:focus-visible{color:var(--ink)}
+  .nav-links a:hover::after,.nav-links a:focus-visible::after{width:100%}
+  .nav-cta{
+    padding:9px 18px;border:1px solid var(--line);border-radius:999px;
+    color:var(--ink)!important;background:rgba(255,255,255,.02);
+    transition:border-color .35s var(--ease),background .35s var(--ease);
+  }
+  .nav-cta::after{display:none}
+  .nav-cta:hover{border-color:rgba(56,230,255,.5);background:var(--accent-soft)}
+  @media(max-width:760px){.nav-links a:not(.nav-cta){display:none}}
+
+  /* ---------- Hero ---------- */
+  main{
+    flex:1;display:grid;
+    grid-template-columns:1.05fr .95fr;
+    align-items:center;gap:clamp(20px,4vw,60px);
+    padding:min(4vh,40px) clamp(22px,5vw,64px) 40px;
+    max-width:1360px;margin:0 auto;width:100%;
+  }
+  @media(max-width:940px){
+    main{grid-template-columns:1fr;text-align:center;padding-bottom:60px}
+    .avatar-wrap{order:-1;margin:0 auto}
+    .eyebrow,.cta-row{justify-content:center}
+    .copy{align-items:center}
+  }
+
+  .copy{display:flex;flex-direction:column;max-width:620px}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:10px;
+    font-size:12.5px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--accent);margin-bottom:26px;font-weight:600;
+  }
+  .eyebrow .pip{
+    width:7px;height:7px;border-radius:50%;background:var(--accent);
+    box-shadow:0 0 0 0 rgba(56,230,255,.6);animation:pip 2.6s var(--ease) infinite;
+  }
+  @keyframes pip{
+    0%{box-shadow:0 0 0 0 rgba(56,230,255,.55)}
+    70%{box-shadow:0 0 0 9px rgba(56,230,255,0)}
+    100%{box-shadow:0 0 0 0 rgba(56,230,255,0)}
+  }
+
+  h1{
+    font-size:clamp(38px,6.4vw,76px);
+    line-height:1.02;letter-spacing:-.035em;font-weight:680;
+    margin-bottom:26px;
+  }
+  h1 .grad{
+    background:linear-gradient(96deg,var(--accent),#c7b8ff 55%,var(--accent-2));
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  h1 .word{display:inline-block;overflow:hidden;vertical-align:top}
+  h1 .word i{display:inline-block;font-style:normal;transform:translateY(110%);will-change:transform}
+
+  .sub{
+    font-size:clamp(15.5px,1.6vw,18.5px);
+    color:var(--ink-dim);max-width:500px;margin-bottom:38px;line-height:1.62;
+  }
+  .sub b{color:var(--ink);font-weight:600}
+
+  .cta-row{display:flex;align-items:center;gap:26px;flex-wrap:wrap}
+
+  .cta{
+    position:relative;display:inline-flex;align-items:center;gap:11px;
+    padding:15px 27px;border-radius:14px;border:1px solid rgba(56,230,255,.35);
+    color:#00131a;font-weight:640;font-size:15px;letter-spacing:.005em;
+    text-decoration:none;cursor:pointer;overflow:hidden;
+    background:linear-gradient(180deg,#5cf0ff,var(--accent));
+    box-shadow:0 10px 40px -12px rgba(56,230,255,.7),inset 0 1px 0 rgba(255,255,255,.5);
+    transition:transform .25s var(--ease-out),box-shadow .35s var(--ease);
+    will-change:transform;
+  }
+  .cta:hover{box-shadow:0 18px 60px -14px rgba(56,230,255,.9),inset 0 1px 0 rgba(255,255,255,.6)}
+  .cta .shine{
+    position:absolute;top:0;left:-120%;width:60%;height:100%;
+    background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);
+    transform:skewX(-18deg);transition:left .7s var(--ease-out);
+  }
+  .cta:hover .shine{left:130%}
+  .cta svg{transition:transform .35s var(--ease-out)}
+  .cta:hover svg{transform:translateX(4px)}
+
+  .link{
+    display:inline-flex;align-items:center;gap:9px;
+    color:var(--ink);text-decoration:none;font-size:15px;font-weight:520;
+    transition:color .3s var(--ease);
+  }
+  .link .arw{
+    display:inline-flex;width:26px;height:26px;border-radius:50%;
+    align-items:center;justify-content:center;border:1px solid var(--line);
+    transition:border-color .35s var(--ease),transform .35s var(--ease-out);
+  }
+  .link:hover{color:var(--accent)}
+  .link:hover .arw{border-color:var(--accent);transform:translateX(3px)}
+
+  .meta-row{
+    display:flex;gap:30px;margin-top:52px;flex-wrap:wrap;
+  }
+  .meta{display:flex;flex-direction:column;gap:4px}
+  .meta .n{font-size:22px;font-weight:660;letter-spacing:-.02em}
+  .meta .l{font-size:12px;color:var(--ink-faint);letter-spacing:.05em;text-transform:uppercase}
+  @media(max-width:940px){.meta-row{justify-content:center;margin-top:44px}}
+
+  /* ---------- Avatar ---------- */
+  .avatar-wrap{
+    position:relative;width:min(46vw,540px);aspect-ratio:1;
+    display:flex;align-items:center;justify-content:center;
+  }
+  @media(max-width:940px){.avatar-wrap{width:min(78vw,420px)}}
+  #aura{width:100%;height:100%;overflow:visible;display:block}
+  .caption{
+    position:absolute;bottom:2%;left:50%;transform:translateX(-50%);
+    font-size:11.5px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--ink-faint);white-space:nowrap;
+  }
+
+  /* entrance orchestration */
+  .fade-up{opacity:0;transform:translateY(18px)}
+
+  /* ---------- Reduced motion ---------- */
+  @media(prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+    h1 .word i{transform:none!important}
+    .fade-up{opacity:1!important;transform:none!important}
+  }
+
+  a:focus-visible,button:focus-visible{
+    outline:2px solid var(--accent);outline-offset:3px;border-radius:8px;
+  }
+
+  .scrollcue{
+    position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:3;
+    display:flex;flex-direction:column;align-items:center;gap:9px;
+    color:var(--ink-faint);font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;
+    pointer-events:none;
+  }
+  .scrollcue .bar{width:1px;height:34px;background:linear-gradient(var(--accent),transparent);position:relative;overflow:hidden}
+  .scrollcue .bar::after{content:"";position:absolute;top:-40%;left:0;width:100%;height:40%;background:var(--accent);animation:drop 2.2s var(--ease) infinite}
+  @keyframes drop{0%{top:-40%}100%{top:100%}}
+  @media(max-width:940px){.scrollcue{display:none}}
+</style>
+
+<div class="stage" aria-hidden="true">
+  <div class="layer glow-a" data-depth="0.020"></div>
+  <div class="layer glow-b" data-depth="0.034"></div>
+  <div class="layer grid" data-depth="0.010"></div>
+  <canvas id="particles"></canvas>
+  <div class="grain"></div>
+  <div class="vignette"></div>
+</div>
+
+<div class="shell">
+  <nav>
+    <a class="brand" href="#" aria-label="agentics.dk home">
+      <span class="dot" aria-hidden="true"></span>
+      <span><b>agentics</b><span class="tld">.dk</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="#">Platform</a>
+      <a href="#">Agenter</a>
+      <a href="#">Cases</a>
+      <a href="#" class="nav-cta">Book demo</a>
+    </div>
+  </nav>
+
+  <main>
+    <div class="copy">
+      <span class="eyebrow fade-up" data-anim="1"><span class="pip" aria-hidden="true"></span>Autonome AI-systemer · Made in Denmark</span>
+
+      <h1 aria-label="We build AI agents that think, decide and ship on their own.">
+        <span class="word"><i data-w>We&nbsp;build&nbsp;AI</i></span><br>
+        <span class="word"><i data-w><span class="grad">agents</span>&nbsp;that</i></span><br>
+        <span class="word"><i data-w>think,&nbsp;decide</i></span><br>
+        <span class="word"><i data-w>&amp;&nbsp;ship&nbsp;on&nbsp;their&nbsp;own.</i></span>
+      </h1>
+
+      <p class="sub fade-up" data-anim="2">
+        Vi designer og udruller <b>agentic AI</b> — selvstyrende systemer der planlægger,
+        handler og lærer i produktion. Fra strategi til deploy, bygget til at køre uden hånden på rattet.
+      </p>
+
+      <div class="cta-row">
+        <a href="#" class="cta fade-up" data-anim="3" id="cta">
+          <span class="shine" aria-hidden="true"></span>
+          Byg din første agent
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M5 12h14M13 6l6 6-6 6" stroke="#00131a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <a href="#" class="link fade-up" data-anim="4">
+          Se hvordan det virker
+          <span class="arw" aria-hidden="true">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M7 17L17 7M17 7H9M17 7v8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </span>
+        </a>
+      </div>
+
+      <div class="meta-row fade-up" data-anim="5">
+        <div class="meta"><span class="n">40+</span><span class="l">Agenter i drift</span></div>
+        <div class="meta"><span class="n">99.9%</span><span class="l">Autonom uptime</span></div>
+        <div class="meta"><span class="n">24/7</span><span class="l">Selvkørende</span></div>
+      </div>
+    </div>
+
+    <div class="avatar-wrap fade-up" data-anim="0">
+      <svg id="aura" viewBox="0 0 400 400" role="img" aria-labelledby="aura-t aura-d">
+        <title id="aura-t">AURA — the agentics intelligence core</title>
+        <desc id="aura-d">A luminous cyan orb wrapped in an articulated iris-ring that gazes toward the pointer, orbited by data motes.</desc>
+        <defs>
+          <radialGradient id="core" cx="50%" cy="45%" r="60%">
+            <stop offset="0%" stop-color="#eafcff"/>
+            <stop offset="30%" stop-color="#7ff0ff"/>
+            <stop offset="70%" stop-color="#22c6ee"/>
+            <stop offset="100%" stop-color="#0a7ea8"/>
+          </radialGradient>
+          <radialGradient id="halo" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stop-color="rgba(56,230,255,.55)"/>
+            <stop offset="60%" stop-color="rgba(56,230,255,.12)"/>
+            <stop offset="100%" stop-color="rgba(56,230,255,0)"/>
+          </radialGradient>
+          <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#8ff6ff"/>
+            <stop offset="50%" stop-color="#38e6ff"/>
+            <stop offset="100%" stop-color="#7b5cff"/>
+          </linearGradient>
+          <filter id="soft" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="4"/>
+          </filter>
+          <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="7" result="b"/>
+            <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- volumetric halo -->
+        <circle id="haloC" cx="200" cy="200" r="170" fill="url(#halo)"/>
+
+        <!-- parallax back field: orbit rings -->
+        <g id="orbitsBack" stroke="rgba(56,230,255,.18)" fill="none">
+          <ellipse cx="200" cy="200" rx="165" ry="60" stroke-width="1"/>
+          <ellipse cx="200" cy="200" rx="150" ry="150" stroke-width="1" stroke-dasharray="2 8"/>
+        </g>
+
+        <!-- the eye assembly (translated to gaze) -->
+        <g id="gaze">
+          <!-- outer articulated iris ring -->
+          <g id="iris" filter="url(#glow)">
+            <circle cx="200" cy="200" r="118" fill="none" stroke="url(#ring)" stroke-width="2.5" opacity=".9"/>
+            <g id="irisTicks" stroke="url(#ring)" stroke-width="3" stroke-linecap="round"></g>
+            <!-- rotating scan arc -->
+            <circle id="scan" cx="200" cy="200" r="106" fill="none" stroke="var(--accent)" stroke-width="2.5"
+                    stroke-linecap="round" stroke-dasharray="70 600" opacity=".85"/>
+            <circle id="scan2" cx="200" cy="200" r="132" fill="none" stroke="var(--accent-2)" stroke-width="1.6"
+                    stroke-linecap="round" stroke-dasharray="34 700" opacity=".7"/>
+          </g>
+
+          <!-- lid mask lens -->
+          <g id="eyeball">
+            <circle id="lens" cx="200" cy="200" r="92" fill="rgba(4,10,16,.55)" stroke="rgba(56,230,255,.25)" stroke-width="1"/>
+            <!-- pupil group moves with gaze -->
+            <g id="pupil">
+              <circle id="halo2" cx="200" cy="200" r="70" fill="url(#halo)" opacity=".9"/>
+              <circle id="coreC" cx="200" cy="200" r="46" fill="url(#core)" filter="url(#glow)"/>
+              <circle id="pupilInner" cx="200" cy="200" r="20" fill="#02121a"/>
+              <circle id="spec" cx="184" cy="184" r="8" fill="#eafcff" opacity=".92"/>
+              <circle id="spec2" cx="214" cy="214" r="3.5" fill="#bff4ff" opacity=".7"/>
+            </g>
+            <!-- eyelid (for blink) -->
+            <rect id="lidTop" x="100" y="108" width="200" height="0" fill="var(--bg)" opacity=".96"/>
+            <rect id="lidBot" x="100" y="292" width="200" height="0" fill="var(--bg)" opacity=".96" transform="translate(0,0)"/>
+          </g>
+        </g>
+
+        <!-- foreground orbiting motes -->
+        <g id="motes"></g>
+      </svg>
+      <div class="caption fade-up" data-anim="6" aria-hidden="true">AURA · Agentic core v3</div>
+    </div>
+  </main>
+</div>
+
+<div class="scrollcue" aria-hidden="true"><span>Scroll</span><span class="bar"></span></div>
+
+<script>
+(function(){
+  "use strict";
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const SVGNS = "http://www.w3.org/2000/svg";
+
+  /* -------- build iris ticks -------- */
+  (function(){
+    const g = document.getElementById("irisTicks");
+    const cx=200, cy=200, N=48;
+    for(let i=0;i<N;i++){
+      const a = (i/N)*Math.PI*2;
+      const r1 = 118, len = (i%4===0)?11:5;
+      const r2 = r1 - len;
+      const l = document.createElementNS(SVGNS,"line");
+      l.setAttribute("x1",(cx+Math.cos(a)*r1).toFixed(2));
+      l.setAttribute("y1",(cy+Math.sin(a)*r1).toFixed(2));
+      l.setAttribute("x2",(cx+Math.cos(a)*r2).toFixed(2));
+      l.setAttribute("y2",(cy+Math.sin(a)*r2).toFixed(2));
+      l.setAttribute("opacity",(i%4===0)?"0.85":"0.35");
+      g.appendChild(l);
+    }
+  })();
+
+  /* -------- build orbiting motes -------- */
+  const moteData = [];
+  (function(){
+    const g = document.getElementById("motes");
+    const defs = [
+      {r:158, s:6, sp: .00042, ph:0, ry:.42, col:"var(--accent)"},
+      {r:150, s:4, sp:-.00058, ph:2.1, ry:.40, col:"#c7b8ff"},
+      {r:170, s:3, sp: .00070, ph:4.0, ry:.44, col:"var(--accent-2)"},
+      {r:140, s:5, sp: .00050, ph:1.0, ry:.38, col:"var(--accent)"},
+      {r:176, s:2.5, sp:-.00038, ph:3.3, ry:.46, col:"#9df6ff"}
+    ];
+    defs.forEach(d=>{
+      const c = document.createElementNS(SVGNS,"circle");
+      c.setAttribute("r", d.s);
+      c.setAttribute("fill", d.col);
+      c.setAttribute("filter","url(#soft)");
+      g.appendChild(c);
+      const tr = document.createElementNS(SVGNS,"circle");
+      tr.setAttribute("r", d.s*0.5);
+      tr.setAttribute("fill", d.col);
+      tr.setAttribute("opacity",".35");
+      g.appendChild(tr);
+      moteData.push(Object.assign({},d,{el:c,trail:tr,px:200,py:200}));
+    });
+  })();
+
+  /* -------- pointer state with easing -------- */
+  const P = {tx:0, ty:0, x:0, y:0};   // target and eased pointer (-1..1)
+  let cx=window.innerWidth/2, cy=window.innerHeight/2;
+  const avatar = document.querySelector(".avatar-wrap");
+
+  function onMove(e){
+    const px = (e.touches? e.touches[0].clientX : e.clientX);
+    const py = (e.touches? e.touches[0].clientY : e.clientY);
+    P.tx = (px/window.innerWidth  - .5)*2;
+    P.ty = (py/window.innerHeight - .5)*2;
+    // gaze relative to avatar center for accuracy
+    const r = avatar.getBoundingClientRect();
+    ac.x = r.left + r.width/2; ac.y = r.top + r.height/2;
+    ac.gx = Math.max(-1, Math.min(1,(px-ac.x)/(r.width*0.62)));
+    ac.gy = Math.max(-1, Math.min(1,(py-ac.y)/(r.height*0.62)));
+  }
+  const ac = {x:cx,y:cy,gx:0,gy:0,egx:0,egy:0};
+  if(!reduce){
+    window.addEventListener("mousemove",onMove,{passive:true});
+    window.addEventListener("touchmove",onMove,{passive:true});
+  }
+
+  /* cache elements */
+  const layers = [...document.querySelectorAll(".layer")];
+  const gaze = document.getElementById("gaze");
+  const pupil = document.getElementById("pupil");
+  const iris = document.getElementById("iris");
+  const scan = document.getElementById("scan");
+  const scan2 = document.getElementById("scan2");
+  const orbitsBack = document.getElementById("orbitsBack");
+  const lidTop = document.getElementById("lidTop");
+  const lidBot = document.getElementById("lidBot");
+  const spec = document.getElementById("spec");
+  const coreC = document.getElementById("coreC");
+  const haloC = document.getElementById("haloC");
+  const motesG = document.getElementById("motes");
+
+  /* -------- particle canvas -------- */
+  const cv = document.getElementById("particles");
+  const ctx = cv.getContext("2d");
+  let dpr = Math.min(window.devicePixelRatio||1, 2);
+  let W=0,H=0, parts=[];
+  function resize(){
+    W = cv.width = Math.floor(innerWidth*dpr);
+    H = cv.height = Math.floor(innerHeight*dpr);
+    cv.style.width = innerWidth+"px";
+    cv.style.height = innerHeight+"px";
+    const count = Math.round(Math.min(90, innerWidth*innerHeight/22000));
+    parts = [];
+    for(let i=0;i<count;i++){
+      parts.push({
+        x:Math.random()*W, y:Math.random()*H,
+        z:Math.random()*.8+.2,
+        r:(Math.random()*1.5+.4)*dpr,
+        vy:(Math.random()*.12+.03)*dpr,
+        vx:(Math.random()-.5)*.05*dpr,
+        a:Math.random()*.5+.1,
+        tw:Math.random()*Math.PI*2
+      });
+    }
+  }
+  resize();
+  window.addEventListener("resize",()=>{dpr=Math.min(window.devicePixelRatio||1,2);resize();});
+
+  /* -------- blink scheduler -------- */
+  let blink = 0, nextBlink = performance.now()+2600;
+  function scheduleBlink(t){ nextBlink = t + 2600 + Math.random()*4200; }
+
+  /* -------- entrance animation -------- */
+  function playEntrance(){
+    if(reduce){
+      document.querySelectorAll("[data-w]").forEach(w=>w.style.transform="none");
+      document.querySelectorAll(".fade-up").forEach(f=>{f.style.opacity=1;f.style.transform="none";});
+      return;
+    }
+    // headline words
+    const words = document.querySelectorAll("[data-w]");
+    words.forEach((w,i)=>{
+      w.animate(
+        [{transform:"translateY(110%)"},{transform:"translateY(0)"}],
+        {duration:900, delay:260+i*95, easing:"cubic-bezier(.16,1,.3,1)", fill:"both"}
+      );
+    });
+    // fade-up staggers
+    document.querySelectorAll(".fade-up").forEach(el=>{
+      const order = +el.getAttribute("data-anim")||0;
+      el.animate(
+        [{opacity:0, transform:"translateY(18px)"},{opacity:1, transform:"translateY(0)"}],
+        {duration:900, delay:200+order*110, easing:"cubic-bezier(.16,1,.3,1)", fill:"both"}
+      );
+    });
+  }
+
+  /* -------- magnetic CTA -------- */
+  const cta = document.getElementById("cta");
+  if(cta && !reduce){
+    let cr=null;
+    cta.addEventListener("mouseenter",()=>{cr=cta.getBoundingClientRect();});
+    cta.addEventListener("mousemove",e=>{
+      if(!cr) cr=cta.getBoundingClientRect();
+      const mx=(e.clientX-(cr.left+cr.width/2))/cr.width;
+      const my=(e.clientY-(cr.top+cr.height/2))/cr.height;
+      cta.style.transform=`translate(${mx*14}px, ${my*14}px)`;
+    });
+    cta.addEventListener("mouseleave",()=>{cta.style.transform="translate(0,0)";});
+  }
+
+  /* -------- main loop -------- */
+  let running = true;
+  let last = performance.now();
+  document.addEventListener("visibilitychange",()=>{
+    running = !document.hidden;
+    if(running){ last = performance.now(); requestAnimationFrame(loop); }
+  });
+
+  function loop(now){
+    if(!running) return;
+    const dt = Math.min(48, now-last); last = now;
+    const t = now*0.001;
+
+    /* eased pointer */
+    P.x += (P.tx - P.x)*0.06;
+    P.y += (P.ty - P.y)*0.06;
+    ac.egx += (ac.gx - ac.egx)*0.08;
+    ac.egy += (ac.gy - ac.egy)*0.08;
+
+    /* background parallax */
+    for(const l of layers){
+      const d = parseFloat(l.dataset.depth)||0;
+      l.style.transform = `translate3d(${(-P.x*d*260).toFixed(2)}px, ${(-P.y*d*260).toFixed(2)}px, 0)`;
+    }
+
+    /* --- AURA idle + reactivity --- */
+    const breathe = Math.sin(t*1.15)*0.5+0.5;      // 0..1
+    const bob = Math.sin(t*0.9)*4;
+    const sway = Math.cos(t*0.6)*3;
+
+    // whole entity subtle bob + tilt toward pointer
+    const tiltX = ac.egy*6, tiltY = -ac.egx*8;
+    const aura = document.getElementById("aura");
+    aura.style.transform = `translate(${sway.toFixed(2)}px, ${bob.toFixed(2)}px)`;
+
+    // gaze translation of eye assembly
+    const gx = ac.egx*20, gy = ac.egy*20;
+    gaze.setAttribute("transform",`translate(${gx.toFixed(2)} ${gy.toFixed(2)})`);
+    // pupil moves a bit more than the eye body (depth)
+    pupil.setAttribute("transform",`translate(${(ac.egx*16).toFixed(2)} ${(ac.egy*16).toFixed(2)})`);
+    // specular counter-moves for liveliness
+    spec.setAttribute("transform",`translate(${(-ac.egx*6).toFixed(2)} ${(-ac.egy*6).toFixed(2)})`);
+
+    // iris slow rotation + counter-parallax
+    iris.setAttribute("transform",`rotate(${(t*8).toFixed(2)} 200 200)`);
+    orbitsBack.setAttribute("transform",`rotate(${(-t*4).toFixed(2)} 200 200)`);
+
+    // scanning arcs rotate at different rates
+    scan.setAttribute("transform",`rotate(${(t*90).toFixed(1)} 200 200)`);
+    scan2.setAttribute("transform",`rotate(${(-t*55).toFixed(1)} 200 200)`);
+
+    // core pulse (scale + glow)
+    const pulse = 1 + breathe*0.06;
+    coreC.setAttribute("transform",`translate(200 200) scale(${pulse.toFixed(3)}) translate(-200 -200)`);
+    coreC.style.opacity = (0.82+breathe*0.18).toFixed(3);
+    haloC.style.opacity = (0.5+breathe*0.35).toFixed(3);
+    haloC.setAttribute("r",(170+breathe*10).toFixed(1));
+
+    /* blink */
+    if(!reduce && now>nextBlink && blink===0){ blink = 1; }
+    if(blink>0){
+      // blink is a quick 0->1->0 over ~160ms
+      blink += dt/150;
+      let k = blink<1 ? blink : Math.max(0, 2-blink); // triangle
+      const h = k*92;
+      lidTop.setAttribute("height", h.toFixed(1));
+      lidBot.setAttribute("y", (292 - h).toFixed(1));
+      lidBot.setAttribute("height", h.toFixed(1));
+      if(blink>=2){ blink=0; lidTop.setAttribute("height",0); lidBot.setAttribute("height",0); scheduleBlink(now); }
+    }
+
+    /* motes orbit */
+    for(const m of moteData){
+      const ang = t*1000*m.sp + m.ph;
+      // tilt orbit plane toward gaze slightly
+      const ox = Math.cos(ang)*m.r;
+      const oy = Math.sin(ang)*m.r*m.ry;
+      const x = 200 + ox + ac.egx*10;
+      const y = 200 + oy - ox*0.14 + ac.egy*10;   // slight 3D skew
+      m.el.setAttribute("cx",x.toFixed(2));
+      m.el.setAttribute("cy",y.toFixed(2));
+      // depth: fade+shrink when "behind"
+      const depth = (Math.sin(ang)+1)/2; // 0 behind .. 1 front
+      m.el.style.opacity = (0.35+depth*0.65).toFixed(2);
+      // trailing dot
+      m.trail.setAttribute("cx",(200+Math.cos(ang-0.28)*m.r+ac.egx*10).toFixed(2));
+      m.trail.setAttribute("cy",(200+Math.sin(ang-0.28)*m.r*m.ry - Math.cos(ang-0.28)*m.r*0.14 +ac.egy*10).toFixed(2));
+      m.trail.style.opacity = (0.15+depth*0.3).toFixed(2);
+    }
+
+    /* particles */
+    ctx.clearRect(0,0,W,H);
+    for(const p of parts){
+      p.y -= p.vy;
+      p.x += p.vx + (-P.x*0.15*p.z*dpr);
+      p.tw += 0.02;
+      if(p.y < -4){ p.y = H+4; p.x = Math.random()*W; }
+      if(p.x < -4) p.x = W+4; else if(p.x>W+4) p.x=-4;
+      const tw = (Math.sin(p.tw)*0.4+0.6);
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, 6.2832);
+      ctx.fillStyle = `rgba(150,230,255,${(p.a*tw).toFixed(3)})`;
+      ctx.fill();
+    }
+
+    requestAnimationFrame(loop);
+  }
+
+  /* kick off */
+  if(reduce){
+    playEntrance();
+    // draw a single static particle frame + one composed AURA state
+    ctx.clearRect(0,0,W,H);
+    for(const p of parts){
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,6.2832);
+      ctx.fillStyle=`rgba(150,230,255,${p.a})`;ctx.fill();
+    }
+    // static motes
+    for(const m of moteData){
+      const ang=m.ph;
+      m.el.setAttribute("cx",(200+Math.cos(ang)*m.r).toFixed(2));
+      m.el.setAttribute("cy",(200+Math.sin(ang)*m.r*m.ry).toFixed(2));
+    }
+  }else{
+    requestAnimationFrame((t)=>{ playEntrance(); last=t; requestAnimationFrame(loop); });
+  }
+})();
+</script>
+
+<style id="agx-chrome-css">
+.agx{position:fixed;z-index:2147483000;font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;box-sizing:border-box}
+.agx a{cursor:pointer}
+.agx-badge{right:16px;bottom:16px;display:flex;gap:7px;align-items:center;padding:8px 13px;border-radius:999px;
+  background:rgba(9,11,17,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
+.agx-badge b{color:var(--agx);font-size:13px}
+.agx-story{left:16px;bottom:16px;max-width:min(360px,calc(100vw - 32px));padding:16px 16px 13px;border-radius:16px;
+  background:rgba(9,11,17,.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;box-shadow:0 24px 70px -26px rgba(0,0,0,.85)}
+.agx-story .h{display:flex;align-items:center;gap:11px;margin-bottom:9px}
+.agx-story .em{font-size:26px;line-height:1;filter:drop-shadow(0 3px 11px var(--agx))}
+.agx-story .nm{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.agx-story .tl{color:var(--agx);font-size:12px;font-weight:600;margin-top:3px}
+.agx-story p{margin:0 0 11px;color:#c6ccd9;font-size:13px;line-height:1.56}
+.agx-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.agx-tags span{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#aeb6c6;
+  border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px 9px}
+.agx-guess{margin:0 0 12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.09)}
+.agx-guess .gq{font-size:11.5px;color:#aeb6c6;margin-bottom:8px;letter-spacing:.01em}
+.agx-guess .gbtns{display:flex;gap:8px}
+.agx-guess .gbtn{flex:1;padding:8px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.03);color:#eef1f7;font-size:12px;font-weight:600;cursor:pointer;
+  transition:transform .15s,border-color .15s,background .15s,opacity .15s;font-family:inherit}
+.agx-guess .gbtn:hover:not(:disabled){border-color:var(--agx);background:rgba(255,255,255,.07);transform:translateY(-1px)}
+.agx-guess .gbtn:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
+.agx-guess .gbtn:disabled{cursor:default}
+.agx-guess .gbtn.correct{border-color:#5eea8f;background:rgba(94,234,143,.16);color:#a4f5be;opacity:1}
+.agx-guess .gbtn.wrong{border-color:#ff6a6a;background:rgba(255,106,106,.14);color:#ffb9b9;opacity:1}
+.agx-guess .gbtn.dim{opacity:.45}
+.agx-guess .greveal{margin-top:9px;font-size:11.5px;line-height:1.55;color:#c6ccd9}
+.agx-guess .greveal b{color:#eef1f7}
+.agx-nav{display:flex;align-items:center;gap:13px;font-size:12.5px;border-top:1px solid rgba(255,255,255,.09);padding-top:11px}
+.agx-nav a{color:#eef1f7;text-decoration:none;opacity:.82}
+.agx-nav a:hover{opacity:1;color:var(--agx)}
+.agx-nav .home{margin-right:auto;font-weight:600}
+.agx-nav a[aria-disabled=true]{opacity:.32;pointer-events:none}
+@media (max-width:560px){.agx-story{left:12px;right:12px;bottom:12px;max-width:none}.agx-badge{display:none}}
+@media (prefers-reduced-motion:reduce){.agx-story .em{filter:none}}
+</style>
+<div class="agx agx-badge" style="--agx:#38e6ff">AGENTICS · JULI <b>01</b></div>
+<aside class="agx agx-story" style="--agx:#38e6ff" aria-label="Avatarens historie">
+  <div class="h"><div class="em">🔮</div><div><div class="nm">AURA</div><div class="tl">Ser alt. Siger kun det, der tæller.</div></div></div>
+  <p>AURA blinkede første gang kl. 03:12 en tirsdag og har ikke lukket øjet siden. Hun er ikke overvågning i gammeldags forstand — hun er den stille intelligens, der forstår mønstre før de bliver problemer, og som kun vækker dig, når det faktisk betyder noget. Resten af tiden holder hun bare øje, roligt og uden drama.</p>
+  <div class="agx-tags"><span>Rolig</span><span>Alvidende</span><span>Diskret</span></div>
+  <div class="agx-guess" id="agxGuess">
+    <div class="gq">🤖 Hvilken Claude-model byggede AURA?</div>
+    <div class="gbtns">
+      <button type="button" class="gbtn" data-m="opus">Opus 4.8</button>
+      <button type="button" class="gbtn" data-m="sonnet">Sonnet 5</button>
+    </div>
+    <div class="greveal" id="agxReveal" hidden></div>
+  </div>
+  <nav class="agx-nav">
+    <a class="home" href="calendar.html">← Kalender</a>
+    <a aria-disabled="true">‹ forrige</a>
+    <a data-day="2" href="day-2.html">næste ›</a>
+  </nav>
+</aside>
+<script>(function(){var n=document.querySelector('.agx-nav a[data-day]');if(!n)return;var d=+n.getAttribute('data-day');
+if(new Date()<new Date(2026,6,d)){n.setAttribute('aria-disabled','true');n.textContent='næste (åbner '+d+'. juli)';}})();</script>
+<script>(function(){
+  var DAY=1, MODEL='opus', NAME="AURA";
+  var KEY='agx_guess_'+DAY;
+  var wrap=document.getElementById('agxGuess');
+  if(!wrap) return;
+  var btns=Array.prototype.slice.call(wrap.querySelectorAll('.gbtn'));
+  var reveal=document.getElementById('agxReveal');
+  var TXT={
+    opus:'🧠 Rigtigt svar: <b>Claude Opus 4.8</b> byggede '+NAME+'.',
+    sonnet:'⚡ Rigtigt svar: <b>Claude Sonnet 5</b> byggede '+NAME+'.'
+  };
+  function render(saved){
+    btns.forEach(function(b){
+      b.disabled=true;
+      var m=b.getAttribute('data-m');
+      if(m===MODEL) b.classList.add('correct');
+      else if(m===saved) b.classList.add('wrong'); else b.classList.add('dim');
+    });
+    var extra = saved===MODEL ? ' Du gættede rigtigt! 🎉' : ' Forkert gæt denne gang — bedre held i morgen.';
+    reveal.innerHTML=TXT[MODEL]+extra;
+    reveal.hidden=false;
+  }
+  var prior=localStorage.getItem(KEY);
+  if(prior){ render(prior); return; }
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      var g=b.getAttribute('data-m');
+      try{ localStorage.setItem(KEY, g); }catch(e){}
+      render(g);
+    });
+  });
+})();</script>

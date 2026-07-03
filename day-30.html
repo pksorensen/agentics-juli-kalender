@@ -1,0 +1,785 @@
+<title>agentics.dk — Bi</title>
+<style>
+  :root{
+    --ink:#0d0a04;
+    --ink-2:#1a1305;
+    --honey:#ffcf33;
+    --nectar:#ffe08a;
+    --amber:#c98a2b;
+    --paper:#f5ead2;
+    --paper-dim:rgba(245,234,210,.62);
+    --paper-faint:rgba(245,234,210,.34);
+    --font: -apple-system, "Segoe UI", Inter, system-ui, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    font-family:var(--font);
+    background:var(--ink);
+    color:var(--paper);
+    overflow:hidden;
+    position:relative;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    cursor:none;
+  }
+
+  /* ---------- layered background ---------- */
+  .stage{ position:fixed; inset:0; overflow:hidden; }
+
+  .bg-grad{
+    position:absolute; inset:0;
+    background:
+      radial-gradient(120% 90% at 72% 30%, rgba(201,138,43,.22), transparent 55%),
+      radial-gradient(90% 80% at 20% 90%, rgba(255,207,51,.10), transparent 60%),
+      linear-gradient(160deg, #17110550 0%, transparent 40%),
+      radial-gradient(140% 120% at 50% -10%, #241a08 0%, var(--ink-2) 34%, var(--ink) 78%);
+  }
+  /* honeycomb, drawn once as SVG data-uri, breathing slowly */
+  .bg-hex{
+    position:absolute; inset:-6%;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='56' height='96' viewBox='0 0 56 96'><g fill='none' stroke='%23ffcf33' stroke-width='1.15' stroke-opacity='0.5'><path d='M28 1 L54 16 L54 46 L28 61 L2 46 L2 16 Z'/><path d='M28 49 L54 64 L54 94 L28 109 L2 94 L2 64 Z'/><path d='M0 -16 L26 -1 L26 29 L0 44 L-26 29 L-26 -1 Z' transform='translate(56,32)'/></g></svg>");
+    background-size:112px 192px;
+    opacity:.05;
+    animation:hexbreathe 15s ease-in-out infinite;
+    will-change:transform,opacity;
+  }
+  @keyframes hexbreathe{
+    0%,100%{ opacity:.045; transform:scale(1) translateY(0); }
+    50%{ opacity:.075; transform:scale(1.035) translateY(-10px); }
+  }
+  /* film grain */
+  .bg-grain{
+    position:absolute; inset:0; pointer-events:none; mix-blend-mode:overlay; opacity:.5;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+    animation:grain 1.1s steps(3) infinite;
+  }
+  @keyframes grain{ 0%{transform:translate(0,0)} 33%{transform:translate(-3%,2%)} 66%{transform:translate(2%,-2%)} 100%{transform:translate(0,0)} }
+  /* subtle vignette to seat the composition */
+  .bg-vig{ position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(120% 110% at 50% 42%, transparent 52%, rgba(0,0,0,.55) 100%); }
+
+  canvas#pollen, canvas#bee{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+  canvas#bee{ z-index:3; }
+  canvas#pollen{ z-index:1; }
+
+  /* ---------- chrome ---------- */
+  .frame{ position:relative; z-index:5; height:100%; display:flex; flex-direction:column; padding:clamp(20px,3vw,40px); pointer-events:none; }
+  .frame a, .frame button{ pointer-events:auto; }
+
+  header{ display:flex; align-items:center; justify-content:space-between; gap:24px; }
+  .wordmark{ display:flex; align-items:center; gap:11px; font-weight:800; letter-spacing:-.02em; font-size:19px; color:var(--paper); text-decoration:none; }
+  .wordmark .glyph{ width:26px; height:26px; display:grid; place-items:center; }
+  .wordmark .glyph svg{ width:100%; height:100%; display:block; }
+  .wordmark b{ color:var(--honey); }
+
+  nav{ display:flex; align-items:center; gap:clamp(14px,2vw,34px); }
+  nav a{
+    color:var(--paper-dim); text-decoration:none; font-size:12.5px; font-weight:600;
+    letter-spacing:.14em; text-transform:uppercase; transition:color .25s ease; position:relative;
+  }
+  nav a::after{ content:""; position:absolute; left:0; bottom:-6px; height:1.5px; width:0; background:var(--honey); transition:width .3s ease; }
+  nav a:hover, nav a:focus-visible{ color:var(--paper); }
+  nav a:hover::after, nav a:focus-visible::after{ width:100%; }
+  nav .nav-cta{
+    color:var(--ink); background:var(--paper); padding:8px 15px; border-radius:999px;
+    letter-spacing:.08em; transition:transform .25s ease, background .25s ease;
+  }
+  nav .nav-cta::after{ display:none; }
+  nav .nav-cta:hover{ background:var(--honey); transform:translateY(-1px); }
+
+  /* ---------- hero ---------- */
+  main{ flex:1; display:flex; align-items:center; }
+  .hero{ max-width:min(720px, 60vw); margin-top:-3vh; }
+
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:10px; margin-bottom:24px;
+    font-size:11.5px; font-weight:700; letter-spacing:.28em; text-transform:uppercase; color:var(--honey);
+  }
+  .eyebrow .dot{ width:7px; height:7px; border-radius:50%; background:var(--honey); box-shadow:0 0 10px var(--honey); animation:pulse 2.4s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.7)} }
+  .eyebrow .line{ width:38px; height:1px; background:linear-gradient(90deg,var(--honey),transparent); }
+
+  h1{
+    font-weight:800; letter-spacing:-.035em; line-height:.94;
+    font-size:clamp(46px, 8.4vw, 116px);
+    color:var(--paper);
+    text-wrap:balance;
+  }
+  h1 .swarm{ color:var(--honey); position:relative; }
+  h1 .lite{ font-weight:300; font-style:italic; letter-spacing:-.01em; color:var(--nectar); }
+
+  .sub{
+    margin-top:26px; max-width:33ch;
+    font-size:clamp(15px, 1.35vw, 18.5px); line-height:1.62; color:var(--paper-dim); font-weight:400;
+  }
+
+  .actions{ margin-top:38px; display:flex; align-items:center; gap:26px; flex-wrap:wrap; }
+  .cta{
+    position:relative; border:0; cursor:none; font-family:var(--font);
+    font-size:15px; font-weight:700; letter-spacing:.01em; color:var(--ink);
+    padding:16px 30px; border-radius:999px; background:var(--honey);
+    display:inline-flex; align-items:center; gap:11px; overflow:hidden;
+    box-shadow:0 8px 30px rgba(255,207,51,.28), inset 0 0 0 1px rgba(255,255,255,.18);
+    transition:box-shadow .3s ease;
+    will-change:transform;
+  }
+  .cta .shine{ position:absolute; inset:0; background:radial-gradient(60px 60px at var(--mx,50%) var(--my,50%), rgba(255,255,255,.55), transparent 70%); opacity:0; transition:opacity .3s ease; }
+  .cta:hover{ box-shadow:0 14px 46px rgba(255,207,51,.5), inset 0 0 0 1px rgba(255,255,255,.32); }
+  .cta:hover .shine{ opacity:1; }
+  .cta:focus-visible{ outline:3px solid var(--nectar); outline-offset:4px; }
+  .cta .arrow{ transition:transform .3s ease; }
+  .cta:hover .arrow{ transform:translateX(4px); }
+
+  .secondary{
+    color:var(--paper); text-decoration:none; font-size:14px; font-weight:600; letter-spacing:.02em;
+    display:inline-flex; align-items:center; gap:9px; opacity:.9; transition:opacity .25s ease, gap .25s ease;
+  }
+  .secondary:hover{ opacity:1; gap:13px; }
+  .secondary:focus-visible{ outline:2px solid var(--nectar); outline-offset:4px; border-radius:4px; }
+  .secondary .tri{ color:var(--honey); }
+
+  /* signature strip — sits center-bottomish but away from the two corners */
+  .signature{
+    position:absolute; left:50%; bottom:clamp(22px,3.4vw,40px); transform:translateX(-50%);
+    z-index:5; display:flex; align-items:center; gap:12px;
+    font-size:10.5px; letter-spacing:.34em; text-transform:uppercase; color:var(--paper-faint);
+    white-space:nowrap; pointer-events:none;
+  }
+  .signature .rule{ width:34px; height:1px; background:var(--paper-faint); }
+
+  /* custom cursor */
+  .cursor{ position:fixed; top:0; left:0; z-index:9; pointer-events:none; mix-blend-mode:screen; will-change:transform; }
+  .cursor .ring{ width:34px; height:34px; border:1.5px solid rgba(255,207,51,.85); border-radius:50%; transform:translate(-50%,-50%); transition:width .18s ease,height .18s ease,border-color .18s ease; }
+  .cursor .core{ position:absolute; top:0; left:0; width:5px; height:5px; border-radius:50%; background:var(--nectar); transform:translate(-50%,-50%); box-shadow:0 0 8px var(--honey); }
+  body.hot .cursor .ring{ width:52px; height:52px; border-color:var(--nectar); }
+
+  /* entrance */
+  .reveal{ opacity:0; transform:translateY(26px); }
+  .go .reveal{ animation:rise .95s cubic-bezier(.16,.84,.32,1) forwards; }
+  .go .reveal.d1{ animation-delay:.05s } .go .reveal.d2{ animation-delay:.16s }
+  .go .reveal.d3{ animation-delay:.28s } .go .reveal.d4{ animation-delay:.40s }
+  .go .reveal.d5{ animation-delay:.52s } .go .reveal.d6{ animation-delay:.64s }
+  @keyframes rise{ to{ opacity:1; transform:translateY(0); } }
+  /* headline word-by-word */
+  .word{ display:inline-block; opacity:0; transform:translateY(38px) rotate(2deg); }
+  .go .word{ animation:wordin 1s cubic-bezier(.18,.9,.28,1) forwards; }
+  @keyframes wordin{ to{ opacity:1; transform:translateY(0) rotate(0); } }
+
+  @media (max-width:760px){
+    .hero{ max-width:88vw; margin-top:0; }
+    nav .nav-link{ display:none; }
+    .sub{ max-width:none; }
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    *{ animation:none !important; transition:none !important; }
+    .reveal,.word{ opacity:1 !important; transform:none !important; }
+    body{ cursor:auto; }
+    .cursor{ display:none; }
+    .bg-grain{ display:none; }
+  }
+</style>
+
+<div class="stage" aria-hidden="true">
+  <div class="bg-grad"></div>
+  <div class="bg-hex"></div>
+  <canvas id="pollen"></canvas>
+  <canvas id="bee"></canvas>
+  <div class="bg-grain"></div>
+  <div class="bg-vig"></div>
+</div>
+
+<div class="frame">
+  <header>
+    <a class="wordmark reveal d1" href="#" aria-label="agentics.dk home">
+      <span class="glyph" aria-hidden="true">
+        <svg viewBox="0 0 32 32" fill="none">
+          <path d="M16 3 L27 9.5 V22.5 L16 29 L5 22.5 V9.5 Z" stroke="#ffcf33" stroke-width="2" stroke-linejoin="round"/>
+          <circle cx="16" cy="16" r="4.4" fill="#ffcf33"/>
+        </svg>
+      </span>
+      agentics<b>.dk</b>
+    </a>
+    <nav aria-label="Primary">
+      <a class="nav-link reveal d2" href="#">Work</a>
+      <a class="nav-link reveal d3" href="#">The Hive</a>
+      <a class="nav-link reveal d4" href="#">Journal</a>
+      <a class="nav-cta reveal d5" href="#">Join the swarm</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <span class="eyebrow reveal d2">
+        <span class="dot"></span> Meet Bi · The busy one
+        <span class="line"></span>
+      </span>
+
+      <h1 aria-label="Small workers. Serious honey.">
+        <span class="word" style="animation-delay:.30s">Small</span>
+        <span class="word" style="animation-delay:.40s">workers.</span><br>
+        <span class="word swarm" style="animation-delay:.52s">Serious</span>
+        <span class="word lite" style="animation-delay:.64s">honey.</span>
+      </h1>
+
+      <p class="sub reveal d5">
+        A swarm of tiny agents, each doing one job flawlessly — then handing off,
+        gathering, building. You bring the flowers. Bi and the hive turn them into
+        something sweet.
+      </p>
+
+      <div class="actions reveal d6">
+        <button class="cta" id="cta" type="button">
+          <span class="shine" aria-hidden="true"></span>
+          <span>Start the swarm</span>
+          <svg class="arrow" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <a class="secondary" href="#">
+          <span class="tri" aria-hidden="true">▸</span> Watch her work
+        </a>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div class="signature" aria-hidden="true">
+  <span class="rule"></span> Busy since sunrise <span class="rule"></span>
+</div>
+
+<div class="cursor" id="cursor" aria-hidden="true">
+  <div class="ring"></div>
+  <div class="core"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- entrance ---------- */
+  requestAnimationFrame(function(){ document.body.classList.add("go"); });
+
+  /* ---------- pointer state (shared) ---------- */
+  var pointer = { x: innerWidth*0.5, y: innerHeight*0.5, active:false, has:false };
+  window.addEventListener("pointermove", function(e){
+    pointer.x = e.clientX; pointer.y = e.clientY; pointer.has = true;
+    var c = document.getElementById("cursor");
+    if(c) c.style.transform = "translate("+e.clientX+"px,"+e.clientY+"px)";
+  }, {passive:true});
+
+  var DPR = Math.min(window.devicePixelRatio || 1, 2);
+  var running = true;
+
+  if(reduce){
+    // Draw one calm static bee, no loops.
+    drawStaticBee();
+    return;
+  }
+
+  /* ---------- custom cursor over CTA ---------- */
+  var cta = document.getElementById("cta");
+  if(cta){
+    cta.addEventListener("pointermove", function(e){
+      var r = cta.getBoundingClientRect();
+      cta.style.setProperty("--mx", (e.clientX-r.left)+"px");
+      cta.style.setProperty("--my", (e.clientY-r.top)+"px");
+    });
+    cta.addEventListener("pointerenter", function(){ document.body.classList.add("hot"); });
+    cta.addEventListener("pointerleave", function(){
+      document.body.classList.remove("hot");
+      cta.style.transform = "";
+    });
+    // magnetic pull
+    window.addEventListener("pointermove", function(e){
+      var r = cta.getBoundingClientRect();
+      var cx = r.left + r.width/2, cy = r.top + r.height/2;
+      var dx = e.clientX - cx, dy = e.clientY - cy;
+      var dist = Math.hypot(dx,dy);
+      if(dist < 130){ var f=(1-dist/130); cta.style.transform="translate("+dx*0.22*f+"px,"+dy*0.28*f+"px)"; }
+      else if(!cta.matches(":hover")) cta.style.transform="";
+    }, {passive:true});
+  }
+
+  /* =========================================================
+     POLLEN LAYER — drifting motes rising, warm bokeh
+  ==========================================================*/
+  var pc = document.getElementById("pollen"), px = pc.getContext("2d");
+  var motes = [];
+  function sizePollen(){
+    pc.width = innerWidth*DPR; pc.height = innerHeight*DPR;
+    px.setTransform(DPR,0,0,DPR,0,0);
+  }
+  function seedPollen(){
+    motes.length = 0;
+    var n = Math.round(Math.min(70, (innerWidth*innerHeight)/26000));
+    for(var i=0;i<n;i++){
+      motes.push({
+        x: Math.random()*innerWidth,
+        y: Math.random()*innerHeight,
+        r: Math.random()*2.1 + 0.5,
+        vy: -(Math.random()*0.28 + 0.08),
+        vx: (Math.random()-0.5)*0.18,
+        a: Math.random()*0.5 + 0.12,
+        tw: Math.random()*Math.PI*2,
+        tws: Math.random()*0.03 + 0.008
+      });
+    }
+  }
+
+  /* =========================================================
+     BEE LAYER — hand-drawn canvas bee, spring flight,
+     figure-8 idle, orbits + darts toward cursor, tracks gaze
+  ==========================================================*/
+  var bc = document.getElementById("bee"), bx = bc.getContext("2d");
+  function sizeBee(){
+    bc.width = innerWidth*DPR; bc.height = innerHeight*DPR;
+    bx.setTransform(DPR,0,0,DPR,0,0);
+  }
+
+  // Bee physical state
+  var bee = {
+    x: innerWidth*0.72, y: innerHeight*0.44,
+    vx:0, vy:0,
+    angle:0,          // heading
+    bank:0,           // roll from turning
+    wing:0,           // wing flap phase
+    blink:1,          // eye open 0..1
+    nextBlink: 1.5 + Math.random()*3,
+    t:0,
+    scale: 1,
+    puffs: []         // pollen puffs
+  };
+  // home base for figure-8 (retargets softly)
+  var home = { x: innerWidth*0.72, y: innerHeight*0.46 };
+  var mode = "idle"; // idle | orbit
+  var orbitAng = 0;
+  var idleT = 0;
+
+  function targetForMode(dt){
+    idleT += dt;
+    // decide mode from pointer proximity to bee, with hysteresis
+    var toP = pointer.has ? Math.hypot(pointer.x-bee.x, pointer.y-bee.y) : 99999;
+    if(pointer.has && toP < 340) mode = "orbit";
+    else if(!pointer.has || toP > 460) mode = "idle";
+
+    if(mode === "orbit" && pointer.has){
+      orbitAng += dt * 2.1;                 // orbit speed
+      var R = 78 + Math.sin(idleT*1.3)*14;  // breathing orbit radius
+      return {
+        x: pointer.x + Math.cos(orbitAng)*R,
+        y: pointer.y + Math.sin(orbitAng)*R*0.72
+      };
+    }
+    // idle figure-8 around home (lemniscate)
+    var s = idleT*0.55;
+    var sc = Math.min(innerWidth,innerHeight);
+    var fx = Math.sin(s)      * (sc*0.16);
+    var fy = Math.sin(s*2)    * (sc*0.075);
+    // home gently drifts toward a comfy region right-of-center, above the clear corners
+    home.x += ((innerWidth*0.70) - home.x)*0.006;
+    home.y += ((innerHeight*0.44) - home.y)*0.006;
+    return { x: home.x + fx, y: home.y + fy + Math.sin(idleT*1.7)*8 };
+  }
+
+  function spawnPuff(x,y,n){
+    for(var i=0;i<n;i++){
+      bee.puffs.push({
+        x:x, y:y,
+        vx:(Math.random()-0.5)*1.4,
+        vy:(Math.random()-0.5)*1.4 - 0.3,
+        r:Math.random()*2.4+1.2,
+        life:1
+      });
+    }
+  }
+
+  var lastOrbitPuff = 0;
+
+  function updateBee(dt){
+    bee.t += dt;
+    var tgt = targetForMode(dt);
+
+    // spring toward target
+    var k = (mode==="orbit") ? 7.5 : 3.2;   // stiffness
+    var damp = 0.86;
+    var ax = (tgt.x - bee.x) * k;
+    var ay = (tgt.y - bee.y) * k;
+    bee.vx = (bee.vx + ax*dt) * damp;
+    bee.vy = (bee.vy + ay*dt) * damp;
+    bee.x += bee.vx*dt;
+    bee.y += bee.vy*dt;
+
+    var speed = Math.hypot(bee.vx, bee.vy);
+
+    // heading & banking from velocity
+    if(speed > 6){
+      var wanted = Math.atan2(bee.vy, bee.vx);
+      // shortest-arc lerp
+      var d = wanted - bee.angle;
+      while(d> Math.PI) d-=Math.PI*2; while(d<-Math.PI) d+=Math.PI*2;
+      bee.angle += d * Math.min(1, dt*8);
+      bee.bank += ((d*2.2) - bee.bank) * Math.min(1, dt*6);
+    } else {
+      bee.bank += (0 - bee.bank) * Math.min(1, dt*5);
+    }
+    bee.bank = Math.max(-0.5, Math.min(0.5, bee.bank));
+
+    // wing flap: faster with speed
+    bee.wing += dt * (34 + speed*0.06);
+
+    // pollen puff when orbiting (playful) & occasionally when idle
+    if(mode==="orbit"){
+      lastOrbitPuff += dt;
+      if(lastOrbitPuff > 0.55){ lastOrbitPuff=0; spawnPuff(bee.x, bee.y, 3); }
+    } else if(Math.random() < dt*0.35){
+      spawnPuff(bee.x, bee.y, 2);
+    }
+
+    // blink timer
+    bee.nextBlink -= dt;
+    if(bee.nextBlink <= 0){
+      bee.blink = 0; // closed; reopen quickly
+      bee.nextBlink = 2 + Math.random()*3.2;
+    }
+    // ease eye open
+    bee.blink += (1 - bee.blink) * Math.min(1, dt*14);
+
+    // update puffs
+    for(var i=bee.puffs.length-1;i>=0;i--){
+      var p=bee.puffs[i];
+      p.x+=p.vx; p.y+=p.vy; p.vy-=0.02; p.vx*=0.97;
+      p.life -= dt*1.1;
+      if(p.life<=0) bee.puffs.splice(i,1);
+    }
+  }
+
+  /* ---- draw one bee at current state ---- */
+  function drawBee(){
+    // pollen puffs (behind bee)
+    for(var i=0;i<bee.puffs.length;i++){
+      var p=bee.puffs[i];
+      bx.globalAlpha = Math.max(0,p.life)*0.5;
+      var g = bx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*2.2);
+      g.addColorStop(0,"rgba(255,224,138,1)");
+      g.addColorStop(1,"rgba(255,207,51,0)");
+      bx.fillStyle=g;
+      bx.beginPath(); bx.arc(p.x,p.y,p.r*2.2,0,Math.PI*2); bx.fill();
+    }
+    bx.globalAlpha=1;
+
+    bx.save();
+    bx.translate(bee.x, bee.y);
+
+    // soft glow halo
+    var halo = bx.createRadialGradient(0,0,4,0,0,54);
+    halo.addColorStop(0,"rgba(255,207,51,.22)");
+    halo.addColorStop(1,"rgba(255,207,51,0)");
+    bx.fillStyle=halo;
+    bx.beginPath(); bx.arc(0,0,54,0,Math.PI*2); bx.fill();
+
+    bx.rotate(bee.angle);
+    bx.scale(bee.scale, bee.scale);
+    // banking → squash body vertically a touch
+    bx.transform(1,0,0,1 - Math.abs(bee.bank)*0.14,0,0);
+    // gentle vertical bob independent of flight
+    bx.translate(0, Math.sin(bee.t*3.1)*1.3);
+
+    var S = 1; // body drawn in local units ~ radius 18
+
+    // ---- wings (draw first, behind body). motion blur via 3 stacked translucent ellipses ----
+    var flap = Math.sin(bee.wing);            // -1..1
+    var wsX = 20 * (0.55 + 0.45*Math.abs(Math.cos(bee.wing))); // shorten across flap (blur illusion)
+    var wSpread = 9;
+    for(var side=-1; side<=1; side+=2){
+      for(var b=0;b<3;b++){
+        var ph = bee.wing - b*0.5;
+        var f = Math.sin(ph);
+        bx.save();
+        bx.translate(-2, side*6);
+        bx.rotate(side * (-0.5 - f*0.5));    // wing beat rotation
+        bx.globalAlpha = 0.20 - b*0.045;
+        bx.fillStyle = "rgba(255,255,255,0.9)";
+        bx.beginPath();
+        bx.ellipse(-8, 0, 15, 6.4, 0, 0, Math.PI*2);
+        bx.fill();
+        // faint honey edge
+        bx.globalAlpha = 0.12 - b*0.03;
+        bx.strokeStyle="rgba(255,207,51,0.9)"; bx.lineWidth=1;
+        bx.stroke();
+        bx.restore();
+      }
+    }
+
+    // ---- legs (little dangling) ----
+    bx.strokeStyle="rgba(40,26,6,0.9)"; bx.lineWidth=1.4; bx.lineCap="round";
+    var legSwing = Math.sin(bee.t*3.1)*1.6;
+    for(var L=0; L<3; L++){
+      var lx = 2 - L*6;
+      bx.beginPath();
+      bx.moveTo(lx, 6);
+      bx.lineTo(lx-2, 12+legSwing);
+      bx.lineTo(lx-5, 15+legSwing*0.6);
+      bx.stroke();
+    }
+
+    // ---- body: rounded abdomen with honey stripes ----
+    // abdomen
+    bx.save();
+    var bodyGrad = bx.createLinearGradient(0,-11,0,11);
+    bodyGrad.addColorStop(0,"#ffd94a");
+    bodyGrad.addColorStop(1,"#e0a52c");
+    bx.fillStyle=bodyGrad;
+    bx.beginPath();
+    bx.ellipse(-3, 0, 17, 11.5, 0, 0, Math.PI*2);
+    bx.fill();
+
+    // stripes — clip to body, draw dark bands
+    bx.clip();
+    bx.fillStyle="#231705";
+    for(var st=0; st<3; st++){
+      bx.beginPath();
+      var sx = -12 + st*8;
+      bx.moveTo(sx, -13);
+      bx.quadraticCurveTo(sx+2.4, 0, sx, 13);
+      bx.lineTo(sx+4.2, 13);
+      bx.quadraticCurveTo(sx+6.6, 0, sx+4.2, -13);
+      bx.closePath();
+      bx.fill();
+    }
+    bx.restore();
+
+    // body rim light
+    bx.strokeStyle="rgba(255,240,190,0.5)"; bx.lineWidth=1.2;
+    bx.beginPath(); bx.ellipse(-3,0,17,11.5,0,-2.4,-0.4); bx.stroke();
+
+    // little stinger
+    bx.fillStyle="#231705";
+    bx.beginPath(); bx.moveTo(-19,-2.4); bx.lineTo(-25,0); bx.lineTo(-19,2.4); bx.closePath(); bx.fill();
+
+    // ---- head ----
+    bx.save();
+    bx.translate(13.5, 0);
+    var headGrad = bx.createRadialGradient(-2,-3,1,0,0,10);
+    headGrad.addColorStop(0,"#3a2a0d");
+    headGrad.addColorStop(1,"#231705");
+    bx.fillStyle=headGrad;
+    bx.beginPath(); bx.arc(0,0,8.6,0,Math.PI*2); bx.fill();
+
+    // antennae
+    bx.strokeStyle="#231705"; bx.lineWidth=1.3; bx.lineCap="round";
+    var ant = Math.sin(bee.t*4)*1.2;
+    for(var an=-1; an<=1; an+=2){
+      bx.beginPath();
+      bx.moveTo(3, an*4);
+      bx.quadraticCurveTo(9, an*8 - ant, 12, an*9 - ant*1.4);
+      bx.stroke();
+      bx.beginPath(); bx.arc(12, an*9 - ant*1.4, 1.6, 0, Math.PI*2);
+      bx.fillStyle="#ffcf33"; bx.fill();
+    }
+
+    // ---- eyes: track cursor in local head space ----
+    // gaze target in world, transform into local: approximate by using pointer direction relative to bee
+    var gx = 0, gy = 0;
+    if(pointer.has){
+      var wdx = pointer.x - bee.x, wdy = pointer.y - bee.y;
+      // rotate world delta into bee's local frame (undo angle)
+      var ca = Math.cos(-bee.angle), sa = Math.sin(-bee.angle);
+      var lx2 = wdx*ca - wdy*sa, ly2 = wdx*sa + wdy*ca;
+      var gl = Math.hypot(lx2,ly2) || 1;
+      gx = (lx2/gl); gy = (ly2/gl);
+    }
+    var eyeOpen = bee.blink; // 0..1
+    for(var e=-1; e<=1; e+=2){
+      var ex = 2.5, ey = e*3.6;
+      // white
+      bx.fillStyle="#fff7e6";
+      bx.beginPath(); bx.ellipse(ex, ey, 3.4, 3.4*eyeOpen+0.2, 0, 0, Math.PI*2); bx.fill();
+      // pupil follows gaze
+      bx.fillStyle="#140d02";
+      bx.beginPath(); bx.ellipse(ex + gx*1.6, ey + gy*1.4, 1.7, 1.7*Math.max(0.2,eyeOpen), 0, 0, Math.PI*2); bx.fill();
+      // catchlight
+      bx.fillStyle="rgba(255,255,255,0.9)";
+      bx.beginPath(); bx.arc(ex + gx*1.6 -0.7, ey + gy*1.4 -0.7, 0.6, 0, Math.PI*2); bx.fill();
+      // lid when blinking
+      if(eyeOpen < 0.6){
+        bx.strokeStyle="#231705"; bx.lineWidth=1.4;
+        bx.beginPath(); bx.moveTo(ex-3.4, ey); bx.lineTo(ex+3.4, ey); bx.stroke();
+      }
+    }
+
+    // tiny cheek blush
+    bx.fillStyle="rgba(255,150,90,0.35)";
+    bx.beginPath(); bx.arc(4, 6, 2, 0, Math.PI*2); bx.fill();
+    bx.beginPath(); bx.arc(4, -6, 2, 0, Math.PI*2); bx.fill();
+
+    // smile
+    bx.strokeStyle="#ffcf33"; bx.lineWidth=1.2; bx.lineCap="round";
+    bx.beginPath(); bx.arc(6, 0, 3.2, -0.6, 0.6); bx.stroke();
+
+    bx.restore(); // head
+    bx.restore(); // body transform stack
+  }
+
+  function drawStaticBee(){
+    // reduced-motion: compose a calm centered bee, no rAF
+    sizeBee(); sizePollen(); seedPollen();
+    // faint static pollen
+    for(var i=0;i<motes.length;i++){
+      var m=motes[i]; px.globalAlpha=m.a*0.7;
+      px.fillStyle="rgba(255,207,51,1)";
+      px.beginPath(); px.arc(m.x,m.y,m.r,0,Math.PI*2); px.fill();
+    }
+    px.globalAlpha=1;
+    bee.x = innerWidth*0.72; bee.y = innerHeight*0.44;
+    bee.angle=0; bee.bank=0; bee.wing=0.6; bee.blink=1; bee.t=0;
+    pointer.has=false;
+    drawBee();
+  }
+
+  /* ---------- pollen frame ---------- */
+  function drawPollen(){
+    px.clearRect(0,0,innerWidth,innerHeight);
+    for(var i=0;i<motes.length;i++){
+      var m=motes[i];
+      m.x += m.vx; m.y += m.vy; m.tw += m.tws;
+      // gentle horizontal parallax toward pointer
+      if(pointer.has){ m.x += (pointer.x-innerWidth/2)*0.00002*m.r; }
+      if(m.y < -6){ m.y = innerHeight+6; m.x = Math.random()*innerWidth; }
+      if(m.x < -6) m.x = innerWidth+6; else if(m.x>innerWidth+6) m.x=-6;
+      var a = m.a * (0.6 + 0.4*Math.sin(m.tw));
+      var g = px.createRadialGradient(m.x,m.y,0,m.x,m.y,m.r*3);
+      g.addColorStop(0,"rgba(255,224,138,"+a+")");
+      g.addColorStop(1,"rgba(255,207,51,0)");
+      px.fillStyle=g;
+      px.beginPath(); px.arc(m.x,m.y,m.r*3,0,Math.PI*2); px.fill();
+    }
+  }
+
+  /* ---------- main loop ---------- */
+  var last = performance.now();
+  function frame(now){
+    if(!running) return;
+    var dt = Math.min(0.05, (now-last)/1000); last = now;
+    drawPollen();
+    bx.clearRect(0,0,innerWidth,innerHeight);
+    updateBee(dt);
+    drawBee();
+    raf = requestAnimationFrame(frame);
+  }
+  var raf;
+
+  function start(){ if(!running){ running=true; last=performance.now(); raf=requestAnimationFrame(frame);} }
+  function stop(){ running=false; if(raf) cancelAnimationFrame(raf); }
+
+  document.addEventListener("visibilitychange", function(){
+    if(document.hidden) stop(); else start();
+  });
+
+  function sizeAll(){ sizePollen(); sizeBee(); seedPollen(); }
+  var rsz;
+  window.addEventListener("resize", function(){
+    clearTimeout(rsz); rsz=setTimeout(sizeAll, 120);
+  });
+
+  sizeAll();
+  raf = requestAnimationFrame(frame);
+})();
+</script>
+
+<style id="agx-chrome-css">
+.agx{position:fixed;z-index:2147483000;font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;box-sizing:border-box}
+.agx a{cursor:pointer}
+.agx-badge{right:16px;bottom:16px;display:flex;gap:7px;align-items:center;padding:8px 13px;border-radius:999px;
+  background:rgba(9,11,17,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
+.agx-badge b{color:var(--agx);font-size:13px}
+.agx-story{left:16px;bottom:16px;max-width:min(360px,calc(100vw - 32px));padding:16px 16px 13px;border-radius:16px;
+  background:rgba(9,11,17,.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;box-shadow:0 24px 70px -26px rgba(0,0,0,.85)}
+.agx-story .h{display:flex;align-items:center;gap:11px;margin-bottom:9px}
+.agx-story .em{font-size:26px;line-height:1;filter:drop-shadow(0 3px 11px var(--agx))}
+.agx-story .nm{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.agx-story .tl{color:var(--agx);font-size:12px;font-weight:600;margin-top:3px}
+.agx-story p{margin:0 0 11px;color:#c6ccd9;font-size:13px;line-height:1.56}
+.agx-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.agx-tags span{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#aeb6c6;
+  border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px 9px}
+.agx-guess{margin:0 0 12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.09)}
+.agx-guess .gq{font-size:11.5px;color:#aeb6c6;margin-bottom:8px;letter-spacing:.01em}
+.agx-guess .gbtns{display:flex;gap:8px}
+.agx-guess .gbtn{flex:1;padding:8px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.03);color:#eef1f7;font-size:12px;font-weight:600;cursor:pointer;
+  transition:transform .15s,border-color .15s,background .15s,opacity .15s;font-family:inherit}
+.agx-guess .gbtn:hover:not(:disabled){border-color:var(--agx);background:rgba(255,255,255,.07);transform:translateY(-1px)}
+.agx-guess .gbtn:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
+.agx-guess .gbtn:disabled{cursor:default}
+.agx-guess .gbtn.correct{border-color:#5eea8f;background:rgba(94,234,143,.16);color:#a4f5be;opacity:1}
+.agx-guess .gbtn.wrong{border-color:#ff6a6a;background:rgba(255,106,106,.14);color:#ffb9b9;opacity:1}
+.agx-guess .gbtn.dim{opacity:.45}
+.agx-guess .greveal{margin-top:9px;font-size:11.5px;line-height:1.55;color:#c6ccd9}
+.agx-guess .greveal b{color:#eef1f7}
+.agx-nav{display:flex;align-items:center;gap:13px;font-size:12.5px;border-top:1px solid rgba(255,255,255,.09);padding-top:11px}
+.agx-nav a{color:#eef1f7;text-decoration:none;opacity:.82}
+.agx-nav a:hover{opacity:1;color:var(--agx)}
+.agx-nav .home{margin-right:auto;font-weight:600}
+.agx-nav a[aria-disabled=true]{opacity:.32;pointer-events:none}
+@media (max-width:560px){.agx-story{left:12px;right:12px;bottom:12px;max-width:none}.agx-badge{display:none}}
+@media (prefers-reduced-motion:reduce){.agx-story .em{filter:none}}
+</style>
+<div class="agx agx-badge" style="--agx:#ffcf33">AGENTICS · JULI <b>30</b></div>
+<aside class="agx agx-story" style="--agx:#ffcf33" aria-label="Avatarens historie">
+  <div class="h"><div class="em">🐝</div><div><div class="nm">Bi</div><div class="tl">Alene er hun lille. Sammen er de uundgåelige.</div></div></div>
+  <p>Bi arbejder aldrig alene, selvom hun sagtens kunne – hun er bygget til sværmen. Hundrede små opgaver, løst af hundrede små agenter, der taler sammen på tværs af blomsterne, bliver til én stor, sammenhængende høst. Ingen enkelt bi bærer hele lasten, og netop derfor bæres den aldrig for tungt.</p>
+  <div class="agx-tags"><span>samarbejdende</span><span>flittig</span><span>målrettet</span></div>
+  <div class="agx-guess" id="agxGuess">
+    <div class="gq">🤖 Hvilken Claude-model byggede Bi?</div>
+    <div class="gbtns">
+      <button type="button" class="gbtn" data-m="opus">Opus 4.8</button>
+      <button type="button" class="gbtn" data-m="sonnet">Sonnet 5</button>
+    </div>
+    <div class="greveal" id="agxReveal" hidden></div>
+  </div>
+  <nav class="agx-nav">
+    <a class="home" href="calendar.html">← Kalender</a>
+    <a href="day-29.html">‹ forrige</a>
+    <a data-day="31" href="day-31.html">næste ›</a>
+  </nav>
+</aside>
+<script>(function(){var n=document.querySelector('.agx-nav a[data-day]');if(!n)return;var d=+n.getAttribute('data-day');
+if(new Date()<new Date(2026,6,d)){n.setAttribute('aria-disabled','true');n.textContent='næste (åbner '+d+'. juli)';}})();</script>
+<script>(function(){
+  var DAY=30, MODEL='opus', NAME="Bi";
+  var KEY='agx_guess_'+DAY;
+  var wrap=document.getElementById('agxGuess');
+  if(!wrap) return;
+  var btns=Array.prototype.slice.call(wrap.querySelectorAll('.gbtn'));
+  var reveal=document.getElementById('agxReveal');
+  var TXT={
+    opus:'🧠 Rigtigt svar: <b>Claude Opus 4.8</b> byggede '+NAME+'.',
+    sonnet:'⚡ Rigtigt svar: <b>Claude Sonnet 5</b> byggede '+NAME+'.'
+  };
+  function render(saved){
+    btns.forEach(function(b){
+      b.disabled=true;
+      var m=b.getAttribute('data-m');
+      if(m===MODEL) b.classList.add('correct');
+      else if(m===saved) b.classList.add('wrong'); else b.classList.add('dim');
+    });
+    var extra = saved===MODEL ? ' Du gættede rigtigt! 🎉' : ' Forkert gæt denne gang — bedre held i morgen.';
+    reveal.innerHTML=TXT[MODEL]+extra;
+    reveal.hidden=false;
+  }
+  var prior=localStorage.getItem(KEY);
+  if(prior){ render(prior); return; }
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      var g=b.getAttribute('data-m');
+      try{ localStorage.setItem(KEY, g); }catch(e){}
+      render(g);
+    });
+  });
+})();</script>

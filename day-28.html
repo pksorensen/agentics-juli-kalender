@@ -1,0 +1,694 @@
+<title>agentics.dk — Sol</title>
+<style>
+  :root{
+    --accent:#ffb02e;
+    --accent-soft:#ffd27a;
+    --accent-deep:#e8850c;
+    --ink:#2a1e12;
+    --ink-soft:#5c4a37;
+    --paper:#fff7ec;
+    --sky-top:#ffe9c2;
+    --sky-mid:#ffd79a;
+    --sky-low:#ffc775;
+    --ease:cubic-bezier(.22,.61,.36,1);
+  }
+
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+
+  .stage{
+    position:fixed;
+    inset:0;
+    overflow:hidden;
+    isolation:isolate;
+  }
+
+  /* ---------- layered background ---------- */
+  .sky{
+    position:absolute;
+    inset:0;
+    background:
+      radial-gradient(120% 90% at 62% 34%, #fff4dc 0%, var(--sky-top) 26%, var(--sky-mid) 55%, var(--sky-low) 80%, #f6b25a 100%);
+    z-index:0;
+  }
+  /* warm bloom that breathes, anchored on the sun */
+  .bloom{
+    position:absolute;
+    left:62%; top:38%;
+    width:min(88vmin,900px);
+    height:min(88vmin,900px);
+    transform:translate(-50%,-50%);
+    background:radial-gradient(circle, rgba(255,199,110,.85) 0%, rgba(255,176,46,.42) 34%, rgba(255,176,46,0) 68%);
+    filter:blur(6px);
+    z-index:1;
+    will-change:transform,opacity;
+    pointer-events:none;
+  }
+  .haze{
+    position:absolute; inset:-10%;
+    background:radial-gradient(60% 50% at 20% 90%, rgba(255,255,255,.5), rgba(255,255,255,0) 60%),
+               radial-gradient(50% 45% at 88% 12%, rgba(255,255,255,.35), rgba(255,255,255,0) 55%);
+    z-index:2; pointer-events:none;
+  }
+  /* film grain */
+  .grain{
+    position:absolute; inset:0;
+    z-index:6; pointer-events:none;
+    opacity:.5; mix-blend-mode:soft-light;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)' opacity='.55'/></svg>");
+    animation:grain 5.2s steps(6) infinite;
+  }
+  @keyframes grain{
+    0%{transform:translate(0,0)} 16%{transform:translate(-3%,2%)}
+    33%{transform:translate(2%,-3%)} 50%{transform:translate(-2%,1%)}
+    66%{transform:translate(3%,2%)} 83%{transform:translate(-1%,-2%)} 100%{transform:translate(0,0)}
+  }
+  /* floating light particles (dust motes) */
+  #motes{ position:absolute; inset:0; z-index:5; pointer-events:none; }
+
+  /* ---------- top chrome ---------- */
+  header{
+    position:absolute; top:0; left:0; right:0;
+    z-index:20;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:clamp(22px,3.4vh,40px) clamp(24px,4.5vw,72px);
+  }
+  .wordmark{
+    display:flex; align-items:center; gap:11px;
+    font-weight:700; font-size:19px; letter-spacing:-.02em;
+    color:var(--ink); text-decoration:none;
+  }
+  .wordmark .glyph{
+    width:22px; height:22px; flex:0 0 auto;
+    display:block;
+  }
+  .wordmark .glyph circle{ fill:var(--accent-deep); }
+  .wordmark .dot{ color:var(--accent-deep); }
+  nav{ display:flex; align-items:center; gap:clamp(18px,2.6vw,40px); }
+  nav a{
+    font-size:14px; font-weight:500; letter-spacing:.01em;
+    color:var(--ink-soft); text-decoration:none;
+    position:relative; padding:6px 2px;
+    transition:color .3s var(--ease);
+  }
+  nav a::after{
+    content:""; position:absolute; left:0; right:100%; bottom:0; height:1.5px;
+    background:var(--accent-deep); transition:right .34s var(--ease);
+  }
+  nav a:hover, nav a:focus-visible{ color:var(--ink); }
+  nav a:hover::after, nav a:focus-visible::after{ right:0; }
+  .nav-cta{
+    font-size:14px; font-weight:600;
+    color:var(--ink); text-decoration:none;
+    padding:9px 18px; border-radius:999px;
+    border:1.5px solid rgba(42,30,18,.18);
+    transition:border-color .3s var(--ease), background .3s var(--ease);
+  }
+  .nav-cta:hover, .nav-cta:focus-visible{ border-color:var(--accent-deep); background:rgba(255,176,46,.14); }
+
+  /* ---------- hero content ---------- */
+  .hero{
+    position:absolute; z-index:15;
+    top:clamp(120px,20vh,220px);
+    left:clamp(24px,4.8vw,84px);
+    max-width:min(620px,52vw);
+  }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:9px;
+    font-size:12.5px; font-weight:600; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--accent-deep);
+    padding:7px 14px 7px 12px; border-radius:999px;
+    background:rgba(255,255,255,.42);
+    border:1px solid rgba(232,133,12,.22);
+    backdrop-filter:blur(3px);
+  }
+  .eyebrow .pip{
+    width:8px; height:8px; border-radius:50%; background:var(--accent);
+    box-shadow:0 0 0 0 rgba(255,176,46,.6);
+    animation:pip 2.6s var(--ease) infinite;
+  }
+  @keyframes pip{ 0%{box-shadow:0 0 0 0 rgba(255,176,46,.55)} 70%,100%{box-shadow:0 0 0 12px rgba(255,176,46,0)} }
+
+  h1{
+    margin-top:22px;
+    font-size:clamp(44px,7.6vw,104px);
+    line-height:.92;
+    letter-spacing:-.035em;
+    font-weight:800;
+    color:var(--ink);
+  }
+  h1 .line{ display:block; overflow:hidden; }
+  h1 .line > span{ display:inline-block; will-change:transform,opacity; }
+  h1 .warm{
+    background:linear-gradient(96deg,var(--accent-deep),var(--accent) 55%,#ffce6b);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .sub{
+    margin-top:26px;
+    font-size:clamp(15px,1.7vw,19px);
+    line-height:1.55; font-weight:400;
+    color:var(--ink-soft);
+    max-width:33em;
+  }
+  .actions{
+    margin-top:36px;
+    display:flex; align-items:center; gap:clamp(16px,2vw,28px);
+    flex-wrap:wrap;
+  }
+  .cta{
+    position:relative;
+    display:inline-flex; align-items:center; gap:11px;
+    font-size:15.5px; font-weight:650; letter-spacing:.005em;
+    color:#3a2708; text-decoration:none;
+    padding:15px 28px; border-radius:999px;
+    background:linear-gradient(180deg,#ffca66,var(--accent) 60%,var(--accent-deep));
+    box-shadow:0 10px 30px -8px rgba(232,133,12,.55), inset 0 1px 0 rgba(255,255,255,.5);
+    will-change:transform;
+    transition:box-shadow .35s var(--ease);
+    overflow:hidden;
+  }
+  .cta .sheen{
+    position:absolute; inset:0; border-radius:inherit;
+    background:radial-gradient(120px 120px at var(--mx,50%) var(--my,50%), rgba(255,255,255,.55), rgba(255,255,255,0) 60%);
+    opacity:0; transition:opacity .3s var(--ease);
+    pointer-events:none;
+  }
+  .cta:hover{ box-shadow:0 16px 44px -8px rgba(232,133,12,.7), inset 0 1px 0 rgba(255,255,255,.6); }
+  .cta:hover .sheen{ opacity:1; }
+  .cta .arrow{ transition:transform .35s var(--ease); }
+  .cta:hover .arrow{ transform:translateX(4px); }
+  .secondary{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:15px; font-weight:550;
+    color:var(--ink); text-decoration:none;
+    position:relative;
+  }
+  .secondary::after{
+    content:""; position:absolute; left:0; right:0; bottom:-3px; height:1.5px;
+    background:currentColor; transform:scaleX(0); transform-origin:left;
+    transition:transform .34s var(--ease); opacity:.5;
+  }
+  .secondary:hover::after, .secondary:focus-visible::after{ transform:scaleX(1); }
+  .secondary .play{
+    width:26px; height:26px; border-radius:50%;
+    display:grid; place-items:center;
+    border:1.5px solid rgba(42,30,18,.28);
+    transition:border-color .3s var(--ease), background .3s var(--ease);
+  }
+  .secondary:hover .play{ border-color:var(--accent-deep); background:rgba(255,176,46,.16); }
+
+  /* ---------- the sun (Sol) ---------- */
+  .sol-wrap{
+    position:absolute; z-index:10;
+    right:min(6vw,120px); top:50%;
+    width:min(52vmin,560px); height:min(52vmin,560px);
+    transform:translateY(-50%);
+    will-change:transform;
+    pointer-events:none;
+  }
+  .sol-wrap svg{ width:100%; height:100%; overflow:visible; display:block; }
+
+  /* rays group rotates slowly (idle); JS tunes ray length toward cursor */
+  #rays{ transform-origin:200px 200px; }
+  .ray{ fill:var(--accent); transform-origin:200px 200px; will-change:transform; }
+
+  #core{ transform-origin:200px 200px; will-change:transform; }
+  #face{ will-change:transform; }
+  .eye-white{ fill:#3a2708; }        /* filled eyes for a warm face */
+  .blush{ fill:#ff8a5b; opacity:.5; }
+  .mouth{ fill:none; stroke:#3a2708; stroke-width:9; stroke-linecap:round; }
+
+  /* ---------- badges / hints (kept out of bottom corners) ---------- */
+  .scrollhint{
+    position:absolute; z-index:16;
+    left:50%; bottom:min(4.5vh,34px);
+    transform:translateX(-50%);
+    display:flex; flex-direction:column; align-items:center; gap:7px;
+    font-size:11px; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--ink-soft); opacity:.7;
+  }
+  .scrollhint .bar{
+    width:1.5px; height:34px; border-radius:2px;
+    background:linear-gradient(var(--accent-deep),rgba(232,133,12,0));
+    animation:drop 2s var(--ease) infinite;
+  }
+  @keyframes drop{ 0%{transform:scaleY(.2);transform-origin:top;opacity:0} 40%{opacity:1} 100%{transform:scaleY(1);transform-origin:top;opacity:0} }
+
+  /* entrance masks */
+  .reveal .line > span{ transform:translateY(110%); }
+  .fade-in{ opacity:0; transform:translateY(16px); }
+
+  :focus-visible{ outline:2.5px solid var(--accent-deep); outline-offset:3px; border-radius:6px; }
+
+  @media (max-width:820px){
+    .hero{ max-width:88vw; top:clamp(104px,16vh,180px); }
+    .sol-wrap{ opacity:.32; right:-14vw; top:60%; width:min(80vmin,520px); height:min(80vmin,520px); }
+    nav .navlink{ display:none; }
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .grain, .pip, .bar, #motes{ animation:none !important; }
+    .scrollhint .bar{ opacity:.4; transform:scaleY(1); }
+    .reveal .line > span{ transform:none; }
+    .fade-in{ opacity:1; transform:none; }
+    *{ transition:none !important; }
+  }
+</style>
+
+<div class="stage" id="stage">
+  <div class="sky"></div>
+  <div class="bloom" id="bloom"></div>
+  <div class="haze"></div>
+  <canvas id="motes" aria-hidden="true"></canvas>
+  <div class="grain" aria-hidden="true"></div>
+
+  <header>
+    <a class="wordmark" href="#" aria-label="agentics.dk home">
+      <svg class="glyph" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7"/></svg>
+      agentics<span class="dot">.dk</span>
+    </a>
+    <nav aria-label="Primary">
+      <a class="navlink" href="#work">Arbejde</a>
+      <a class="navlink" href="#studio">Studio</a>
+      <a class="navlink" href="#journal">Journal</a>
+      <a class="nav-cta" href="#contact">Lad os snakke</a>
+    </nav>
+  </header>
+
+  <main class="hero" id="hero">
+    <span class="eyebrow fade-in"><span class="pip" aria-hidden="true"></span>Juli · dag 28 · Sol</span>
+    <h1 class="reveal">
+      <span class="line"><span>Byg noget</span></span>
+      <span class="line"><span class="warm">der stråler.</span></span>
+    </h1>
+    <p class="sub fade-in">
+      Vi laver digitale oplevelser med varme i — grænseflader der føles levende,
+      lyse og let at holde af. Mød Sol: din daglige dosis optimisme, i vektor.
+    </p>
+    <div class="actions">
+      <a class="cta fade-in" id="cta" href="#start">
+        <span class="sheen" aria-hidden="true"></span>
+        Start i lyset
+        <svg class="arrow" width="17" height="17" viewBox="0 0 17 17" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5h10M9 4l4.5 4.5L9 13"/></svg>
+      </a>
+      <a class="secondary fade-in" href="#reel">
+        <span class="play" aria-hidden="true">
+          <svg width="9" height="10" viewBox="0 0 9 10" fill="currentColor" aria-hidden="true"><path d="M0 0l9 5-9 5z"/></svg>
+        </span>
+        Se reel'en
+      </a>
+    </div>
+  </main>
+
+  <!-- Sol the sun -->
+  <div class="sol-wrap" id="solWrap" aria-hidden="true">
+    <svg viewBox="0 0 400 400" role="img" aria-label="Sol, a cheerful little sun">
+      <defs>
+        <radialGradient id="coreGrad" cx="42%" cy="38%" r="70%">
+          <stop offset="0%" stop-color="#fff2cf"/>
+          <stop offset="42%" stop-color="#ffd873"/>
+          <stop offset="78%" stop-color="#ffb02e"/>
+          <stop offset="100%" stop-color="#f39412"/>
+        </radialGradient>
+        <radialGradient id="rimGlow" cx="50%" cy="50%" r="50%">
+          <stop offset="60%" stop-color="rgba(255,176,46,0)"/>
+          <stop offset="88%" stop-color="rgba(255,176,46,.35)"/>
+          <stop offset="100%" stop-color="rgba(255,176,46,0)"/>
+        </radialGradient>
+        <filter id="soft"><feGaussianBlur stdDeviation="1.1"/></filter>
+      </defs>
+
+      <circle cx="200" cy="200" r="170" fill="url(#rimGlow)"/>
+
+      <g id="rays"><!-- rays injected by JS --></g>
+
+      <g id="core">
+        <circle cx="200" cy="200" r="112" fill="url(#coreGrad)"/>
+        <circle cx="200" cy="200" r="112" fill="none" stroke="rgba(255,255,255,.45)" stroke-width="2"/>
+      </g>
+
+      <g id="face">
+        <ellipse class="blush" cx="158" cy="222" rx="18" ry="12"/>
+        <ellipse class="blush" cx="242" cy="222" rx="18" ry="12"/>
+        <g id="eyes">
+          <g class="eye" id="eyeL">
+            <ellipse class="eye-white" cx="172" cy="192" rx="11" ry="14"/>
+            <circle cx="169" cy="187" r="3.4" fill="#fff5dd"/>
+          </g>
+          <g class="eye" id="eyeR">
+            <ellipse class="eye-white" cx="228" cy="192" rx="11" ry="14"/>
+            <circle cx="225" cy="187" r="3.4" fill="#fff5dd"/>
+          </g>
+        </g>
+        <path class="mouth" id="mouth" d="M176 224 Q200 246 224 224"/>
+      </g>
+    </svg>
+  </div>
+
+  <div class="scrollhint fade-in" aria-hidden="true">
+    <span>Scroll</span>
+    <span class="bar"></span>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- ray geometry ---------- */
+  const raysG = document.getElementById("rays");
+  const RAY_N = 14, CX = 200, CY = 200, R0 = 118;
+  const rays = [];
+  for (let i = 0; i < RAY_N; i++){
+    const a = (i / RAY_N) * Math.PI * 2;
+    const inner = R0, base = 30, len = 44;
+    // triangle-ish ray as a rounded path
+    const p = document.createElementNS("http://www.w3.org/2000/svg","path");
+    p.setAttribute("class","ray");
+    const ax = CX + Math.cos(a - .085) * inner, ay = CY + Math.sin(a - .085) * inner;
+    const bx = CX + Math.cos(a + .085) * inner, by = CY + Math.sin(a + .085) * inner;
+    const tx = CX + Math.cos(a) * (inner + len), ty = CY + Math.sin(a) * (inner + len);
+    p.setAttribute("d", `M${ax.toFixed(1)} ${ay.toFixed(1)} L${tx.toFixed(1)} ${ty.toFixed(1)} L${bx.toFixed(1)} ${by.toFixed(1)} Z`);
+    raysG.appendChild(p);
+    rays.push({ el:p, ang:a });
+  }
+
+  /* ---------- particles (dust motes) ---------- */
+  const canvas = document.getElementById("motes");
+  const ctx = canvas.getContext("2d");
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  let W = 0, H = 0, motes = [];
+  function resize(){
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = W * DPR; canvas.height = H * DPR;
+    canvas.style.width = W + "px"; canvas.style.height = H + "px";
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    const count = Math.round(Math.min(60, (W * H) / 26000));
+    motes = new Array(count).fill(0).map(() => ({
+      x: Math.random()*W, y: Math.random()*H,
+      r: Math.random()*2.1 + .6,
+      s: Math.random()*.28 + .06,
+      d: Math.random()*Math.PI*2,
+      a: Math.random()*.4 + .12,
+      tw: Math.random()*Math.PI*2
+    }));
+  }
+  resize();
+  window.addEventListener("resize", resize);
+
+  /* ---------- pointer state (smoothed) ---------- */
+  const solWrap = document.getElementById("solWrap");
+  const bloom = document.getElementById("bloom");
+  const eyeL = document.getElementById("eyeL");
+  const eyeR = document.getElementById("eyeR");
+  const mouth = document.getElementById("mouth");
+  const core = document.getElementById("core");
+  const face = document.getElementById("face");
+  const hero = document.getElementById("hero");
+
+  let tx = .5, ty = .5;   // target normalized pointer (0..1)
+  let px = .5, py = .5;   // smoothed
+  let running = true;
+
+  window.addEventListener("pointermove", (e) => {
+    tx = e.clientX / window.innerWidth;
+    ty = e.clientY / window.innerHeight;
+  }, { passive:true });
+
+  /* magnetic CTA + sheen */
+  const cta = document.getElementById("cta");
+  const sheen = cta.querySelector(".sheen");
+  cta.addEventListener("pointermove", (e) => {
+    const r = cta.getBoundingClientRect();
+    const mx = e.clientX - r.left, my = e.clientY - r.top;
+    sheen.style.setProperty("--mx", mx + "px");
+    sheen.style.setProperty("--my", my + "px");
+    if (!reduce){
+      const dx = (mx - r.width/2) / r.width, dy = (my - r.height/2) / r.height;
+      cta.style.transform = `translate(${dx*10}px, ${dy*8}px)`;
+    }
+  });
+  cta.addEventListener("pointerleave", () => { cta.style.transform = ""; });
+
+  /* ---------- blink loop (idle personality) ---------- */
+  let blink = 1; // 1 = open, 0 = closed
+  let blinkTimer = 0;
+  function scheduleBlink(){ blinkTimer = performance.now() + 2200 + Math.random()*3200; }
+  scheduleBlink();
+
+  /* ---------- entrance ---------- */
+  function entrance(){
+    if (reduce){
+      document.querySelectorAll(".reveal .line > span, .fade-in").forEach(el=>{
+        el.style.transform="none"; el.style.opacity="1";
+      });
+      return;
+    }
+    const spans = document.querySelectorAll(".reveal .line > span");
+    spans.forEach((s,i)=>{
+      s.animate(
+        [{transform:"translateY(110%)"},{transform:"translateY(0)"}],
+        {duration:900, delay:200+i*130, easing:"cubic-bezier(.22,.61,.36,1)", fill:"both"}
+      );
+    });
+    const fades = document.querySelectorAll(".fade-in");
+    fades.forEach((f,i)=>{
+      f.animate(
+        [{opacity:0,transform:"translateY(16px)"},{opacity:1,transform:"translateY(0)"}],
+        {duration:800, delay:520+i*120, easing:"cubic-bezier(.22,.61,.36,1)", fill:"both"}
+      );
+    });
+    // Sol rises in
+    solWrap.animate(
+      [{opacity:0,transform:"translateY(-50%) scale(.86)"},{opacity:1,transform:"translateY(-50%) scale(1)"}],
+      {duration:1200, delay:200, easing:"cubic-bezier(.22,.61,.36,1)", fill:"both"}
+    );
+  }
+  entrance();
+
+  /* ---------- main loop ---------- */
+  let t0 = performance.now();
+  function frame(now){
+    if (!running) return;
+    const dt = Math.min(50, now - t0); t0 = now;
+    const t = now / 1000;
+
+    // smooth pointer
+    px += (tx - px) * 0.06;
+    py += (ty - py) * 0.06;
+    const ndx = (px - .5) * 2; // -1..1
+    const ndy = (py - .5) * 2;
+
+    if (!reduce){
+      // idle breathe of core + bloom
+      const breathe = Math.sin(t * 1.15) * 0.5 + 0.5; // 0..1
+      const coreScale = 1 + breathe * 0.022 + Math.sin(t*2.3)*0.004;
+      const bob = Math.sin(t * 0.9) * 6;
+
+      // Sol parallax follows pointer (subtle), plus bob
+      const followX = ndx * 16, followY = ndy * 12 + bob;
+      solWrap.style.transform = `translateY(-50%) translate(${followX.toFixed(2)}px, ${followY.toFixed(2)}px)`;
+
+      core.style.transform = `scale(${coreScale.toFixed(4)})`;
+
+      // bloom breathe (glow pulse) + drift toward pointer
+      const bScale = 1 + breathe * 0.10;
+      const bx = (px - .62) * 40, by = (py - .38) * 34;
+      bloom.style.transform = `translate(-50%,-50%) translate(${bx.toFixed(1)}px,${by.toFixed(1)}px) scale(${bScale.toFixed(3)})`;
+      bloom.style.opacity = (0.72 + breathe * 0.22).toFixed(3);
+
+      // rays: slow rotate + lengthen toward the pointer direction
+      const rot = t * 6; // degrees
+      const pointerAng = Math.atan2(ndy, ndx);
+      const reach = Math.min(1, Math.hypot(ndx, ndy)); // 0..1
+      raysG.setAttribute("transform", `rotate(${rot.toFixed(2)} ${CX} ${CY})`);
+      for (const ry of rays){
+        // ray's world angle = its base angle + current rotation
+        const world = ry.ang + rot * Math.PI/180;
+        let d = Math.cos(world - pointerAng); // 1 when facing pointer
+        d = Math.max(0, d);
+        const grow = 1 + d * reach * 0.30 + breathe * 0.03;
+        ry.el.setAttribute("transform", `translate(${CX} ${CY}) scale(${grow.toFixed(3)}) translate(${-CX} ${-CY})`);
+        ry.el.style.opacity = (0.78 + d * reach * 0.22).toFixed(3);
+      }
+
+      // eyes track pointer (relative to Sol's screen position)
+      const solRect = solWrap.getBoundingClientRect();
+      const scx = solRect.left + solRect.width/2;
+      const scy = solRect.top + solRect.height * 0.48;
+      let gx = (px*window.innerWidth - scx);
+      let gy = (py*window.innerHeight - scy);
+      const gl = Math.hypot(gx,gy) || 1;
+      const maxMove = 4.2;
+      gx = gx/gl * Math.min(maxMove, gl/60);
+      gy = gy/gl * Math.min(maxMove, gl/60);
+
+      // blink
+      if (now > blinkTimer){
+        blink -= dt/70;
+        if (blink <= 0){ blink = 0; if (now > blinkTimer + 90){ scheduleBlink(); } }
+      } else if (blink < 1){
+        blink += dt/70; if (blink > 1) blink = 1;
+      }
+      const ey = Math.max(0.12, blink);
+
+      eyeL.setAttribute("transform", `translate(${gx.toFixed(2)} ${gy.toFixed(2)}) scale(1 ${ey.toFixed(3)})`);
+      eyeR.setAttribute("transform", `translate(${gx.toFixed(2)} ${gy.toFixed(2)}) scale(1 ${ey.toFixed(3)})`);
+      // keep eye vertical center stable when squishing
+      eyeL.style.transformOrigin = "172px 192px";
+      eyeR.style.transformOrigin = "228px 192px";
+
+      // face tilts gently toward pointer (head-follow)
+      face.style.transform = `translate(${(ndx*6).toFixed(2)}px, ${(ndy*5).toFixed(2)}px)`;
+
+      // mouth gets a touch wider/happier as pointer nears Sol
+      const near = 1 - Math.min(1, gl/520);
+      const smile = 224 + near*10;
+      mouth.setAttribute("d", `M176 224 Q200 ${smile.toFixed(0)} 224 224`);
+
+      // hero text micro-parallax
+      hero.style.transform = `translate(${(ndx*-6).toFixed(2)}px, ${(ndy*-4).toFixed(2)}px)`;
+
+      // particles
+      ctx.clearRect(0,0,W,H);
+      for (const m of motes){
+        m.x += Math.cos(m.d)*m.s + ndx*0.15;
+        m.y += Math.sin(m.d)*m.s*0.6 - m.s*0.5 + ndy*0.1;
+        m.tw += 0.03;
+        if (m.y < -6) m.y = H+6;
+        if (m.x < -6) m.x = W+6; else if (m.x > W+6) m.x = -6;
+        if (m.y > H+6) m.y = -6;
+        const tw = 0.6 + Math.sin(m.tw)*0.4;
+        ctx.beginPath();
+        ctx.fillStyle = `rgba(255,236,190,${(m.a*tw).toFixed(3)})`;
+        ctx.arc(m.x, m.y, m.r, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  if (!reduce){
+    requestAnimationFrame(frame);
+  } else {
+    // static composed layout: draw motes once, faint
+    ctx.clearRect(0,0,W,H);
+    for (const m of motes){
+      ctx.beginPath();
+      ctx.fillStyle = `rgba(255,236,190,${(m.a).toFixed(3)})`;
+      ctx.arc(m.x, m.y, m.r, 0, Math.PI*2); ctx.fill();
+    }
+    bloom.style.opacity = ".8";
+  }
+
+  /* pause when tab hidden */
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden){ running = false; }
+    else if (!reduce && !running){ running = true; t0 = performance.now(); requestAnimationFrame(frame); }
+  });
+})();
+</script>
+
+<style id="agx-chrome-css">
+.agx{position:fixed;z-index:2147483000;font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;box-sizing:border-box}
+.agx a{cursor:pointer}
+.agx-badge{right:16px;bottom:16px;display:flex;gap:7px;align-items:center;padding:8px 13px;border-radius:999px;
+  background:rgba(9,11,17,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
+.agx-badge b{color:var(--agx);font-size:13px}
+.agx-story{left:16px;bottom:16px;max-width:min(360px,calc(100vw - 32px));padding:16px 16px 13px;border-radius:16px;
+  background:rgba(9,11,17,.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;box-shadow:0 24px 70px -26px rgba(0,0,0,.85)}
+.agx-story .h{display:flex;align-items:center;gap:11px;margin-bottom:9px}
+.agx-story .em{font-size:26px;line-height:1;filter:drop-shadow(0 3px 11px var(--agx))}
+.agx-story .nm{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.agx-story .tl{color:var(--agx);font-size:12px;font-weight:600;margin-top:3px}
+.agx-story p{margin:0 0 11px;color:#c6ccd9;font-size:13px;line-height:1.56}
+.agx-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.agx-tags span{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#aeb6c6;
+  border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px 9px}
+.agx-guess{margin:0 0 12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.09)}
+.agx-guess .gq{font-size:11.5px;color:#aeb6c6;margin-bottom:8px;letter-spacing:.01em}
+.agx-guess .gbtns{display:flex;gap:8px}
+.agx-guess .gbtn{flex:1;padding:8px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.03);color:#eef1f7;font-size:12px;font-weight:600;cursor:pointer;
+  transition:transform .15s,border-color .15s,background .15s,opacity .15s;font-family:inherit}
+.agx-guess .gbtn:hover:not(:disabled){border-color:var(--agx);background:rgba(255,255,255,.07);transform:translateY(-1px)}
+.agx-guess .gbtn:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
+.agx-guess .gbtn:disabled{cursor:default}
+.agx-guess .gbtn.correct{border-color:#5eea8f;background:rgba(94,234,143,.16);color:#a4f5be;opacity:1}
+.agx-guess .gbtn.wrong{border-color:#ff6a6a;background:rgba(255,106,106,.14);color:#ffb9b9;opacity:1}
+.agx-guess .gbtn.dim{opacity:.45}
+.agx-guess .greveal{margin-top:9px;font-size:11.5px;line-height:1.55;color:#c6ccd9}
+.agx-guess .greveal b{color:#eef1f7}
+.agx-nav{display:flex;align-items:center;gap:13px;font-size:12.5px;border-top:1px solid rgba(255,255,255,.09);padding-top:11px}
+.agx-nav a{color:#eef1f7;text-decoration:none;opacity:.82}
+.agx-nav a:hover{opacity:1;color:var(--agx)}
+.agx-nav .home{margin-right:auto;font-weight:600}
+.agx-nav a[aria-disabled=true]{opacity:.32;pointer-events:none}
+@media (max-width:560px){.agx-story{left:12px;right:12px;bottom:12px;max-width:none}.agx-badge{display:none}}
+@media (prefers-reduced-motion:reduce){.agx-story .em{filter:none}}
+</style>
+<div class="agx agx-badge" style="--agx:#ffb02e">AGENTICS · JULI <b>28</b></div>
+<aside class="agx agx-story" style="--agx:#ffb02e" aria-label="Avatarens historie">
+  <div class="h"><div class="em">☀️</div><div><div class="nm">Sol</div><div class="tl">Står tidligt op, så du ikke behøver.</div></div></div>
+  <p>Sol kravler over horisonten længe før nogen andre er vågne og har allerede varmet dagens vigtigste opgaver op, inden du har hældt kaffe op. Han spreder sig ikke tyndt – han skinner fuldt og helt på det, der betyder mest lige nu. Ingen dag føles for tung, når Sol har været der først.</p>
+  <div class="agx-tags"><span>energisk</span><span>punktlig</span><span>varm</span></div>
+  <div class="agx-guess" id="agxGuess">
+    <div class="gq">🤖 Hvilken Claude-model byggede Sol?</div>
+    <div class="gbtns">
+      <button type="button" class="gbtn" data-m="opus">Opus 4.8</button>
+      <button type="button" class="gbtn" data-m="sonnet">Sonnet 5</button>
+    </div>
+    <div class="greveal" id="agxReveal" hidden></div>
+  </div>
+  <nav class="agx-nav">
+    <a class="home" href="calendar.html">← Kalender</a>
+    <a href="day-27.html">‹ forrige</a>
+    <a data-day="29" href="day-29.html">næste ›</a>
+  </nav>
+</aside>
+<script>(function(){var n=document.querySelector('.agx-nav a[data-day]');if(!n)return;var d=+n.getAttribute('data-day');
+if(new Date()<new Date(2026,6,d)){n.setAttribute('aria-disabled','true');n.textContent='næste (åbner '+d+'. juli)';}})();</script>
+<script>(function(){
+  var DAY=28, MODEL='opus', NAME="Sol";
+  var KEY='agx_guess_'+DAY;
+  var wrap=document.getElementById('agxGuess');
+  if(!wrap) return;
+  var btns=Array.prototype.slice.call(wrap.querySelectorAll('.gbtn'));
+  var reveal=document.getElementById('agxReveal');
+  var TXT={
+    opus:'🧠 Rigtigt svar: <b>Claude Opus 4.8</b> byggede '+NAME+'.',
+    sonnet:'⚡ Rigtigt svar: <b>Claude Sonnet 5</b> byggede '+NAME+'.'
+  };
+  function render(saved){
+    btns.forEach(function(b){
+      b.disabled=true;
+      var m=b.getAttribute('data-m');
+      if(m===MODEL) b.classList.add('correct');
+      else if(m===saved) b.classList.add('wrong'); else b.classList.add('dim');
+    });
+    var extra = saved===MODEL ? ' Du gættede rigtigt! 🎉' : ' Forkert gæt denne gang — bedre held i morgen.';
+    reveal.innerHTML=TXT[MODEL]+extra;
+    reveal.hidden=false;
+  }
+  var prior=localStorage.getItem(KEY);
+  if(prior){ render(prior); return; }
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      var g=b.getAttribute('data-m');
+      try{ localStorage.setItem(KEY, g); }catch(e){}
+      render(g);
+    });
+  });
+})();</script>

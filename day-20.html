@@ -1,0 +1,1114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>agentics.dk — Mochi</title>
+<style>
+  :root{
+    --accent: #ffb3d1;
+    --accent-deep: #ff8fbf;
+    --bg-1: #2a1f33;
+    --bg-2: #3c2a46;
+    --bg-3: #55345a;
+    --cream: #fff6f0;
+    --ink: #2a1f2c;
+  }
+
+  *{ margin:0; padding:0; box-sizing:border-box; }
+
+  html,body{
+    width:100%; height:100%;
+    overflow:hidden;
+    background: var(--bg-1);
+  }
+
+  body{
+    font-family: -apple-system, "Segoe UI", Inter, system-ui, sans-serif;
+    color: var(--cream);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .stage{
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    min-height: 560px;
+  }
+
+  /* ---------- background layers ---------- */
+  .bg-gradient{
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(120% 90% at 78% 18%, #6a3f6e 0%, transparent 55%),
+      radial-gradient(100% 80% at 15% 85%, #3c5a72 0%, transparent 50%),
+      linear-gradient(160deg, var(--bg-1) 0%, var(--bg-2) 45%, var(--bg-3) 100%);
+    z-index: 0;
+  }
+
+  .bg-glow{
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  canvas#grain{
+    position: absolute; inset: 0;
+    z-index: 2;
+    width: 100%; height: 100%;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+  }
+
+  canvas#bokeh{
+    position: absolute; inset: 0;
+    z-index: 1;
+    width: 100%; height: 100%;
+    pointer-events: none;
+  }
+
+  /* ---------- nav ---------- */
+  .nav{
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px clamp(20px, 4vw, 56px);
+  }
+
+  .wordmark{
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.08em;
+    color: var(--cream);
+    opacity: 0.92;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+  }
+
+  .wordmark .dot{
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px 2px var(--accent);
+    display: inline-block;
+  }
+
+  .nav-links{
+    display: flex;
+    gap: clamp(14px, 2.5vw, 34px);
+    list-style: none;
+  }
+
+  .nav-links a{
+    color: var(--cream);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.03em;
+    opacity: 0.68;
+    position: relative;
+    padding: 6px 2px;
+    transition: opacity 0.25s ease;
+  }
+
+  .nav-links a:hover,
+  .nav-links a:focus-visible{
+    opacity: 1;
+  }
+
+  .nav-links a::after{
+    content: "";
+    position: absolute;
+    left: 0; right: 100%;
+    bottom: 0;
+    height: 1px;
+    background: var(--accent);
+    transition: right 0.3s cubic-bezier(.2,.8,.2,1);
+  }
+
+  .nav-links a:hover::after,
+  .nav-links a:focus-visible::after{
+    right: 0;
+  }
+
+  a:focus-visible, button:focus-visible{
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+    border-radius: 4px;
+  }
+
+  /* ---------- hero content ---------- */
+  .hero{
+    position: relative;
+    z-index: 10;
+    height: 100%;
+    display: grid;
+    grid-template-columns: minmax(280px, 620px) 1fr;
+    align-items: center;
+    padding: 0 clamp(20px, 5vw, 64px);
+    gap: 24px;
+  }
+
+  .copy{
+    padding-top: 40px;
+    max-width: 560px;
+  }
+
+  .eyebrow{
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    opacity: 0;
+    transform: translateY(10px);
+    background: rgba(255,179,209,0.1);
+    border: 1px solid rgba(255,179,209,0.25);
+    padding: 7px 14px 7px 12px;
+    border-radius: 100px;
+    margin-bottom: 22px;
+  }
+
+  .eyebrow .pip{
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  h1{
+    font-size: clamp(2.6rem, 6vw, 5rem);
+    line-height: 0.98;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--cream);
+  }
+
+  h1 .line{
+    display: block;
+    overflow: hidden;
+  }
+
+  h1 .line span{
+    display: inline-block;
+    opacity: 0;
+    transform: translateY(110%);
+  }
+
+  h1 .accent-word{
+    background: linear-gradient(100deg, var(--accent) 10%, #ffd6e8 45%, var(--accent-deep) 90%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    font-style: italic;
+  }
+
+  .sub{
+    margin-top: 26px;
+    font-size: clamp(1rem, 1.6vw, 1.2rem);
+    line-height: 1.6;
+    color: var(--cream);
+    opacity: 0;
+    transform: translateY(14px);
+    max-width: 480px;
+    font-weight: 400;
+  }
+  .sub b{ color: var(--accent); font-weight: 600; }
+
+  .actions{
+    margin-top: 38px;
+    display: flex;
+    align-items: center;
+    gap: 26px;
+    opacity: 0;
+    transform: translateY(14px);
+  }
+
+  .cta{
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 30px;
+    border-radius: 100px;
+    background: var(--accent);
+    color: #3a1428;
+    font-weight: 700;
+    font-size: 14.5px;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    isolation: isolate;
+    transition: transform 0.35s cubic-bezier(.2,.9,.25,1.4), box-shadow 0.35s ease;
+    box-shadow: 0 8px 26px -8px rgba(255,143,191,0.55);
+  }
+
+  .cta::before{
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 100px;
+    background: linear-gradient(120deg, var(--accent), #ffe1ee, var(--accent-deep));
+    z-index: -1;
+    opacity: 0;
+    filter: blur(14px);
+    transition: opacity 0.35s ease;
+  }
+
+  .cta:hover, .cta:focus-visible{
+    transform: translateY(-3px) scale(1.035);
+    box-shadow: 0 14px 34px -8px rgba(255,143,191,0.75);
+  }
+  .cta:hover::before, .cta:focus-visible::before{ opacity: 0.75; }
+
+  .cta svg{ transition: transform 0.35s cubic-bezier(.2,.9,.25,1.4); }
+  .cta:hover svg{ transform: translateX(4px); }
+
+  .secondary{
+    color: var(--cream);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    opacity: 0.75;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-bottom: 1px solid transparent;
+    transition: opacity 0.25s ease, border-color 0.25s ease;
+    padding-bottom: 2px;
+  }
+  .secondary:hover, .secondary:focus-visible{
+    opacity: 1;
+    border-color: rgba(255,246,240,0.5);
+  }
+
+  /* ---------- mochi stage ---------- */
+  .mochi-wrap{
+    position: relative;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  #mochi-canvas{
+    width: min(58vw, 620px);
+    height: min(58vw, 620px);
+    max-height: 78vh;
+    touch-action: none;
+  }
+
+  .caption{
+    position: absolute;
+    bottom: 12%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--cream);
+    opacity: 0;
+    text-align: center;
+    white-space: nowrap;
+    font-weight: 600;
+  }
+  .caption .heart{ color: var(--accent); }
+
+  /* ---------- reduced motion static ---------- */
+  @media (prefers-reduced-motion: reduce){
+    .eyebrow, .sub, .actions, .caption, h1 .line span{
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+
+  /* ---------- responsive ---------- */
+  @media (max-width: 880px){
+    .hero{
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+      padding-top: 90px;
+      gap: 0;
+    }
+    .copy{ padding-top: 0; text-align: left; }
+    .mochi-wrap{ min-height: 320px; }
+    #mochi-canvas{ width: min(70vw, 380px); height: min(70vw, 380px); }
+    .nav-links{ display: none; }
+    .caption{ display: none; }
+  }
+
+  @media (max-width: 480px){
+    .actions{ flex-direction: column; align-items: flex-start; gap: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+
+  <div class="bg-gradient"></div>
+  <canvas id="bokeh" aria-hidden="true"></canvas>
+  <canvas id="grain" aria-hidden="true"></canvas>
+
+  <nav class="nav">
+    <a href="#" class="wordmark" aria-label="agentics.dk home">
+      <span class="dot"></span>agentics.dk
+    </a>
+    <ul class="nav-links">
+      <li><a href="#academy">Academy</a></li>
+      <li><a href="#calendar">Avatar Calendar</a></li>
+      <li><a href="#about">About</a></li>
+    </ul>
+  </nav>
+
+  <main class="hero">
+    <div class="copy">
+      <div class="eyebrow" id="eyebrow"><span class="pip"></span>Day 20 · Meet Mochi</div>
+      <h1 id="headline">
+        <span class="line"><span>Soft on the</span></span>
+        <span class="line"><span>outside, <em class="accent-word">warm</em></span></span>
+        <span class="line"><span>on the inside.</span></span>
+      </h1>
+      <p class="sub" id="subline">
+        Mochi is your squishiest teammate — a little jelly blob who breathes,
+        blinks, and wobbles along with every move you make. <b>Gentle by design</b>,
+        built to make automation feel like a cozy afternoon nap.
+      </p>
+      <div class="actions" id="actions">
+        <a href="#academy" class="cta">
+          Say hello to Mochi
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 8H13M13 8L8.5 3.5M13 8L8.5 12.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <a href="#calendar" class="secondary">See the full calendar →</a>
+      </div>
+    </div>
+
+    <div class="mochi-wrap">
+      <canvas id="mochi-canvas" role="img" aria-label="Mochi, a squishy pastel-pink jelly blob mascot, gently breathing and watching your cursor"></canvas>
+      <div class="caption" id="caption">poke it, jiggle it <span class="heart">♥</span> it follows you</div>
+    </div>
+  </main>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var stage = document.getElementById("stage");
+
+  /* ============================================================
+     ENTRANCE ANIMATION (staggered)
+  ============================================================ */
+  function runEntrance(){
+    var lineSpans = document.querySelectorAll("h1 .line span");
+    var eyebrow = document.getElementById("eyebrow");
+    var sub = document.getElementById("subline");
+    var actions = document.getElementById("actions");
+    var caption = document.getElementById("caption");
+
+    if (reduceMotion){
+      lineSpans.forEach(function(s){ s.style.opacity = 1; s.style.transform = "none"; });
+      [eyebrow, sub, actions, caption].forEach(function(el){ if(el){ el.style.opacity = 1; el.style.transform = "none"; } });
+      return;
+    }
+
+    var t = 120;
+    if (eyebrow){
+      eyebrow.animate(
+        [{opacity:0, transform:"translateY(10px)"},{opacity:1, transform:"translateY(0)"}],
+        {duration:600, delay:t, easing:"cubic-bezier(.2,.8,.2,1)", fill:"forwards"}
+      );
+    }
+    t += 200;
+
+    lineSpans.forEach(function(span, i){
+      span.animate(
+        [{opacity:0, transform:"translateY(110%) rotate(2deg)"},{opacity:1, transform:"translateY(0) rotate(0deg)"}],
+        {duration:820, delay: t + i*130, easing:"cubic-bezier(.16,.9,.2,1)", fill:"forwards"}
+      );
+    });
+    t += lineSpans.length*130 + 380;
+
+    if (sub){
+      sub.animate(
+        [{opacity:0, transform:"translateY(14px)"},{opacity:1, transform:"translateY(0)"}],
+        {duration:700, delay:t, easing:"cubic-bezier(.2,.8,.2,1)", fill:"forwards"}
+      );
+    }
+    t += 220;
+
+    if (actions){
+      actions.animate(
+        [{opacity:0, transform:"translateY(14px)"},{opacity:1, transform:"translateY(0)"}],
+        {duration:700, delay:t, easing:"cubic-bezier(.2,.8,.2,1)", fill:"forwards"}
+      );
+    }
+    t += 300;
+
+    if (caption){
+      caption.animate(
+        [{opacity:0},{opacity:0.72}],
+        {duration:900, delay:t, easing:"ease-out", fill:"forwards"}
+      );
+    }
+  }
+  runEntrance();
+
+  /* ============================================================
+     POINTER TRACKING (shared)
+  ============================================================ */
+  var pointer = { x: window.innerWidth/2, y: window.innerHeight/2, active: false };
+  var pointerVelocity = { x: 0, y: 0 };
+  var lastPointer = { x: pointer.x, y: pointer.y, t: performance.now() };
+
+  window.addEventListener("pointermove", function(e){
+    pointer.x = e.clientX;
+    pointer.y = e.clientY;
+    pointer.active = true;
+    var now = performance.now();
+    var dt = Math.max(now - lastPointer.t, 1);
+    pointerVelocity.x = (e.clientX - lastPointer.x) / dt * 16;
+    pointerVelocity.y = (e.clientY - lastPointer.y) / dt * 16;
+    lastPointer.x = e.clientX; lastPointer.y = e.clientY; lastPointer.t = now;
+  }, {passive:true});
+
+  window.addEventListener("pointerleave", function(){ pointer.active = false; });
+
+  /* ============================================================
+     BACKGROUND: bokeh particles + grain
+  ============================================================ */
+  var bokehCanvas = document.getElementById("bokeh");
+  var bokehCtx = bokehCanvas.getContext("2d");
+  var grainCanvas = document.getElementById("grain");
+  var grainCtx = grainCanvas.getContext("2d");
+
+  var DPR = Math.min(window.devicePixelRatio || 1, 2);
+  var W = 0, H = 0;
+
+  var bokehParticles = [];
+  function initBokeh(){
+    bokehParticles = [];
+    var count = Math.max(14, Math.min(26, Math.floor((W*H)/60000)));
+    var palette = ["#ffb3d1", "#ffd6e8", "#c9a3d8", "#9fb8d9", "#fff6f0"];
+    for (var i=0; i<count; i++){
+      bokehParticles.push({
+        x: Math.random()*W,
+        y: Math.random()*H,
+        r: 18 + Math.random()*70,
+        baseAlpha: 0.03 + Math.random()*0.07,
+        color: palette[i % palette.length],
+        phase: Math.random()*Math.PI*2,
+        speed: 0.15 + Math.random()*0.35,
+        driftX: (Math.random()-0.5)*0.15,
+        driftY: (Math.random()-0.5)*0.15
+      });
+    }
+  }
+
+  function resize(){
+    W = window.innerWidth;
+    H = window.innerHeight;
+    [bokehCanvas, grainCanvas].forEach(function(c){
+      c.width = W*DPR;
+      c.height = H*DPR;
+    });
+    bokehCtx.setTransform(DPR,0,0,DPR,0,0);
+    initBokeh();
+    drawGrain();
+  }
+
+  function drawGrain(){
+    // static-ish grain texture, redrawn rarely (on resize) for perf
+    var w = grainCanvas.width, h = grainCanvas.height;
+    var imgData = grainCtx.createImageData(w, h);
+    var buf = imgData.data;
+    for (var i=0; i<buf.length; i+=4){
+      var v = Math.random()*255;
+      buf[i] = v; buf[i+1] = v; buf[i+2] = v; buf[i+3] = 255;
+    }
+    grainCtx.putImageData(imgData, 0, 0);
+  }
+
+  var bokehTime = 0;
+  function drawBokeh(dt){
+    bokehCtx.clearRect(0,0,W,H);
+    bokehTime += dt*0.001;
+    for (var i=0; i<bokehParticles.length; i++){
+      var p = bokehParticles[i];
+      var floatY = Math.sin(bokehTime*p.speed + p.phase) * 14;
+      var floatX = Math.cos(bokehTime*p.speed*0.8 + p.phase) * 10;
+      var px = p.x + floatX + p.driftX*bokehTime*10;
+      var py = p.y + floatY + p.driftY*bokehTime*10;
+
+      // wrap
+      if (px < -100) p.x += W+200;
+      if (px > W+100) p.x -= W+200;
+      if (py < -100) p.y += H+200;
+      if (py > H+100) p.y -= H+200;
+
+      var grad = bokehCtx.createRadialGradient(px, py, 0, px, py, p.r);
+      var alpha = p.baseAlpha * (0.7 + 0.3*Math.sin(bokehTime*p.speed*1.3 + p.phase));
+      grad.addColorStop(0, hexToRgba(p.color, alpha));
+      grad.addColorStop(1, hexToRgba(p.color, 0));
+      bokehCtx.fillStyle = grad;
+      bokehCtx.beginPath();
+      bokehCtx.arc(px, py, p.r, 0, Math.PI*2);
+      bokehCtx.fill();
+    }
+  }
+
+  function hexToRgba(hex, alpha){
+    var r = parseInt(hex.slice(1,3),16);
+    var g = parseInt(hex.slice(3,5),16);
+    var b = parseInt(hex.slice(5,7),16);
+    return "rgba("+r+","+g+","+b+","+alpha+")";
+  }
+
+  /* ============================================================
+     MOCHI CHARACTER — canvas jelly blob
+  ============================================================ */
+  var mochiCanvas = document.getElementById("mochi-canvas");
+  var mctx = mochiCanvas.getContext("2d");
+  var mochiSize = 0; // css px, square
+
+  function resizeMochi(){
+    var rect = mochiCanvas.getBoundingClientRect();
+    mochiSize = rect.width;
+    mochiCanvas.width = Math.max(1, Math.round(rect.width * DPR));
+    mochiCanvas.height = Math.max(1, Math.round(rect.height * DPR));
+    mctx.setTransform(DPR,0,0,DPR,0,0);
+  }
+
+  // Mochi state
+  var mochi = {
+    t: 0,
+    // squash/stretch factors
+    sx: 1, sy: 1,
+    // target squash from velocity
+    squashVX: 0, squashVY: 0,
+    // body offset (bob)
+    bobY: 0,
+    // sway/tilt
+    tilt: 0,
+    // eye look targets (relative -1..1)
+    lookX: 0, lookY: 0,
+    curLookX: 0, curLookY: 0,
+    // blink
+    blinkTimer: 0,
+    blinkNext: 2 + Math.random()*3,
+    blinkProgress: 0, // 0 = open, 1 = closed
+    blinking: false,
+    // blush intensity
+    blush: 0.55,
+    // poke jiggle
+    jiggle: 0,
+    jiggleVel: 0,
+    // last pointer distance for velocity-based wobble
+    lastDist: 0,
+    hover: false
+  };
+
+  mochiCanvas.style.cursor = "pointer";
+
+  function localPointer(){
+    var rect = mochiCanvas.getBoundingClientRect();
+    var cx = rect.left + rect.width/2;
+    var cy = rect.top + rect.height/2;
+    return {
+      dx: pointer.x - cx,
+      dy: pointer.y - cy,
+      cx: cx, cy: cy,
+      rect: rect
+    };
+  }
+
+  function onPoke(e){
+    mochi.jiggleVel += 3.2;
+    var burst = 10;
+    spawnHearts(2);
+    e && e.preventDefault && e.preventDefault();
+  }
+  mochiCanvas.addEventListener("pointerdown", onPoke);
+  mochiCanvas.addEventListener("mouseenter", function(){ mochi.hover = true; });
+  mochiCanvas.addEventListener("mouseleave", function(){ mochi.hover = false; });
+
+  // little heart particles on poke
+  var hearts = [];
+  function spawnHearts(n){
+    for (var i=0;i<n;i++){
+      hearts.push({
+        x: mochiSize/2 + (Math.random()-0.5)*40,
+        y: mochiSize*0.38,
+        vy: -0.6 - Math.random()*0.5,
+        vx: (Math.random()-0.5)*0.4,
+        life: 1,
+        scale: 0.6 + Math.random()*0.5
+      });
+    }
+  }
+
+  function drawHeart(ctx, x, y, s, alpha){
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = "#ffb3d1";
+    ctx.translate(x,y);
+    ctx.scale(s,s);
+    ctx.beginPath();
+    ctx.moveTo(0,4);
+    ctx.bezierCurveTo(0,2,-2,0,-4,0);
+    ctx.bezierCurveTo(-7,0,-7,4,-4,6.5);
+    ctx.bezierCurveTo(-2.5,8,-1,9,0,10.5);
+    ctx.bezierCurveTo(1,9,2.5,8,4,6.5);
+    ctx.bezierCurveTo(7,4,7,0,4,0);
+    ctx.bezierCurveTo(2,0,0,2,0,4);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawMochi(dt){
+    var size = mochiSize;
+    if (!size) return;
+    mctx.clearRect(0,0,size,size);
+
+    mochi.t += dt*0.001;
+
+    // ---- idle breathing (slow sine) ----
+    var breathe = Math.sin(mochi.t*1.15) * 0.028;
+    var breatheY = Math.sin(mochi.t*1.15 + 0.6) * 0.018;
+
+    // ---- gentle bob ----
+    var bob = Math.sin(mochi.t*0.9) * (size*0.012);
+
+    // ---- pointer-driven look + tilt + jiggle ----
+    var lp = localPointer();
+    var dist = Math.sqrt(lp.dx*lp.dx + lp.dy*lp.dy);
+    var maxLook = size*0.55;
+    var nx = clamp(lp.dx / maxLook, -1, 1);
+    var ny = clamp(lp.dy / maxLook, -1, 1);
+    mochi.lookX = nx;
+    mochi.lookY = ny;
+    mochi.curLookX += (mochi.lookX - mochi.curLookX) * 0.12;
+    mochi.curLookY += (mochi.lookY - mochi.curLookY) * 0.12;
+
+    // velocity-based extra wobble when pointer moves fast nearby
+    var speed = Math.sqrt(pointerVelocity.x*pointerVelocity.x + pointerVelocity.y*pointerVelocity.y);
+    var proximity = clamp(1 - dist / (size*0.9), 0, 1);
+    var velJiggle = Math.min(speed * 0.02 * proximity, 0.16);
+    mochi.jiggleVel += velJiggle * 0.12;
+
+    // spring jiggle physics
+    var springK = 90, damping = 9;
+    var accel = -springK * mochi.jiggle - damping * mochi.jiggleVel;
+    mochi.jiggleVel += accel * dt*0.001;
+    mochi.jiggle += mochi.jiggleVel * dt*0.001;
+
+    // target tilt follows horizontal pointer + hover lean
+    var targetTilt = nx * 0.09 + (mochi.hover ? -0.02 : 0);
+    mochi.tilt += (targetTilt - mochi.tilt) * 0.08;
+
+    // squash/stretch: combine breathing + jiggle
+    var squashFromJiggle = mochi.jiggle;
+    var sx = 1 + breathe*0.5 - squashFromJiggle*0.5;
+    var sy = 1 - breathe*0.6 + squashFromJiggle*0.7 + breatheY*0.3;
+    // hover = gentle rise + widen
+    if (mochi.hover){ sy -= 0.01; sx += 0.008; }
+
+    // ---- blink logic ----
+    mochi.blinkTimer += dt*0.001;
+    if (!mochi.blinking && mochi.blinkTimer > mochi.blinkNext){
+      mochi.blinking = true;
+      mochi.blinkTimer = 0;
+    }
+    if (mochi.blinking){
+      mochi.blinkProgress += dt*0.012;
+      if (mochi.blinkProgress >= 1){
+        mochi.blinkProgress = 0;
+        mochi.blinking = false;
+        mochi.blinkNext = 2.4 + Math.random()*3.2;
+        mochi.blinkTimer = 0;
+      }
+    }
+    var blinkAmt = mochi.blinking ? Math.sin(Math.min(mochi.blinkProgress,1) * Math.PI) : 0;
+
+    // ================= DRAW =================
+    mctx.save();
+    mctx.translate(size/2, size*0.56 + bob);
+    mctx.rotate(mochi.tilt);
+    mctx.scale(sx, sy);
+
+    var R = size * 0.30; // base radius
+
+    // soft contact shadow
+    mctx.save();
+    mctx.translate(0, R*1.42);
+    var shadowGrad = mctx.createRadialGradient(0,0,0,0,0,R*1.1);
+    shadowGrad.addColorStop(0, "rgba(20,10,25,0.32)");
+    shadowGrad.addColorStop(1, "rgba(20,10,25,0)");
+    mctx.fillStyle = shadowGrad;
+    mctx.scale(1, 0.28);
+    mctx.beginPath();
+    mctx.arc(0,0, R*1.15, 0, Math.PI*2);
+    mctx.fill();
+    mctx.restore();
+
+    // ---- body: squishy blob via wobbly bezier path ----
+    var wob = squashFromJiggle;
+    mctx.beginPath();
+    var pts = 8;
+    var wobbleAmt = 0.05 + Math.abs(wob)*0.12;
+    var radii = [];
+    for (var i=0;i<pts;i++){
+      var ang = (i/pts) * Math.PI*2;
+      var n = Math.sin(ang*3 + mochi.t*1.4) * wobbleAmt + Math.sin(ang*2 - mochi.t*0.7)*wobbleAmt*0.5;
+      radii.push(R * (1 + n));
+    }
+    drawBlobPath(mctx, pts, radii, R);
+
+    var bodyGrad = mctx.createRadialGradient(-R*0.35,-R*0.45,R*0.15, 0,0, R*1.25);
+    bodyGrad.addColorStop(0, "#ffffff");
+    bodyGrad.addColorStop(0.28, "#ffe6f0");
+    bodyGrad.addColorStop(0.7, "#ffb3d1");
+    bodyGrad.addColorStop(1, "#f691bd");
+    mctx.fillStyle = bodyGrad;
+    mctx.fill();
+
+    // rim light
+    mctx.save();
+    mctx.globalAlpha = 0.5;
+    mctx.lineWidth = size*0.012;
+    mctx.strokeStyle = "#fff";
+    mctx.stroke();
+    mctx.restore();
+
+    // subtle inner shading bottom
+    mctx.save();
+    mctx.clip();
+    var shadeGrad = mctx.createLinearGradient(0,-R,0,R*1.1);
+    shadeGrad.addColorStop(0, "rgba(255,255,255,0)");
+    shadeGrad.addColorStop(1, "rgba(224,90,140,0.28)");
+    mctx.fillStyle = shadeGrad;
+    mctx.fillRect(-R*1.4,-R*1.4,R*2.8,R*2.8);
+    mctx.restore();
+
+    // top glossy highlight
+    mctx.save();
+    mctx.globalAlpha = 0.55;
+    mctx.fillStyle = "#ffffff";
+    mctx.beginPath();
+    mctx.ellipse(-R*0.32, -R*0.42, R*0.26, R*0.15, -0.5, 0, Math.PI*2);
+    mctx.fill();
+    mctx.restore();
+
+    // little top knot (mochi nub)
+    mctx.save();
+    mctx.translate(R*0.05, -R*1.02);
+    mctx.rotate(Math.sin(mochi.t*0.8)*0.15 + mochi.curLookX*0.2);
+    var knotGrad = mctx.createRadialGradient(-3,-3,1,0,0,R*0.16);
+    knotGrad.addColorStop(0,"#fff");
+    knotGrad.addColorStop(0.4,"#ffe6f0");
+    knotGrad.addColorStop(1,"#ffb3d1");
+    mctx.fillStyle = knotGrad;
+    mctx.beginPath();
+    mctx.ellipse(0,0, R*0.15, R*0.17, 0, 0, Math.PI*2);
+    mctx.fill();
+    mctx.restore();
+
+    // ---- face group (counter-rotate slightly less for readability) ----
+    var eyeSpread = R*0.34;
+    var eyeY = -R*0.02 + mochi.curLookY*R*0.05;
+    var lookOffX = mochi.curLookX * R*0.10;
+    var lookOffY = mochi.curLookY * R*0.07;
+
+    // blush
+    mctx.save();
+    mctx.globalAlpha = mochi.blush * (mochi.hover ? 1 : 0.8);
+    var blushGrad1 = mctx.createRadialGradient(-eyeSpread-R*0.12, eyeY+R*0.18, 1, -eyeSpread-R*0.12, eyeY+R*0.18, R*0.18);
+    blushGrad1.addColorStop(0, "#ff8fbf");
+    blushGrad1.addColorStop(1, "rgba(255,143,191,0)");
+    mctx.fillStyle = blushGrad1;
+    mctx.beginPath(); mctx.arc(-eyeSpread-R*0.12, eyeY+R*0.18, R*0.18, 0, Math.PI*2); mctx.fill();
+
+    var blushGrad2 = mctx.createRadialGradient(eyeSpread+R*0.12, eyeY+R*0.18, 1, eyeSpread+R*0.12, eyeY+R*0.18, R*0.18);
+    blushGrad2.addColorStop(0, "#ff8fbf");
+    blushGrad2.addColorStop(1, "rgba(255,143,191,0)");
+    mctx.fillStyle = blushGrad2;
+    mctx.beginPath(); mctx.arc(eyeSpread+R*0.12, eyeY+R*0.18, R*0.18, 0, Math.PI*2); mctx.fill();
+    mctx.restore();
+
+    // eyes (closed = curved line, open = round dot with blink squash)
+    drawEye(mctx, -eyeSpread + lookOffX, eyeY + lookOffY, R, blinkAmt);
+    drawEye(mctx, eyeSpread + lookOffX, eyeY + lookOffY, R, blinkAmt);
+
+    // mouth: small contented curve, widens slightly with hover
+    mctx.save();
+    mctx.translate(lookOffX*0.6, eyeY + R*0.34 + lookOffY*0.5);
+    mctx.strokeStyle = "#d1487e";
+    mctx.lineWidth = R*0.045;
+    mctx.lineCap = "round";
+    var mouthW = R*0.16 + (mochi.hover ? R*0.05 : 0);
+    mctx.beginPath();
+    mctx.moveTo(-mouthW, 0);
+    mctx.quadraticCurveTo(0, mouthW*0.85, mouthW, 0);
+    mctx.stroke();
+    mctx.restore();
+
+    mctx.restore(); // end body transform
+
+    // ---- floating hearts on poke ----
+    for (var h=hearts.length-1; h>=0; h--){
+      var he = hearts[h];
+      he.x += he.vx;
+      he.y += he.vy;
+      he.vy -= 0.01;
+      he.life -= dt*0.0016;
+      if (he.life <= 0){ hearts.splice(h,1); continue; }
+      drawHeart(mctx, he.x, he.y, he.scale, Math.max(he.life,0));
+    }
+  }
+
+  function drawEye(ctx, x, y, R, blinkAmt){
+    ctx.save();
+    ctx.translate(x, y);
+    var openH = R*0.11;
+    var h = openH * (1 - blinkAmt*0.92);
+    var w = R*0.085;
+
+    if (blinkAmt > 0.85){
+      // fully closed: happy curved line
+      ctx.strokeStyle = "#7a3552";
+      ctx.lineWidth = R*0.035;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(-w, 0);
+      ctx.quadraticCurveTo(0, h + R*0.06, w, 0);
+      ctx.stroke();
+    } else {
+      // eye white/black
+      ctx.fillStyle = "#3a2030";
+      ctx.beginPath();
+      ctx.ellipse(0,0,w,Math.max(h,R*0.01),0,0,Math.PI*2);
+      ctx.fill();
+      // catchlight
+      ctx.fillStyle = "rgba(255,255,255,0.92)";
+      ctx.beginPath();
+      ctx.ellipse(-w*0.32,-h*0.35, w*0.32, Math.max(h*0.32,0.4), 0, 0, Math.PI*2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  function drawBlobPath(ctx, pts, radii, R){
+    var coords = [];
+    for (var i=0;i<pts;i++){
+      var ang = (i/pts)*Math.PI*2 - Math.PI/2;
+      coords.push([Math.cos(ang)*radii[i], Math.sin(ang)*radii[i]]);
+    }
+    ctx.beginPath();
+    for (var j=0;j<pts;j++){
+      var cur = coords[j];
+      var next = coords[(j+1)%pts];
+      var mx = (cur[0]+next[0])/2;
+      var my = (cur[1]+next[1])/2;
+      if (j===0){ ctx.moveTo(mx,my); }
+      else { ctx.quadraticCurveTo(cur[0],cur[1], mx, my); }
+    }
+    var first = coords[0];
+    var last = coords[pts-1];
+    ctx.quadraticCurveTo(last[0],last[1], (first[0]+ (coords[0][0]))/2, (first[1]+coords[0][1])/2 );
+    ctx.closePath();
+  }
+
+  function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
+
+  /* ============================================================
+     PARALLAX for hero copy (subtle)
+  ============================================================ */
+  var copyEl = document.querySelector(".copy");
+  var mochiWrapEl = document.querySelector(".mochi-wrap");
+  var curParX = 0, curParY = 0;
+  function updateParallax(){
+    if (reduceMotion) return;
+    var targetX = ((pointer.x / window.innerWidth) - 0.5) * 14;
+    var targetY = ((pointer.y / window.innerHeight) - 0.5) * 10;
+    curParX += (targetX - curParX)*0.06;
+    curParY += (targetY - curParY)*0.06;
+    if (copyEl) copyEl.style.transform = "translate3d(" + (curParX*-0.4) + "px," + (curParY*-0.4) + "px,0)";
+    if (mochiWrapEl) mochiWrapEl.style.transform = "translate3d(" + (curParX*0.6) + "px," + (curParY*0.6) + "px,0)";
+  }
+
+  /* ============================================================
+     MAIN LOOP
+  ============================================================ */
+  var running = true;
+  var lastTime = performance.now();
+
+  function frame(now){
+    if (!running) return;
+    var dt = Math.min(now - lastTime, 48);
+    lastTime = now;
+
+    if (!reduceMotion){
+      drawBokeh(dt);
+      updateParallax();
+    }
+    drawMochi(dt);
+
+    // decay pointer velocity so jiggle settles
+    pointerVelocity.x *= 0.9;
+    pointerVelocity.y *= 0.9;
+
+    requestAnimationFrame(frame);
+  }
+
+  function start(){
+    running = true;
+    lastTime = performance.now();
+    requestAnimationFrame(frame);
+  }
+  function stop(){ running = false; }
+
+  document.addEventListener("visibilitychange", function(){
+    if (document.hidden) stop(); else start();
+  });
+
+  window.addEventListener("resize", debounce(function(){
+    resize();
+    resizeMochi();
+  }, 120), {passive:true});
+
+  // init
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  resize();
+  resizeMochi();
+
+  if (reduceMotion){
+    // draw a single static composed frame, no rAF loop
+    drawBokeh(0);
+    drawMochi(0);
+  } else {
+    start();
+  }
+
+  function debounce(fn, wait){
+    var tm;
+    return function(){
+      clearTimeout(tm);
+      var args = arguments;
+      tm = setTimeout(function(){ fn.apply(null,args); }, wait);
+    };
+  }
+
+})();
+</script>
+
+<style id="agx-chrome-css">
+.agx{position:fixed;z-index:2147483000;font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;box-sizing:border-box}
+.agx a{cursor:pointer}
+.agx-badge{right:16px;bottom:16px;display:flex;gap:7px;align-items:center;padding:8px 13px;border-radius:999px;
+  background:rgba(9,11,17,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
+.agx-badge b{color:var(--agx);font-size:13px}
+.agx-story{left:16px;bottom:16px;max-width:min(360px,calc(100vw - 32px));padding:16px 16px 13px;border-radius:16px;
+  background:rgba(9,11,17,.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;box-shadow:0 24px 70px -26px rgba(0,0,0,.85)}
+.agx-story .h{display:flex;align-items:center;gap:11px;margin-bottom:9px}
+.agx-story .em{font-size:26px;line-height:1;filter:drop-shadow(0 3px 11px var(--agx))}
+.agx-story .nm{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
+.agx-story .tl{color:var(--agx);font-size:12px;font-weight:600;margin-top:3px}
+.agx-story p{margin:0 0 11px;color:#c6ccd9;font-size:13px;line-height:1.56}
+.agx-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.agx-tags span{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#aeb6c6;
+  border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px 9px}
+.agx-guess{margin:0 0 12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.09)}
+.agx-guess .gq{font-size:11.5px;color:#aeb6c6;margin-bottom:8px;letter-spacing:.01em}
+.agx-guess .gbtns{display:flex;gap:8px}
+.agx-guess .gbtn{flex:1;padding:8px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
+  background:rgba(255,255,255,.03);color:#eef1f7;font-size:12px;font-weight:600;cursor:pointer;
+  transition:transform .15s,border-color .15s,background .15s,opacity .15s;font-family:inherit}
+.agx-guess .gbtn:hover:not(:disabled){border-color:var(--agx);background:rgba(255,255,255,.07);transform:translateY(-1px)}
+.agx-guess .gbtn:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
+.agx-guess .gbtn:disabled{cursor:default}
+.agx-guess .gbtn.correct{border-color:#5eea8f;background:rgba(94,234,143,.16);color:#a4f5be;opacity:1}
+.agx-guess .gbtn.wrong{border-color:#ff6a6a;background:rgba(255,106,106,.14);color:#ffb9b9;opacity:1}
+.agx-guess .gbtn.dim{opacity:.45}
+.agx-guess .greveal{margin-top:9px;font-size:11.5px;line-height:1.55;color:#c6ccd9}
+.agx-guess .greveal b{color:#eef1f7}
+.agx-nav{display:flex;align-items:center;gap:13px;font-size:12.5px;border-top:1px solid rgba(255,255,255,.09);padding-top:11px}
+.agx-nav a{color:#eef1f7;text-decoration:none;opacity:.82}
+.agx-nav a:hover{opacity:1;color:var(--agx)}
+.agx-nav .home{margin-right:auto;font-weight:600}
+.agx-nav a[aria-disabled=true]{opacity:.32;pointer-events:none}
+@media (max-width:560px){.agx-story{left:12px;right:12px;bottom:12px;max-width:none}.agx-badge{display:none}}
+@media (prefers-reduced-motion:reduce){.agx-story .em{filter:none}}
+</style>
+<div class="agx agx-badge" style="--agx:#ffb3d1">AGENTICS · JULI <b>20</b></div>
+<aside class="agx agx-story" style="--agx:#ffb3d1" aria-label="Avatarens historie">
+  <div class="h"><div class="em">🍡</div><div><div class="nm">Mochi</div><div class="tl">Blød udenpå, ekstremt effektiv indeni.</div></div></div>
+  <p>Mochi ser ud, som om han kunne falde i søvn midt i en sætning, men lad dig ikke narre – under den bløde skal sidder en agent, der komprimerer tunge processer til noget, man kan sluge i én bid. Han tager det komplicerede og gør det spiseligt. Ingen kanter, ingen ventetid.</p>
+  <div class="agx-tags"><span>smidig</span><span>afslappet</span><span>effektiv</span></div>
+  <div class="agx-guess" id="agxGuess">
+    <div class="gq">🤖 Hvilken Claude-model byggede Mochi?</div>
+    <div class="gbtns">
+      <button type="button" class="gbtn" data-m="opus">Opus 4.8</button>
+      <button type="button" class="gbtn" data-m="sonnet">Sonnet 5</button>
+    </div>
+    <div class="greveal" id="agxReveal" hidden></div>
+  </div>
+  <nav class="agx-nav">
+    <a class="home" href="calendar.html">← Kalender</a>
+    <a href="day-19.html">‹ forrige</a>
+    <a data-day="21" href="day-21.html">næste ›</a>
+  </nav>
+</aside>
+<script>(function(){var n=document.querySelector('.agx-nav a[data-day]');if(!n)return;var d=+n.getAttribute('data-day');
+if(new Date()<new Date(2026,6,d)){n.setAttribute('aria-disabled','true');n.textContent='næste (åbner '+d+'. juli)';}})();</script>
+<script>(function(){
+  var DAY=20, MODEL='sonnet', NAME="Mochi";
+  var KEY='agx_guess_'+DAY;
+  var wrap=document.getElementById('agxGuess');
+  if(!wrap) return;
+  var btns=Array.prototype.slice.call(wrap.querySelectorAll('.gbtn'));
+  var reveal=document.getElementById('agxReveal');
+  var TXT={
+    opus:'🧠 Rigtigt svar: <b>Claude Opus 4.8</b> byggede '+NAME+'.',
+    sonnet:'⚡ Rigtigt svar: <b>Claude Sonnet 5</b> byggede '+NAME+'.'
+  };
+  function render(saved){
+    btns.forEach(function(b){
+      b.disabled=true;
+      var m=b.getAttribute('data-m');
+      if(m===MODEL) b.classList.add('correct');
+      else if(m===saved) b.classList.add('wrong'); else b.classList.add('dim');
+    });
+    var extra = saved===MODEL ? ' Du gættede rigtigt! 🎉' : ' Forkert gæt denne gang — bedre held i morgen.';
+    reveal.innerHTML=TXT[MODEL]+extra;
+    reveal.hidden=false;
+  }
+  var prior=localStorage.getItem(KEY);
+  if(prior){ render(prior); return; }
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){
+      var g=b.getAttribute('data-m');
+      try{ localStorage.setItem(KEY, g); }catch(e){}
+      render(g);
+    });
+  });
+})();</script>
+
+</body>
+</html>
