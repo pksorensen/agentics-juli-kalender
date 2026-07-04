@@ -294,6 +294,11 @@ app.get('/api/events', (req, res) => {
   res.setHeader('X-Accel-Buffering', 'no'); // ingen buffering i nginx/proxies
   res.flushHeaders();
 
+  // 2 KB kommentar-padding: Traefiks compress-middleware buffrer de første
+  // ~1024 bytes mens den beslutter sig — uden padding når små SSE-events
+  // aldrig browseren. Kommentarlinjer (:) ignoreres af EventSource.
+  res.write(':' + ' '.repeat(2048) + '\n\n');
+
   // 'error' på socket/stream (fx skrivning efter disconnect) må aldrig crashe.
   res.on('error', () => sseClients.delete(res));
 
