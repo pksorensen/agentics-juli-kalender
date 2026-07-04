@@ -61,10 +61,12 @@ Når en ny avatar er genereret og deployet: `POST /api/wake {"slug":"neko"}`
 |---|---|
 | `calendar.html` | 31-lågers kalender-grid. Datolåst til juli 2026 — alle avatarer er synlige, men kun passerede dage kan klikkes. `?preview=1` låser alt op (operator-preview, per browser); `?preview=0` slår det fra igen. |
 | `day-1.html` … `day-31.html` | Én side per avatar: fullscreen cinematic hero, cursor-reaktiv SVG/canvas-mascot, historie-kort og gætte-widget (localStorage; scoren samles på kalendersiden). |
-| `day-2.html` | 🎬 Opgraderet til **rigtig video-avatar** (Viktor Oddy-workflowet): GPT Image 2-still → Seedance 2.0 image-to-video → all-intra re-encode → scroll-scrubbet playhead. Den kodede original ligger i `assets/day-2/day-2-coded-original.html`. |
-| `assets/day-N/` | Genererede video-assets per opgraderet dag (still, rå klip, scrub-mp4/webm, poster). |
-| `tools/assemble.py` | Genererer `calendar.html` + injicerer historie-kort/gætte-widget i alle day-sider. `--calendar-only` springer day-injektionen over (kør ALDRIG fuld injektion to gange — chromen dubleres). |
-| `index.html`, `concept-*.html`, `round2-*.html` | Rå kildesider fra de første eksperiment-runder (dag 1–13 peger på indhold herfra). |
+| `day-2.html`, `day-3.html` | 🎬 Opgraderet til **rigtig video-avatar** (Viktor Oddy-workflowet): GPT Image 2-still → Seedance 2.0 image-to-video → all-intra re-encode → scroll-scrubbet playhead. Historie/tags/stemme-/gætte-widget/nav ligger in-flow i en `.below`-sektion (ikke som fast overlay — det dækkede karakteren). En "🎬 Levende / ✏️ Kodet"-toggle viser den bevarede kodede original via iframe. Kodet original: `assets/day-N/day-N-coded-original.html`. |
+| `assets/day-N/` | Genererede video-assets per opgraderet dag (still, rå klip, scrub-mp4/webm, poster, kodet original). |
+| `tools/assemble.py` | Genererer **kun** `calendar.html` (+ `ANSWER_KEY.txt`). Kør: `python3 tools/assemble.py` (ingen flag nødvendige). Trygt at importere/køre igen — ren funktion af `day-N.html`s indhold, ingen andre filer røres. (Historisk indeholdt den også `inject()`, som satte historie-kortet på alle day-sider første gang; det job er gjort — se git-historik hvis nysgerrig.) |
+| `tools/inject_vote_block.py` | Idempotent patcher: sætter/opgraderer stemme/fodrings-widget'en i alle 31 day-sider. |
+| `tools/add_story_toggle.py` | Idempotent patcher: sætter skjul/vis-toggle på historie-kortet på de statiske day-sider (ikke dag 2/3, der har deres eget in-flow layout). |
+| `index.html`, `concept-*.html`, `round2-*.html` | Rå kildesider fra de første eksperiment-runder — kun historiske, ingen kode læser dem længere. |
 | `ANSWER_KEY.txt` | Facitliste for gætte-spillet. (Svarene ligger alligevel klient-side i `calendar.html`, så den er her mest for nemhedens skyld.) |
 
 ## Gætte-spillet

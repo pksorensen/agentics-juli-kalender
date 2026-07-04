@@ -1,19 +1,29 @@
 #!/usr/bin/env python3
-# Assembles the agentics.dk "juli" avatar advent calendar:
-#  - injects uniform story chrome into all 31 day pages (day-1..31.html)
-#  - generates calendar.html (date-locked 31-door grid)
-# Usage: python3 assemble.py <workflow_task_output.json>
-import sys, json, html, re, os
+# Generates calendar.html (date-locked 31-door grid) for the agentics.dk julikalender.
+#
+# NOTE: this file used to ALSO contain inject(), a one-time tool that stamped the
+# story-card/badge/guess-widget "chrome" onto all 31 day-N.html pages. That job is
+# done — every day page has had its chrome for a long time, and day-N.html is now
+# the living source of truth (patched in place by targeted, idempotent scripts like
+# inject_vote_block.py and add_story_toggle.py). inject() was removed because it was
+# a landmine: it was non-idempotent (re-running it for days 1-13 would overwrite
+# day-N.html from STALE pre-video/pre-vote source files, e.g. concept-b.html), and it
+# had no `if __name__ == "__main__"` guard, so merely `import`ing this module used to
+# silently run it and corrupt the site (this actually happened once — see git log).
+# If you ever need to re-derive that history, it's in git blame on this file.
+#
+# Usage: python3 assemble.py
+import sys, json, html, os
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-# single source of truth for the vote-campaign block — tools/inject_vote_block.py
-# patches existing day pages in place; we import the exact same builders here so
-# a future FULL regeneration produces byte-identical vote markup.
-from inject_vote_block import VOTE_CSS, VOTE_ROSTER, vote_block
+# single source of truth for the vote-campaign block, reused here only for the
+# slug/name/emoji/accent roster (VOTE_ROSTER) that the campaign top-3 needs.
+from inject_vote_block import VOTE_ROSTER
 
 DIR = "/home/claude-desktop/experiments/animated-avatar"
 
-# day -> (name, emoji, accent, source_file_or_None[in-place day-N.html])
+# day -> (name, emoji, accent, <vestigial: original pre-video source file, unused
+# now that inject() is gone — day-N.html is the only source of truth for content>)
 ROSTER = {
  1:("AURA","🔮","#38e6ff","concept-a.html"),
  2:("Ræv","🦊","#ff9a3d","concept-b.html"),
@@ -60,196 +70,6 @@ MODEL.update({
     29: "sonnet", 30: "opus", 31: "sonnet",
 })
 MODEL_LABEL = {"opus": "Claude Opus 4.8", "sonnet": "Claude Sonnet 5"}
-
-# ---- args: optional workflow-output path + --calendar-only (skip re-injecting chrome into
-#      day-N.html, since those files are ALSO the injection target — re-running inject() on
-#      an already-injected file would double-append the chrome block) ----
-CALENDAR_ONLY = "--calendar-only" in sys.argv
-pos_args = [a for a in sys.argv[1:] if not a.startswith("--")]
-
-# ---- load stories from workflow output ----
-stories = {}
-if pos_args:
-    raw = open(pos_args[0]).read()
-    try:
-        data = json.loads(raw)
-    except Exception:
-        i = raw.find('{'); data = json.loads(raw[i:])
-    st = (data.get("result") or data).get("stories") or {}
-    for k, v in st.items():
-        stories[int(k)] = v
-
-def story_for(day):
-    s = stories.get(day) or {}
-    name = ROSTER[day][0]
-    return (
-        s.get("tagline") or "En agent i agentics.dk-holdet",
-        s.get("lore") or f"{name} er en del af agentics.dk's agent-hold — en lille autonom karakter med sit helt eget temperament.",
-        s.get("tags") or ["agentisk","autonom","dansk"],
-    )
-
-CHROME = """
-<style id="agx-chrome-css">
-.agx{position:fixed;z-index:2147483000;font-family:-apple-system,"Segoe UI",Inter,system-ui,sans-serif;box-sizing:border-box}
-.agx a{cursor:pointer}
-.agx-badge{right:16px;bottom:16px;display:flex;gap:7px;align-items:center;padding:8px 13px;border-radius:999px;
-  background:rgba(9,11,17,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  border:1px solid rgba(255,255,255,.13);color:#eef1f7;font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:600}
-.agx-badge b{color:var(--agx);font-size:13px}
-.agx-story{left:16px;bottom:16px;max-width:min(360px,calc(100vw - 32px));padding:16px 16px 13px;border-radius:16px;
-  background:rgba(9,11,17,.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-  border:1px solid rgba(255,255,255,.13);color:#eef1f7;box-shadow:0 24px 70px -26px rgba(0,0,0,.85)}
-.agx-story .h{display:flex;align-items:center;gap:11px;margin-bottom:9px}
-.agx-story .em{font-size:26px;line-height:1;filter:drop-shadow(0 3px 11px var(--agx))}
-.agx-story .nm{font-size:17px;font-weight:700;letter-spacing:-.01em;line-height:1.1}
-.agx-story .tl{color:var(--agx);font-size:12px;font-weight:600;margin-top:3px}
-.agx-story p{margin:0 0 11px;color:#c6ccd9;font-size:13px;line-height:1.56}
-.agx-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
-.agx-tags span{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:#aeb6c6;
-  border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:3px 9px}
-__VOTECSS__.agx-guess{margin:0 0 12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.09)}
-.agx-guess .gq{font-size:11.5px;color:#aeb6c6;margin-bottom:8px;letter-spacing:.01em}
-.agx-guess .gbtns{display:flex;gap:8px}
-.agx-guess .gbtn{flex:1;padding:8px 8px;border-radius:10px;border:1px solid rgba(255,255,255,.15);
-  background:rgba(255,255,255,.03);color:#eef1f7;font-size:12px;font-weight:600;cursor:pointer;
-  transition:transform .15s,border-color .15s,background .15s,opacity .15s;font-family:inherit}
-.agx-guess .gbtn:hover:not(:disabled){border-color:var(--agx);background:rgba(255,255,255,.07);transform:translateY(-1px)}
-.agx-guess .gbtn:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
-.agx-guess .gbtn:disabled{cursor:default}
-.agx-guess .gbtn.correct{border-color:#5eea8f;background:rgba(94,234,143,.16);color:#a4f5be;opacity:1}
-.agx-guess .gbtn.wrong{border-color:#ff6a6a;background:rgba(255,106,106,.14);color:#ffb9b9;opacity:1}
-.agx-guess .gbtn.dim{opacity:.45}
-.agx-guess .greveal{margin-top:9px;font-size:11.5px;line-height:1.55;color:#c6ccd9}
-.agx-guess .greveal b{color:#eef1f7}
-.agx-nav{display:flex;align-items:center;gap:13px;font-size:12.5px;border-top:1px solid rgba(255,255,255,.09);padding-top:11px}
-.agx-nav a{color:#eef1f7;text-decoration:none;opacity:.82}
-.agx-nav a:hover{opacity:1;color:var(--agx)}
-.agx-nav .home{margin-right:auto;font-weight:600}
-.agx-nav a[aria-disabled=true]{opacity:.32;pointer-events:none}
-@media (max-width:560px){.agx-story{left:12px;right:12px;bottom:12px;max-width:none}.agx-badge{display:none}}
-@media (prefers-reduced-motion:reduce){.agx-story .em{filter:none}}
-/* <!-- agx-story-toggle --> */
-.agx-story.agx-hidden{display:none}
-.agx-story .x{position:absolute;top:10px;right:10px;width:26px;height:26px;display:flex;
-  align-items:center;justify-content:center;border-radius:999px;border:1px solid rgba(255,255,255,.16);
-  background:rgba(255,255,255,.06);color:#eef1f7;font-size:13px;line-height:1;cursor:pointer;
-  transition:background .15s,transform .15s;padding:0}
-.agx-story .x:hover{background:rgba(255,255,255,.14);transform:scale(1.06)}
-.agx-story .x:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
-.agx-reopen{left:16px;bottom:16px;width:42px;height:42px;border-radius:999px;display:flex;
-  align-items:center;justify-content:center;font-size:19px;line-height:1;cursor:pointer;
-  background:rgba(9,11,17,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
-  border:1px solid rgba(255,255,255,.13);color:#eef1f7;padding:0}
-.agx-reopen:hover{background:rgba(9,11,17,.72)}
-.agx-reopen:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
-.agx-reopen[hidden]{display:none}
-@media (max-width:560px){.agx-reopen{left:12px;bottom:12px}}
-</style>
-<div class="agx agx-badge" style="--agx:__ACC__">AGENTICS · JULI <b>__DD__</b></div>
-<button type="button" class="agx agx-reopen" id="agxStoryReopen" aria-label="Vis info om avataren" hidden>__EMOJI__</button>
-<aside class="agx agx-story" style="--agx:__ACC__" aria-label="Avatarens historie">
-  <div class="h"><div class="em">__EMOJI__</div><div><div class="nm">__NAME__</div><div class="tl">__TAGLINE__</div></div></div><button type="button" class="x" id="agxStoryX" aria-label="Skjul info">✕</button>
-  <p>__LORE__</p>
-  <div class="agx-tags">__TAGS__</div>
-__VOTE__
-  <div class="agx-guess" id="agxGuess">
-    <div class="gq">🤖 Hvilken Claude-model byggede __NAME__?</div>
-    <div class="gbtns">
-      <button type="button" class="gbtn" data-m="opus">Opus 4.8</button>
-      <button type="button" class="gbtn" data-m="sonnet">Sonnet 5</button>
-    </div>
-    <div class="greveal" id="agxReveal" hidden></div>
-  </div>
-  <nav class="agx-nav">
-    <a class="home" href="calendar.html">← Kalender</a>
-    __PREV__
-    __NEXT__
-  </nav>
-</aside>
-<script>(function(){var n=document.querySelector('.agx-nav a[data-day]');if(!n)return;var d=+n.getAttribute('data-day');
-if(new Date()<new Date(2026,6,d)){n.setAttribute('aria-disabled','true');n.textContent='næste (åbner '+d+'. juli)';}})();</script>
-<script>(function(){
-  var DAY=__DAYNUM__, MODEL='__MODEL__', NAME='__NAMEJS__';
-  var KEY='agx_guess_'+DAY;
-  var wrap=document.getElementById('agxGuess');
-  if(!wrap) return;
-  var btns=Array.prototype.slice.call(wrap.querySelectorAll('.gbtn'));
-  var reveal=document.getElementById('agxReveal');
-  var TXT={
-    opus:'🧠 Rigtigt svar: <b>Claude Opus 4.8</b> byggede '+NAME+'.',
-    sonnet:'⚡ Rigtigt svar: <b>Claude Sonnet 5</b> byggede '+NAME+'.'
-  };
-  function render(saved){
-    btns.forEach(function(b){
-      b.disabled=true;
-      var m=b.getAttribute('data-m');
-      if(m===MODEL) b.classList.add('correct');
-      else if(m===saved) b.classList.add('wrong'); else b.classList.add('dim');
-    });
-    var extra = saved===MODEL ? ' Du gættede rigtigt! 🎉' : ' Forkert gæt denne gang — bedre held i morgen.';
-    reveal.innerHTML=TXT[MODEL]+extra;
-    reveal.hidden=false;
-  }
-  var prior=localStorage.getItem(KEY);
-  if(prior){ render(prior); return; }
-  btns.forEach(function(b){
-    b.addEventListener('click', function(){
-      var g=b.getAttribute('data-m');
-      try{ localStorage.setItem(KEY, g); }catch(e){}
-      render(g);
-    });
-  });
-})();</script>
-<script>// <!-- agx-story-toggle -->
-(function(){
-  var DAY=__DAYNUM__, KEY='agx_hide_'+DAY;
-  var card=document.querySelector('.agx-story'), reopen=document.getElementById('agxStoryReopen'),
-      x=document.getElementById('agxStoryX');
-  if(!card||!reopen||!x) return;
-  function hide(){card.classList.add('agx-hidden');reopen.hidden=false;try{sessionStorage.setItem(KEY,'1');}catch(e){}}
-  function show(){card.classList.remove('agx-hidden');reopen.hidden=true;try{sessionStorage.removeItem(KEY);}catch(e){}}
-  var wasHidden=false; try{wasHidden=sessionStorage.getItem(KEY)==='1';}catch(e){}
-  if(wasHidden){card.classList.add('agx-hidden');reopen.hidden=false;}
-  x.addEventListener('click',hide);
-  reopen.addEventListener('click',show);
-})();</script>
-"""
-
-def inject(day):
-    name, emoji, acc, src = ROSTER[day]
-    tagline, lore, tags = story_for(day)
-    srcpath = f"{DIR}/{src}" if src else f"{DIR}/day-{day}.html"
-    doc = open(srcpath, encoding="utf-8").read()
-    tags_html = "".join(f"<span>{html.escape(str(t))}</span>" for t in tags[:3])
-    prev = (f'<a href="day-{day-1}.html">‹ forrige</a>' if day > 1
-            else '<a aria-disabled="true">‹ forrige</a>')
-    nxt = (f'<a data-day="{day+1}" href="day-{day+1}.html">næste ›</a>' if day < 31
-           else '<a aria-disabled="true">finale 🎉</a>')
-    name_js = json.dumps(name)  # safe JS string literal, handles æøå/quotes
-    chrome = (CHROME.replace("__ACC__", acc).replace("__DD__", f"{day:02d}")
-              .replace("__EMOJI__", emoji).replace("__NAME__", html.escape(name))
-              .replace("__TAGLINE__", html.escape(tagline)).replace("__LORE__", html.escape(lore))
-              .replace("__TAGS__", tags_html).replace("__PREV__", prev).replace("__NEXT__", nxt)
-              .replace("__DAYNUM__", str(day)).replace("__MODEL__", MODEL[day])
-              .replace("'__NAMEJS__'", name_js)
-              .replace("__VOTECSS__", VOTE_CSS).replace("__VOTE__", vote_block(day)))
-    if "</body>" in doc:
-        doc = doc.replace("</body>", chrome + "\n</body>", 1)
-    else:
-        doc = doc + chrome
-    open(f"{DIR}/day-{day}.html", "w", encoding="utf-8").write(doc)
-
-# ---- build all 31 day pages ----
-if not CALENDAR_ONLY:
-    made = []
-    for d in range(1, 32):
-        try:
-            inject(d); made.append(d)
-        except FileNotFoundError:
-            print(f"  ! missing source for day {d}: {ROSTER[d][3]}")
-    print(f"injected chrome into {len(made)}/31 day pages")
-else:
-    print("--calendar-only: skipped day-page injection")
 
 # ---- calendar.html ----
 # every avatar's art/name is always shown; only the CLICK-THROUGH to day-N.html is date-gated
@@ -928,22 +748,28 @@ var AGX_AVATARS = __AVATARS_JSON__;
 </body>
 </html>
 """
-models_json = json.dumps({str(d): MODEL[d] for d in range(1, 32)})
-# slug -> [name, emoji, accent] for the campaign top-3 (names/emoji are plain
-# ASCII/emoji — ensure_ascii keeps the inline JSON safe inside the script tag)
-avatars_json = json.dumps(
-    {slug: [name, emoji, acc] for slug, name, emoji, acc in VOTE_ROSTER.values()}
-)
-open(f"{DIR}/calendar.html","w",encoding="utf-8").write(
-    CAL.replace("__DOORS1__", doors_by_group[0]).replace("__DOORS2__", doors_by_group[1])
-       .replace("__DOORS3__", doors_by_group[2]).replace("__DOORS4__", doors_by_group[3])
-       .replace("__MODELS_JSON__", models_json).replace("__AVATARS_JSON__", avatars_json)
-)
-print(f"wrote calendar.html (live days: {sorted(LIVE_DAYS)})")
+# ---- the only file-writing side effects in this module — guarded so that merely
+#      importing assemble.py (accidentally, via a linter, a stray `python3 -c
+#      "import assemble"`, etc.) can NEVER touch disk. Only `python3 assemble.py`
+#      run directly does. This guard is the actual fix for the incident referenced
+#      in the module docstring above. ----
+if __name__ == "__main__":
+    models_json = json.dumps({str(d): MODEL[d] for d in range(1, 32)})
+    # slug -> [name, emoji, accent] for the campaign top-3 (names/emoji are plain
+    # ASCII/emoji — ensure_ascii keeps the inline JSON safe inside the script tag)
+    avatars_json = json.dumps(
+        {slug: [name, emoji, acc] for slug, name, emoji, acc in VOTE_ROSTER.values()}
+    )
+    open(f"{DIR}/calendar.html", "w", encoding="utf-8").write(
+        CAL.replace("__DOORS1__", doors_by_group[0]).replace("__DOORS2__", doors_by_group[1])
+           .replace("__DOORS3__", doors_by_group[2]).replace("__DOORS4__", doors_by_group[3])
+           .replace("__MODELS_JSON__", models_json).replace("__AVATARS_JSON__", avatars_json)
+    )
+    print(f"wrote calendar.html (live days: {sorted(LIVE_DAYS)})")
 
-# ---- answer key for the operator (not linked from any page) ----
-key_lines = ["day\tname\tmodel"]
-for d in range(1, 32):
-    key_lines.append(f"{d}\t{ROSTER[d][0]}\t{MODEL_LABEL[MODEL[d]]}")
-open(f"{DIR}/ANSWER_KEY.txt", "w", encoding="utf-8").write("\n".join(key_lines) + "\n")
-print("wrote ANSWER_KEY.txt (operator-only, not linked)")
+    # ---- answer key for the operator (not linked from any page) ----
+    key_lines = ["day\tname\tmodel"]
+    for d in range(1, 32):
+        key_lines.append(f"{d}\t{ROSTER[d][0]}\t{MODEL_LABEL[MODEL[d]]}")
+    open(f"{DIR}/ANSWER_KEY.txt", "w", encoding="utf-8").write("\n".join(key_lines) + "\n")
+    print("wrote ANSWER_KEY.txt (operator-only, not linked)")
