@@ -128,10 +128,27 @@ __VOTECSS__.agx-guess{margin:0 0 12px;padding-top:11px;border-top:1px solid rgba
 .agx-nav a[aria-disabled=true]{opacity:.32;pointer-events:none}
 @media (max-width:560px){.agx-story{left:12px;right:12px;bottom:12px;max-width:none}.agx-badge{display:none}}
 @media (prefers-reduced-motion:reduce){.agx-story .em{filter:none}}
+/* <!-- agx-story-toggle --> */
+.agx-story.agx-hidden{display:none}
+.agx-story .x{position:absolute;top:10px;right:10px;width:26px;height:26px;display:flex;
+  align-items:center;justify-content:center;border-radius:999px;border:1px solid rgba(255,255,255,.16);
+  background:rgba(255,255,255,.06);color:#eef1f7;font-size:13px;line-height:1;cursor:pointer;
+  transition:background .15s,transform .15s;padding:0}
+.agx-story .x:hover{background:rgba(255,255,255,.14);transform:scale(1.06)}
+.agx-story .x:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
+.agx-reopen{left:16px;bottom:16px;width:42px;height:42px;border-radius:999px;display:flex;
+  align-items:center;justify-content:center;font-size:19px;line-height:1;cursor:pointer;
+  background:rgba(9,11,17,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;padding:0}
+.agx-reopen:hover{background:rgba(9,11,17,.72)}
+.agx-reopen:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
+.agx-reopen[hidden]{display:none}
+@media (max-width:560px){.agx-reopen{left:12px;bottom:12px}}
 </style>
 <div class="agx agx-badge" style="--agx:__ACC__">AGENTICS · JULI <b>__DD__</b></div>
+<button type="button" class="agx agx-reopen" id="agxStoryReopen" aria-label="Vis info om avataren" hidden>__EMOJI__</button>
 <aside class="agx agx-story" style="--agx:__ACC__" aria-label="Avatarens historie">
-  <div class="h"><div class="em">__EMOJI__</div><div><div class="nm">__NAME__</div><div class="tl">__TAGLINE__</div></div></div>
+  <div class="h"><div class="em">__EMOJI__</div><div><div class="nm">__NAME__</div><div class="tl">__TAGLINE__</div></div></div><button type="button" class="x" id="agxStoryX" aria-label="Skjul info">✕</button>
   <p>__LORE__</p>
   <div class="agx-tags">__TAGS__</div>
 __VOTE__
@@ -182,6 +199,19 @@ if(new Date()<new Date(2026,6,d)){n.setAttribute('aria-disabled','true');n.textC
       render(g);
     });
   });
+})();</script>
+<script>// <!-- agx-story-toggle -->
+(function(){
+  var DAY=__DAYNUM__, KEY='agx_hide_'+DAY;
+  var card=document.querySelector('.agx-story'), reopen=document.getElementById('agxStoryReopen'),
+      x=document.getElementById('agxStoryX');
+  if(!card||!reopen||!x) return;
+  function hide(){card.classList.add('agx-hidden');reopen.hidden=false;try{sessionStorage.setItem(KEY,'1');}catch(e){}}
+  function show(){card.classList.remove('agx-hidden');reopen.hidden=true;try{sessionStorage.removeItem(KEY);}catch(e){}}
+  var wasHidden=false; try{wasHidden=sessionStorage.getItem(KEY)==='1';}catch(e){}
+  if(wasHidden){card.classList.add('agx-hidden');reopen.hidden=false;}
+  x.addEventListener('click',hide);
+  reopen.addEventListener('click',show);
 })();</script>
 """
 

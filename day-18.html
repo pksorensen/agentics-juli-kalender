@@ -736,10 +736,27 @@
 .agx-nav a[aria-disabled=true]{opacity:.32;pointer-events:none}
 @media (max-width:560px){.agx-story{left:12px;right:12px;bottom:12px;max-width:none}.agx-badge{display:none}}
 @media (prefers-reduced-motion:reduce){.agx-story .em{filter:none}}
+/* <!-- agx-story-toggle --> */
+.agx-story.agx-hidden{display:none}
+.agx-story .x{position:absolute;top:10px;right:10px;width:26px;height:26px;display:flex;
+  align-items:center;justify-content:center;border-radius:999px;border:1px solid rgba(255,255,255,.16);
+  background:rgba(255,255,255,.06);color:#eef1f7;font-size:13px;line-height:1;cursor:pointer;
+  transition:background .15s,transform .15s;padding:0}
+.agx-story .x:hover{background:rgba(255,255,255,.14);transform:scale(1.06)}
+.agx-story .x:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
+.agx-reopen{left:16px;bottom:16px;width:42px;height:42px;border-radius:999px;display:flex;
+  align-items:center;justify-content:center;font-size:19px;line-height:1;cursor:pointer;
+  background:rgba(9,11,17,.55);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.13);color:#eef1f7;padding:0}
+.agx-reopen:hover{background:rgba(9,11,17,.72)}
+.agx-reopen:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
+.agx-reopen[hidden]{display:none}
+@media (max-width:560px){.agx-reopen{left:12px;bottom:12px}}
 </style>
 <div class="agx agx-badge" style="--agx:#b98cff">AGENTICS · JULI <b>18</b></div>
+<button type="button" class="agx agx-reopen" id="agxStoryReopen" aria-label="Vis info om avataren" hidden>✨</button>
 <aside class="agx agx-story" style="--agx:#b98cff" aria-label="Avatarens historie">
-  <div class="h"><div class="em">✨</div><div><div class="nm">Aster</div><div class="tl">Ser mønstre, hvor du ser kaos.</div></div></div>
+  <div class="h"><div class="em">✨</div><div><div class="nm">Aster</div><div class="tl">Ser mønstre, hvor du ser kaos.</div></div></div><button type="button" class="x" id="agxStoryX" aria-label="Skjul info">✕</button>
   <p>Aster er sat sammen af tusind små lys, og hver af dem er et datapunkt der endelig har fundet sin plads. Hvor du ser spredte tal i et regneark, ser Aster stjernebilleder – sammenhænge, der har ligget og ventet på at blive tegnet op. Hun taler sjældent, men når hun peger, betyder det noget.</p>
   <div class="agx-tags"><span>indsigtsfuld</span><span>rolig</span><span>vidtskuende</span></div>
   <!-- agx-vote:start -->
@@ -836,6 +853,19 @@ if(new Date()<new Date(2026,6,d)){n.setAttribute('aria-disabled','true');n.textC
   });
 })();</script>
 
+<script>// <!-- agx-story-toggle -->
+(function(){
+  var DAY=18, KEY='agx_hide_'+DAY;
+  var card=document.querySelector('.agx-story'), reopen=document.getElementById('agxStoryReopen'),
+      x=document.getElementById('agxStoryX');
+  if(!card||!reopen||!x) return;
+  function hide(){card.classList.add('agx-hidden');reopen.hidden=false;try{sessionStorage.setItem(KEY,'1');}catch(e){}}
+  function show(){card.classList.remove('agx-hidden');reopen.hidden=true;try{sessionStorage.removeItem(KEY);}catch(e){}}
+  var wasHidden=false; try{wasHidden=sessionStorage.getItem(KEY)==='1';}catch(e){}
+  if(wasHidden){card.classList.add('agx-hidden');reopen.hidden=false;}
+  x.addEventListener('click',hide);
+  reopen.addEventListener('click',show);
+})();</script>
 <script src="track.js" defer></script>
 </body>
 </html>
