@@ -1,6 +1,6 @@
-# agentics.dk · Juli-kalender 2026 🗓️🦊
+# agentics.dk · Julikalenderen 2026 🗓️🦊
 
-En omvendt julekalender for juli: **31 dage, 31 animerede avatarer** — én "låge"
+En julikalender (ja, med i): **31 dage, 31 animerede avatarer** — én "låge"
 åbner hver dag i juli 2026. Hver avatar er en lille autonom karakter i
 agentics.dk's agent-hold, med sit eget temperament, sin egen historie og et
 gætte-spil: *hvilken Claude-model byggede den?*

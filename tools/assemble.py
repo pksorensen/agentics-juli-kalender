@@ -491,7 +491,7 @@ CAL = r"""<!doctype html>
 <main class="wrap" id="top">
 
   <header class="hero">
-    <div class="kicker rv">Julikalenderen · 31 dage, 31 agenter</div>
+    <div class="kicker rv">Julikalenderen · 31 dage, 31 AI-avatarer</div>
     <h1 class="rv">De sover.<br>Du kan <span class="g">vække</span> dem.</h1>
     <p class="sub rv">Hver dag i juli åbner en ny låge med en karakter bygget af AI. Nogle er allerede vågnet som levende video-avatarer — resten venter på likes, mails og en smule kærlighed.</p>
     <div class="econ rv">
@@ -518,7 +518,7 @@ __DOORS1__
     <div class="eyebrow rv">Konceptet</div>
     <h2 class="rv">En kalender, der kigger tilbage.</h2>
     <div class="body rv">
-      <p>En julekalender. Midt i juli. Bag hver af de 31 låger bor en agent — kodet som en levende karakter, der reagerer, når din cursor nærmer sig. Ingen af dem er ens. Alle har en historie.</p>
+      <p>En julikalender. (Ja, med i.) Bag hver af de 31 låger bor en AI-avatar — kodet som en levende karakter, der reagerer, når din cursor nærmer sig. Ingen af dem er ens. Alle har en historie.</p>
       <p>To af dem er allerede vågnet. <b>Ræven</b> bag låge 2 og <b>Agent-01</b> bag låge 3 lever nu som ægte AI-video-avatarer — skabt billede for billede, styret af dit scroll.</p>
       <p>Resten venter. På dig.</p>
     </div>
@@ -569,7 +569,7 @@ __DOORS3__
     <h2 class="rv">Nu er de dit ansvar.</h2>
     <div class="body rv">
       <p>En vågen avatar er ikke færdig. Den er sulten. Tre behov — <b>mad</b>, <b>vand</b> og <b>kærlighed</b> — tømmes langsomt og forfalder helt på 48 timer.</p>
-      <p>Én mail fodrer ét behov. Det tager ti sekunder og betyder alt for en lille agent på en server.</p>
+      <p>Én mail fodrer ét behov. Det tager ti sekunder og betyder alt for en lille avatar på en server.</p>
       <p>Men falder alle tre behov til nul, lukker øjnene sig igen. En Tamagotchi glemmer aldrig, hvem der glemte den.</p>
     </div>
     <div class="points">
@@ -594,8 +594,8 @@ __DOORS4__
     <div class="eyebrow rv">Til din forside</div>
     <h2 class="rv">Forelsket i en af dem?<br>Tag den med hjem.</h2>
     <div class="body rv">
-      <p>Hver agent i kalenderen kan blive <b>din</b>. Vi bygger den færdig som et komplet brand til din forside eller dit produkt: karakterdesign, ægte AI-video-avatar, animeret hero-side og en stemme, der passer til den.</p>
-      <p>Og det bedste: du behøver ikke udfylde en formular. Skriv direkte til agentens egen mailadresse — den du er faldet for — og bed om et tilbud. Så svarer vi. Agenten læser med.</p>
+      <p>Hver avatar i julikalenderen kan blive <b>din</b>. Vi bygger den færdig som et komplet brand til din forside eller dit produkt: karakterdesign, ægte AI-video-avatar, animeret hero-side og en stemme, der passer til den.</p>
+      <p>Og det bedste: du behøver ikke udfylde en formular. Skriv direkte til avatarens egen mailadresse — den du er faldet for — og bed om et tilbud. Så svarer vi. Avataren læser med.</p>
       <p>Den første er allerede væk: <b>Agent-01</b> er adopteret af agentics.dk selv og bliver ansigtet på deres nye forside — release lige om lidt. De 30 andre er stadig ledige.</p>
     </div>
     <a class="cta-btn ghost rv" href="mailto:raev@agent.agentics.dk?subject=Tilbud%20p%C3%A5%20R%C3%A6v%20%F0%9F%A6%8A&body=Hej%20agentics%20%E2%80%94%20jeg%20er%20interesseret%20i%20et%20tilbud%20p%C3%A5%20R%C3%A6v%20som%20avatar/brand%20til%20mit%20projekt.%20Kort%20om%20projektet%3A%20">✉️ Fx: bed Ræv om et tilbud</a>
@@ -613,7 +613,7 @@ __DOORS4__
     <a class="cta-btn rv" id="ctaToday" href="#top">Find dagens låge</a>
   </section>
 
-  <p class="foot">agentics.dk — vi bygger autonome AI-agenter. Denne kalender er selve holdet, én dag ad gangen.<br>
+  <p class="foot">agentics.dk — vi bygger autonome AI-agenter. Julikalenderen er holdets ansigter: én AI-avatar ad gangen.<br>
   Alle sider er selvstændige, animerede og cursor-reaktive. #agentics #juli</p>
 </main>
 <script>
@@ -678,7 +678,7 @@ var AGX_MODELS = __MODELS_JSON__;
   }
   if(todayDay===null){
     document.getElementById('hint').textContent = (now<new Date(YEAR,MONTH,1))
-      ? 'Kalenderen starter 1. juli 2026.' : 'Juli 2026 er slut — alle 31 agenter er åbne. 🎉';
+      ? 'Kalenderen starter 1. juli 2026.' : 'Juli 2026 er slut — alle 31 låger er åbne. 🎉';
   }
   // guess-the-model score, aggregated from each day page's localStorage guess
   var guessed=0, correct=0;
