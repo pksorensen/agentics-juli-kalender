@@ -287,7 +287,9 @@ app.get('/api/health', (req, res) => {
 // Offentlig SSE-strøm (ingen auth). Backlog ved connect, derefter live events.
 app.get('/api/events', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
-  res.setHeader('Cache-Control', 'no-cache');
+  // no-transform: Traefik's gzip-middleware buffrer ellers streamen — browseren
+  // ser aldrig events (curl uden Accept-Encoding virker, hvilket narrer én).
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
   res.setHeader('Connection', 'keep-alive');
   res.setHeader('X-Accel-Buffering', 'no'); // ingen buffering i nginx/proxies
   res.flushHeaders();
