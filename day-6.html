@@ -346,8 +346,8 @@
   var DPR = Math.min(window.devicePixelRatio||1, 2);
   var W=0,H=0, puffs=[];
   function resize(){
-    W = canvas.clientWidth = innerWidth;
-    H = canvas.clientHeight = innerHeight;
+    W = innerWidth;
+    H = innerHeight;
     canvas.width = Math.floor(W*DPR);
     canvas.height = Math.floor(H*DPR);
     ctx.setTransform(DPR,0,0,DPR,0,0);
