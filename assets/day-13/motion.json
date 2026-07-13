@@ -1,0 +1,41 @@
+[
+  {
+    "created_at": "2026-07-13T08:24:09.623205Z",
+    "display_name": "Seedance 2.0",
+    "id": "d96af16e-2047-4669-847e-3819e39a1793",
+    "job_type": "seedance_2_0",
+    "min_result_url": null,
+    "params": {
+      "aspect_ratio": "16:9",
+      "bitrate_mode": "standard",
+      "duration": 8,
+      "generate_audio": true,
+      "genre": "auto",
+      "height": 1080,
+      "medias": [
+        {
+          "data": {
+            "id": "fae9e66c-f6d8-4819-9ea9-f7c25b64078e",
+            "type": "media_input",
+            "url": "https://d2ol7oe51mr4n9.cloudfront.net/user_3FrWNkY3JraLGlw9hIAsPuYA3WR/fae9e66c-f6d8-4819-9ea9-f7c25b64078e_resize.jpg"
+          },
+          "role": "start_image"
+        }
+      ],
+      "mode": "std",
+      "model": "seedance_2_0",
+      "multi_prompt": [],
+      "multi_shot_mode": "custom",
+      "multi_shots": false,
+      "prompt": "Animate the image: the small flame elemental with white-hot glowing eyes and a confident smile — her body of living fire flickers and dances gently in place, the flame wisps of her crown swaying upward, sparks and embers drifting up around her. Mid-clip she brightens: her eyes flare whiter, her smile widens confidently, and the flames of her crown surge a little taller for a moment — then she settles back into a calm, steady flicker. Her overall silhouette, standing pose and facial features stay stable and coherent throughout; she stays in place. Embers rise slowly in the dark background with a soft heat-haze shimmer near the ground. Camera dollies in very slowly the whole time. Calm, seamless, loopable motion, cinematic lighting unchanged.",
+      "prompt_language": "en",
+      "reference_elements": [],
+      "resolution": "1080p",
+      "speedramp": "auto",
+      "width": 1920
+    },
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3FrWNkY3JraLGlw9hIAsPuYA3WR/hf_20260713_082409_d96af16e-2047-4669-847e-3819e39a1793.mp4",
+    "status": "completed",
+    "thumbnail_url": "https://cdn.higgsfield.ai/user_3FrWNkY3JraLGlw9hIAsPuYA3WR/hf_20260713_082409_d96af16e-2047-4669-847e-3819e39a1793_thumbnail.webp"
+  }
+]

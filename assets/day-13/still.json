@@ -1,0 +1,22 @@
+[
+  {
+    "created_at": "2026-07-13T08:20:21.730604Z",
+    "display_name": "GPT Image 2",
+    "id": "0ad1210d-cef1-4530-8509-53696d1592c4",
+    "job_type": "gpt_image_2",
+    "min_result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3FrWNkY3JraLGlw9hIAsPuYA3WR/hf_20260713_082021_0ad1210d-cef1-4530-8509-53696d1592c4_min.webp",
+    "params": {
+      "aspect_ratio": "16:9",
+      "height": 1520,
+      "medias": [],
+      "model": "videotape-alpha",
+      "prompt": "3D rendered character still, cinematic studio lighting: a small living FLAME elemental creature ('Ember') — her entire body is made of swirling, dancing fire, orange-to-amber flames licking upward into wisps at her crown, with two bright white-hot glowing eyes and a hint of a confident smile in the fire. She stands leaning slightly forward with spark-trails rising around her, on dark charred ground with scattered glowing embers. One bold accent color: warm ember orange #ff7a18. Near-black background with subtle volumetric orange rim light and rising ember particles, soft heat-haze glow around her silhouette. Premium award-winning 3D render, Pixar-quality character still, energetic but warm and friendly, centered-right composition with generous negative space on the left for headline text.",
+      "quality": "high",
+      "reference_elements": [],
+      "resolution": "2k",
+      "width": 2688
+    },
+    "result_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3FrWNkY3JraLGlw9hIAsPuYA3WR/hf_20260713_082021_0ad1210d-cef1-4530-8509-53696d1592c4.png",
+    "status": "completed"
+  }
+]
