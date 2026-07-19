@@ -24,6 +24,66 @@ function feedSecret() {
 }
 const MAX_MESSAGE_IDS = 50000; // FIFO-cap på husket dedupe-liste
 
+// Møde-invitationer: vi joiner INGEN møder endnu — vi logger bare at en mail
+// til en avatars adresse lugtede af en kalenderindkaldelse (ICS-vedhæftning
+// eller "Invitation/Indkaldelse/Accepted"-agtigt emne), så Poul kan se om
+// nogen overhovedet bruger book-et-møde-sektionen på day-siderne. Se
+// docs/meeting-invites.md.
+const MEETING_INVITES_FILE = path.join(DATA_DIR, 'meeting-invites.jsonl');
+const MAX_LOGGED_MEETING_INVITES = 5000; // hård cap på hvor mange linjer /api/meeting-invites læser
+
+const ICS_ATTACHMENT_RE = /\.ics$/i;
+const INVITE_SUBJECT_RE =
+  /\b(invit(?:ation|e)|indkald(?:else|t)|accepted|declined|tentative|updated invitation|opdateret indkaldelse|canceled event|aflyst)\b/i;
+const MEETING_LINK_RE = /(teams\.microsoft\.com\/(?:l\/)?meet|meet\.google\.com|zoom\.us\/j\/)/i;
+
+function detectMeetingInvite(subject, attachments) {
+  const subj = typeof subject === 'string' ? subject : '';
+  const atts = Array.isArray(attachments) ? attachments.filter((a) => typeof a === 'string') : [];
+  const icsAttachment = atts.find((a) => ICS_ATTACHMENT_RE.test(a));
+  if (icsAttachment) return { detected: true, reason: 'ics-attachment', match: icsAttachment };
+  const linkMatch = subj.match(MEETING_LINK_RE);
+  if (linkMatch) return { detected: true, reason: 'meeting-link', match: linkMatch[0] };
+  if (INVITE_SUBJECT_RE.test(subj)) return { detected: true, reason: 'invite-subject', match: subj.slice(0, 80) };
+  return { detected: false };
+}
+
+function logMeetingInvite(slug, messageId, subject, detection, senderHash) {
+  const entry = {
+    at: new Date().toISOString(),
+    slug,
+    messageId: messageId || null,
+    reason: detection.reason,
+    match: typeof detection.match === 'string' ? detection.match.slice(0, 120) : null,
+    subject: typeof subject === 'string' ? subject.slice(0, 160) : null,
+    // aldrig den rå afsenderadresse på disk — kun hashen fra webhook-kontrakten
+    senderHash: typeof senderHash === 'string' ? senderHash : null,
+  };
+  try {
+    fs.appendFileSync(MEETING_INVITES_FILE, JSON.stringify(entry) + '\n', 'utf8');
+    console.log(`[meeting-invite] slug=${slug} reason=${detection.reason} messageId=${messageId || '-'}`);
+  } catch (err) {
+    console.error(`[meeting-invite] log write failed: ${err.message}`);
+  }
+  return entry;
+}
+
+function readMeetingInvites(limit) {
+  let raw;
+  try {
+    raw = fs.readFileSync(MEETING_INVITES_FILE, 'utf8');
+  } catch {
+    return [];
+  }
+  const lines = raw.split('\n').filter(Boolean);
+  const tail = lines.slice(-Math.min(limit, MAX_LOGGED_MEETING_INVITES));
+  const out = [];
+  for (const line of tail) {
+    try { out.push(JSON.parse(line)); } catch { /* skip corrupt line */ }
+  }
+  return out;
+}
+
 // Avatar-roster — dag 1..31. GET /api/votes skal ALTID indeholde alle 31 slugs.
 const SLUGS = [
   'aura', 'raev', 'agent01', 'nova', 'comet', 'boo', 'neko', 'tsuru',
@@ -435,7 +495,32 @@ app.post('/api/feed', express.json({ limit: '64kb', verify: (req, res, buf) => {
     return res.json({ ok: true, duplicate: true, slug, votes: votes[slug], total: totalVotes() });
   }
 
-  res.json(processIncomingMail(slug, messageId, p.subject, null));
+  // Møde-invitation? Log det ved siden af den normale feed/stem-behandling —
+  // ingen join, bare synlighed. Aldrig lad detektion afbryde stemme-flowet.
+  const detection = detectMeetingInvite(p.subject, p.attachments);
+  if (detection.detected) {
+    logMeetingInvite(slug, messageId, p.subject, detection, p.senderHash);
+  }
+
+  const result = processIncomingMail(slug, messageId, p.subject, null);
+  if (detection.detected) result.meetingInviteDetected = true;
+  res.json(result);
+});
+
+// GET /api/meeting-invites — Poul-only oversigt over hvem der har prøvet at
+// invitere en avatar til et møde (day-siderne viser adressen, ingen bot
+// dukker op endnu). Samme Bearer-token som /api/wake.
+app.get('/api/meeting-invites', (req, res) => {
+  const token = process.env.VOTE_WEBHOOK_TOKEN;
+  if (!token) {
+    return res.status(503).json({ ok: false, error: 'not-configured' });
+  }
+  const auth = req.get('authorization') || '';
+  if (auth !== `Bearer ${token}`) {
+    return res.status(401).json({ ok: false, error: 'unauthorized' });
+  }
+  const limit = Math.min(parseInt(req.query.limit, 10) || 100, MAX_LOGGED_MEETING_INVITES);
+  res.json({ ok: true, invites: readMeetingInvites(limit) });
 });
 
 // Kaldes når en avatar er genereret og deployet: state=awake, alle behov = 100.

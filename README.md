@@ -65,6 +65,7 @@ Når en ny avatar er genereret og deployet: `POST /api/wake {"slug":"neko"}`
 | `assets/day-N/` | Genererede video-assets per opgraderet dag (still, rå klip, scrub-mp4/webm, poster, kodet original). |
 | `tools/assemble.py` | Genererer **kun** `calendar.html` (+ `ANSWER_KEY.txt`). Kør: `python3 tools/assemble.py` (ingen flag nødvendige). Trygt at importere/køre igen — ren funktion af `day-N.html`s indhold, ingen andre filer røres. (Historisk indeholdt den også `inject()`, som satte historie-kortet på alle day-sider første gang; det job er gjort — se git-historik hvis nysgerrig.) |
 | `tools/inject_vote_block.py` | Idempotent patcher: sætter/opgraderer stemme/fodrings-widget'en i alle 31 day-sider. |
+| `tools/inject_meet_block.py` | Idempotent patcher: sætter "📅 Book et møde med `<Name>`"-sektionen (avatarens `<slug>@agent.agentics.dk`-adresse) i alle 31 day-sider. Ingen join-integration endnu — `/api/feed` bare *detekterer og logger* om en mail lugter af en kalenderindkaldelse. Se `docs/meeting-invites.md`. |
 | `tools/add_story_toggle.py` | Idempotent patcher: sætter skjul/vis-toggle på historie-kortet på de statiske day-sider (ikke dag 2/3, der har deres eget in-flow layout). |
 | `index.html`, `concept-*.html`, `round2-*.html` | Rå kildesider fra de første eksperiment-runder — kun historiske, ingen kode læser dem længere. |
 | `ANSWER_KEY.txt` | Facitliste for gætte-spillet. (Svarene ligger alligevel klient-side i `calendar.html`, så den er her mest for nemhedens skyld.) |

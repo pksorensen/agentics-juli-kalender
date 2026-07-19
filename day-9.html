@@ -650,6 +650,16 @@
 .agx-vote .fbtn:hover{border-color:var(--agx);background:rgba(255,255,255,.08);transform:translateY(-1px)}
 .agx-vote .fbtn:focus-visible{outline:2px solid var(--agx);outline-offset:2px}
 /* agx-vote-css:end */
+/* agx-meet-css:start */
+.agx-meet{margin:0 0 12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.09)}
+.agx-meet .mt{font-size:12.5px;font-weight:700;letter-spacing:.01em;margin-bottom:2px;color:#eef1f7}
+.agx-meet .mp{font-size:11.5px;color:#aeb6c6;line-height:1.45;margin-bottom:6px}
+.agx-meet .maddr{display:block;font-size:11.5px;font-weight:700;color:var(--agx);word-break:break-all;
+  padding:6px 9px;border-radius:8px;border:1px dashed rgba(255,255,255,.2);background:rgba(255,255,255,.03);
+  text-decoration:none;margin-bottom:5px}
+.agx-meet .maddr:hover{border-color:var(--agx);background:rgba(255,255,255,.06)}
+.agx-meet .mnote{font-size:10px;color:#7d8494;line-height:1.4}
+/* agx-meet-css:end */
 .agx-guess{margin:0 0 12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.09)}
 .agx-guess .gq{font-size:11.5px;color:#aeb6c6;margin-bottom:8px;letter-spacing:.01em}
 .agx-guess .gbtns{display:flex;gap:8px}
@@ -739,6 +749,14 @@
     }).catch(function(){ /* statisk hosting / offline: behold standardvisning, ingen behovs-bars */ });
   })();</script>
   <!-- agx-vote:end -->
+  <!-- agx-meet:start -->
+  <div class="agx-meet">
+    <div class="mt">📅 Book et møde med Bit</div>
+    <div class="mp">Tilføj Bit som gæst på en Teams- eller Google Meet-invitation:</div>
+    <a class="maddr" href="mailto:bit@agent.agentics.dk">bit@agent.agentics.dk</a>
+    <div class="mnote">Eksperimentelt: Bit dukker endnu ikke selv op til mødet — vi holder bare øje med hvem der spørger. 👀</div>
+  </div>
+  <!-- agx-meet:end -->
   <div class="agx-guess" id="agxGuess">
     <div class="gq">🤖 Hvilken Claude-model byggede Bit?</div>
     <div class="gbtns">
